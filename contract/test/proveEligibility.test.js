@@ -62,8 +62,12 @@ const defaultClaimaint = {
   proof: head(TEST_TREE_DATA.proofs),
 };
 
+const getLast = iterable => iterable[iterable.length - 1];
+const getTier = compose(head,getLast)
+
 const makeClaimOfferArgs = ({ pubkey, address, proof } = defaultClaimaint) => ({
-  pubkey,
+  pubkey: pubkey.slice(0, pubkey.length - 1),
+  tier: getTier(pubkey),
   address,
   proof,
 });
@@ -72,27 +76,20 @@ const simulateClaim = async (
   t,
   invitation,
   expectedPayout,
-  claimAccountDetails = makeClaimOfferArgs(),
+  claimAccountDetails = {},
 ) => {
-  const marshaller = makeMarshal();
-  console.log('inside simulateClaim');
+  console.log('inside simulateClaim', { ...claimAccountDetails});
   // claimAccountDetails object holds values that are passed into the offer as offerArgs
   // proof should be used to verify proof against tree (e.g. tree.verify(proof, leafValue, hash) where tree is the merkletree, leafValue is pubkey value, and root hash of tree)
   // address is used in conjunction with namesByAddress/namesByAddressAdmin to send tokens to claimain (see https://docs.agoric.com/guides/integration/name-services.html#namesbyaddress-namesbyaddressadmin-and-depositfacet-per-account-namespace)
-  const { pubkey, address, proof } = claimAccountDetails;
-  const { zoe, airdropIssuer: tokenIssuer } = await t.context;
+  const { zoe, airdropIssuer: tokenIssuer , marshaller } = await t.context;
 
-  t.log('Proof::', proof)
-  const offerArgsObject = ({
-    address,
-    pubkey,
-    proof: Far('proof', {
-      getProof() {
-        return proof
-      }
-    }),
-    encoded: encodeBase64(proof)
-  });
+  t.log('Proof::', claimAccountDetails.proof)
+  const offerArgsObject =  await E(marshaller).marshall(harden({...claimAccountDetails, proof: Far('proof remotable', {
+    getProof() {
+      return claimAccountDetails.proof
+    }
+  })}));
 
   t.log('offerArgsObject', offerArgsObject)
 
@@ -101,7 +98,7 @@ const simulateClaim = async (
     invitation,
     undefined,
     undefined,
-    marshaller.toCapData(harden(offerArgsObject)),
+    offerArgsObject
   );
 
   t.log('------------ testing claim capabilities -------');
@@ -300,10 +297,14 @@ const makeTestContext = async t => {
   const airdropInstallation = await E(zoe).install(airdropCampaign);
 
   const defaultCustomTerms = {
-    hash: TEST_TREE_DATA.rootHash,
-    basePayoutQuantity: memes(ONE_THOUSAND),
-    startTime: relTimeMaker(TimeIntervals.SECONDS.ONE_DAY * 7n),
-    endTime: relTimeMaker(ONE_THOUSAND * ONE_THOUSAND),
+    tiers: AIRDROP_TIERS,
+    startEpoch: 0,
+    totalEpochs: 5,
+    epochLength: TimeIntervals.SECONDS.ONE_DAY,
+    bonusSupply: 100_000n,
+    baseSupply: 10_000_000n,
+    tokenName: 'Tribbles',
+    startTime: relTimeMaker(TimeIntervals.SECONDS.ONE_DAY * 3n),
   };
   const defaultPrivateArgs = {
     purce: AIRDROP_PURSE,
@@ -322,24 +323,25 @@ const makeTestContext = async t => {
     TEST_TREE_DATA.tree,
     TEST_TREE_DATA.rootHash,
   );
+  const {toCapData, fromCapData } = makeMarshal();
+  const marshaller = Far('marshaller', {
+    marshall(x) {
+      return toCapData(x)
+    },
+    unmarshal(x) {
+      return fromCapData(x)
+    }
+  });
   const instance = await E(zoe).startInstance(
     airdropInstallation,
     undefined,
-    harden({
-      tiers: AIRDROP_TIERS,
-      startEpoch: 0,
-      totalEpochs: 5,
-      epochLength: TimeIntervals.SECONDS.ONE_DAY,
-      bonusSupply: 100_000n,
-      baseSupply: 10_000_000n,
-      tokenName: 'Tribbles',
-      startTime: relTimeMaker(TimeIntervals.SECONDS.ONE_DAY * 3n),
-    }),
+    harden(defaultCustomTerms),
     harden({
       purse: AIRDROP_PURSE,
       bonusPurse: MemePurse.purse,
       TreeRemotable: testTreeRemotable,
       timer,
+      marshaller
     }),
     'c1-ownable-Airdrop',
   );
@@ -350,6 +352,7 @@ const makeTestContext = async t => {
 
   t.context = {
     ...t.context,
+    marshaller,
     walletFactory,
     invitationIssuer,
     invitationBrand,
@@ -514,6 +517,20 @@ test('airdrop claim :: eligible participant', async t => {
 
 });
 
+// test('claimant atempts a 2nd claim', async t=> {
+//     const { publicFacet, timer, airdropAmount, zoe } =await t.context
+//     const [alice, bob, carol, dan, eva, ...x] =
+//     preparedAccounts.map(makeClaimOfferArgs);
+
+
+
+//   const invitation = await E(publicFacet).makeClaimInvitation();
+//   const offer =  await E(zoe).offer(invitation,undefined, undefined, harden(makeClaimOfferArgs(alice)))
+
+//   t.deepEqual(await offer, {})
+  
+// })
+
 // test('claim attempts with tiers', async t => {
 //   await makeTestContext(t);
 
@@ -555,7 +572,11 @@ test('airdrop claim :: eligible participant', async t => {
 // test('airdrop claim :: claim attempts with tiers', async t => {});
 // // const { publicFacet, timer, testTreeRemotable } = await t.context;
 
-test.todo('claim attempts after the last epoch has ended');
+test('claim attempts after the last epoch has ended', async t =>{
+  const {context} = await t;
+
+  t.log(context)
+});
 
 test.todo('bonus mints');
 

@@ -6,24 +6,24 @@ import { test as anyTest } from './airdropData/prepare-test-env-ava.js';
 import { createRequire } from 'module';
 import { accounts, preparedAccounts } from './data/agoric.accounts.js';
 import { Fn } from '../src/airdrop/helpers/monads.js';
-import { lensProp, lensPath, view } from '../src/airdrop/helpers/lenses.js';
+import { lensProp, lensPath, view, over } from '../src/airdrop/helpers/lenses.js';
 
 const test = anyTest;
 
 const epochDataArray = [{
   epoch: 0,
-  onDeck: [1000, 850, 500, 400, 300],
+  previousPayoutValue: [1000, 850, 500, 400, 300],
   tracker: [0, 0, 0, 0, 0],
   epochStore: new Map()
 }, {
   epoch: 1,
-  onDeck: [600, 480, 384, 307, 245],
+  previousPayoutValue: [600, 480, 384, 307, 245],
   tracker: [0, 0, 0, 0, 0],
   epochStore:  new Map()
 
 }, {
   epoch: 2,
-  onDeck: [480, 384, 307, 200, 165],
+  previousPayoutValue: [480, 384, 307, 200, 165],
   tracker: [0, 0, 0, 0, 0],
   epochStore: new Map()
 }
@@ -35,6 +35,27 @@ const defaultState = {
   epochData: epochDataArray,
   currentEpochData: epochDataArray[0]
 }
+
+const add = x => y => x + y;
+const minusOne = add(-1);
+const exp = x => y => x ** y;
+
+const multiply = x => y => x * y;
+
+const calculateClaimAmt = () => {}
+
+
+const updateEpochData = (epochData) => (payload) ({
+  tracker: updateArray(epochData.tracker)(epochData.tier)(tracker)
+})
+const createClaimReducerState = ({epochDataArray = [], claimDecayRate = 0, epochDecayRate = 0,  currentEpoch = 0}) => ({
+  ...defaultState,
+  claimDecayRate,
+  epochDecayRate,
+  currentEpoch,
+  epochData: epochDataArray,
+  currentEpochData: epochDataArray[currentEpoch],
+})
 
 const reconstructArray = (array, index, data) => array.slice(0, index)
   .concat([data])
@@ -50,9 +71,10 @@ const updateArray = array => index => newData => array.slice(0, index).concat(ne
 const uncurriedUpdateArray = uncurry(updateArray)
 const { CLAIM, CHANGE_EPOCH } = ACTION_TYPES;
 
-const reducer = (state = {}, { type = '', payload = {} }) => {
+const reducer = (state = createClaimReducerState(), { type = '', payload = {} }) => {
   switch (type) {
     case CHANGE_EPOCH: {
+      const s = over(lensProp('epochData'), uncurriedUpdateArray(state.epochData, state.currentEpoch, state.currentEpochData))
       console.log({ type, payload, state })
       const newState = ({
         ...state,
@@ -66,13 +88,13 @@ const reducer = (state = {}, { type = '', payload = {} }) => {
     case CLAIM: {
       const { address, tier } = payload;
       const { currentEpochData } = state;
-      const { onDeck, epochStore, tracker } = currentEpochData;
-      // update currentEpochData.onDeck[tier] 
+      const { previousPayoutValue, epochStore, tracker } = currentEpochData;
+      // update currentEpochData.previousPayoutValue[tier] 
       // increment currentEpochData.tracker[tier]
 
-      console.log({ onDeck, tier })
+      console.log({ previousPayoutValue, tier })
       const size = epochStore.size + 1;
-      const nextNumber = onDeck[tier] * state.claimDecayRate ** (size - 1);
+      const nextNumber = previousPayoutValue[tier] * state.claimDecayRate ** (size - 1);
       console.log({ nextNumber })
       return ({
         ...state,
@@ -81,7 +103,7 @@ const reducer = (state = {}, { type = '', payload = {} }) => {
           epochStore: epochStore.set(address, {
             amount: nextNumber
           }),
-          onDeck: updateArray(onDeck)(tier)(nextNumber)
+          previousPayoutValue: updateArray(previousPayoutValue)(tier)(nextNumber)
         }
       })
     }

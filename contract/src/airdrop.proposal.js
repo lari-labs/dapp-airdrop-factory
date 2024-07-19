@@ -8,7 +8,32 @@ import {
 } from './airdrop/airdrop.coreEval.js';
 import { TimeIntervals } from './airdrop/helpers/time.js';
 import { allValues } from './objectTools.js';
+import { AIRDROP_TIERS } from '../test/data/account.utils.js';
+import { makeTreeRemotable } from '../test/data/tree.utils.js';
+import { fixHub } from './fixHub.js';
 
+const defaultContractTemrs = {
+  tiers: AIRDROP_TIERS,
+  startEpoch: 0,
+  totalEpochs: 5,
+  epochLength: TimeIntervals.SECONDS.ONE_DAY,
+  bonusSupply: 100_000n,
+  baseSupply: 10_000_000n,
+  tokenName: 'Tribbles',
+}
+const { SECONDS: { ONE_DAY } } = TimeIntervals
+
+// const defaultArgs = 
+// {
+//   tiers: AIRDROP_TIERS,
+//   startEpoch: 0,
+//   totalEpochs: 5,
+//   epochLength: TimeIntervals.SECONDS.ONE_DAY,
+//   bonusSupply: 100_000n,
+//   baseSupply: 10_000_000n,
+//   tokenName: 'Tribbles',
+//   startTime: makeRelTimeMaker(ONE_DAY * 3n),
+// }
 /** @import { Payment, Brand, Issuer } from '@agoric/ertp/src/types.js'; */
 // TODO: Get to the bottom of using bankManager
 // /** @import { AssetIssuerKit } from '@agoric/vats/src/vat-bank.js' */
@@ -42,50 +67,41 @@ export const startAirdropCampaignContract = async (permittedPowers, config) => {
   console.log('core eval for', contractName);
   const {
     // must be supplied by caller or template-replaced
-    bundleID = Fail`no bundleID`,
+    consume: { namesByAddressAdmin },
   } = config?.options?.[contractName] ?? {};
+
+
+  // const {tiers = AIRDROP_TIERS, epochLength = ONE_DAY, tokenName = 'Tribbles', bonusSupply =  100_000n, baseSupply = 10_000_000 } = config.terms;
+  console.log('insidde startAirdropCampaign :::::', {
+    config,
+    airdrop: config.options.airdrop,
+  });
 
   const installation = await installContract(permittedPowers, {
     name: contractName,
-    bundleID,
+    bundleID: config.options.airdrop.bundleID,
   });
 
-  const ist = await allValues({
+  console.group('---------- inside startAirdropCampaignContract----------');
+  console.log('------------------------');
+  console.log('installation::', installation);
+  console.log('------------------------');
+  console.log(':: powers', permittedPowers);
+  console.log('------------------------');
+  console.groupEnd();
+
+  const [ist, timer] = await Promise.all([allValues({
     brand: permittedPowers.brand.consume.IST,
     issuer: permittedPowers.issuer.consume.IST,
-  });
-
-  const timer = await permittedPowers.consume.chainTimerService;
+  }), permittedPowers.consume.chainTimerService]);
 
   const timerBrand = await E(timer).getTimerBrand();
-  const startTime = harden({
-    timerBrand,
-    relValue: TimeIntervals.SECONDS.ONE_DAY,
-  });
-  const endTime = harden({
-    timerBrand,
-    relValue: TimeIntervals.SECONDS.ONE_DAY * 7n,
-  });
 
-  const { zoe, agoricNames } = permittedPowers.consume;
-
-  const { publicFacet: tokenIssuer, creatorFacet: tokenMint } = await E(
-    zoe,
-  ).startInstance(
-    E(agoricNames).lookup('installation', 'mintHolder'),
-    undefined,
-    { keyword: 'Airdroplets' },
-  );
-
-  const tokenBrand = await E(tokenIssuer).getBrand();
-  const purse = await E(tokenIssuer).makeEmptyPurse();
-  const oneMillionPayment = await E(tokenMint).mintPayment(
-    AmountMath.make(tokenBrand, 1_000_000n),
-  );
-
-  console.log('checking issuer and payment', {
-    tokenIssuer,
-    oneMillionPayment,
+  const namesByAddress = await fixHub(namesByAddressAdmin);
+  const terms = harden({ 
+    ...defaultContractTemrs, 
+    namesByAddress, 
+    startTime: ({ timerBrand, relValue: ONE_DAY })
   });
 
   await startContract(permittedPowers, {
@@ -93,18 +109,15 @@ export const startAirdropCampaignContract = async (permittedPowers, config) => {
     startArgs: {
       installation,
       issuerKeywordRecord: {
-        Price: ist.issuer,
-        Token: tokenIssuer, // FIXME
+        Price: ist.issuer
       },
-      terms: {
-        startTime,
-        endTime,
-      },
+      terms,
       privateArgs: {
         timer,
+        TreeRemotable: makeTreeRemotable()
         // TODO: think about this approach....
-        purse: await E(purse).deposit(oneMillionPayment),
       },
+      issuerNames: ['Tribbles']
     },
   });
 
@@ -117,6 +130,8 @@ export const permit = harden({
     bankManager: true,
     chainTimerService: true,
     agoricNames: true,
+    namesByAddress: true,
+    namesByAddressAdmin: true,
     brandAuxPublisher: true,
     startUpgradable: true, // to start contract and save adminFacet
     zoe: true, // to get contract terms, including issuer/brand
@@ -126,8 +141,8 @@ export const permit = harden({
     produce: { [contractName]: true },
   },
   instance: { produce: { [contractName]: true } },
-  issuer: { consume: { IST: true } },
-  brand: { consume: { IST: true } },
+  issuer: { consume: { IST: true }, produce: { Tribbles: true } },
+  brand: { consume: { IST: true } }, produce: { Tribbles: true },
 });
 
 export const main = startAirdropCampaignContract;

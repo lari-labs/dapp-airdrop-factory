@@ -7,9 +7,108 @@ import {
   makeSignDoc as makeSignDocAmino,
   serializeSignDoc,
 } from '@cosmjs/amino';
-
 import { ripemd160 } from '@noble/hashes/ripemd160';
+import { preparedAccounts } from '../test/data/agoric.accounts.js';
 
+const Either = (() => {
+  const Right = x => ({
+    isLeft: false,
+    chain: f => f(x),
+    ap: other => other.map(x),
+    alt: other => Right(x),
+    extend: f => f(Right(x)),
+    concat: other =>
+      other.fold(
+        x => other,
+        y => Right(x.concat(y)),
+      ),
+    traverse: (of, f) => f(x).map(Right),
+    map: f => Right(f(x)),
+    fold: (_, g) => g(x),
+    inspect: () => `Right(${x})`,
+  });
+
+  const Left = x => ({
+    isLeft: true,
+    chain: _ => Left(x),
+    ap: _ => Left(x),
+    extend: _ => Left(x),
+    alt: other => other,
+    concat: _ => Left(x),
+    traverse: (of, _) => of(Left(x)),
+    map: _ => Left(x),
+    fold: (f, _) => f(x),
+    inspect: () => `Left(${x})`,
+  });
+
+  const of = Right;
+  const tryCatch = f => {
+    try {
+      return Right(f());
+    } catch (e) {
+      return Left(e);
+    }
+  };
+
+  const fromUndefined = x => (x === undefined ? Right(x) : Left(x));
+
+  const fromNullable = x => (x != null ? Right(x) : Left(x));
+
+  return { Right, Left, of, tryCatch, fromNullable, fromUndefined };
+})();
+
+const { Left, Right, tryCatch, of } = Either;
+
+const keys = preparedAccounts.map(x => ({
+  prefix: x.prefix,
+  address: x.address,
+  key: x.pubkey.slice(0, x.pubkey.length - 1),
+  keyWithTier: x.pubkey,
+}));
+
+const safeByteLengthCheck = pk =>
+  pk.byteLength === 33
+    ? Right(pk)
+    : Left('pubkey.bytelength is not the correct value');
+
+const decode = x => decodeBase64(x);
+const createHash = hashFn => data => hashFn.create().update(data).digest();
+const createSha256Hash = createHash(sha256);
+const createRipeMdHash = createHash(ripemd160);
+const compose =
+  (...fns) =>
+  initialValue =>
+    fns.reduceRight((acc, val) => val(acc), initialValue);
+
+const toWords = bytes => bech32.toWords(bytes);
+const toBech32Address = prefix => (hash, limit) =>
+  bech32.encode(prefix, toWords(hash), limit);
+
+const trace = label => value => {
+  console.log(label, '::::', value);
+  return value;
+};
+
+const mapFn = fn => type => type.map(fn);
+
+const id = x => x;
+
+const pkToAddress = prefix =>
+  compose(
+    x =>
+      x.fold(
+        err => new Error('Error', err),
+        x => x,
+      ),
+    mapFn(toBech32Address(prefix)),
+    trace('after create ripe'),
+    x => x.map(createRipeMdHash),
+    trace('after create'),
+    x => x.map(createSha256Hash),
+    trace('after safe'),
+    safeByteLengthCheck,
+    decode,
+  );
 // https://github.com/cosmos/cosmjs/blob/main/packages/encoding/src/bech32.ts#L3C1-L6C2
 export function toBech32(prefix, data, limit) {
   const address = bech32.encode(prefix, bech32.toWords(data), limit);

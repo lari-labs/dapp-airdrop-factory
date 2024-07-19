@@ -10,6 +10,11 @@ import {
   makeMockTools,
   makeSmartWalletFactory,
 } from '../tools/boot-tools.js';
+
+import {
+  makeNameProxy,
+  makeAgoricNames,
+} from '../tools/ui-kit-goals/name-service-client.js';
 import { getBundleId, makeBundleCacheContext } from '../tools/bundle-tools.js';
 import { env as ambientEnv } from 'node:process';
 import * as ambientChildProcess from 'node:child_process';
@@ -27,7 +32,7 @@ import {
   preparedAccounts,
   TEST_TREE_DATA,
 } from './data/agoric.accounts.js';
-import { TimeIntervals } from '../src/airdrop/helpers/time.js';
+import { oneDay, TimeIntervals } from '../src/airdrop/helpers/time.js';
 import { setup } from './setupBasicMints.js';
 import { compose, objectToMap } from '../src/airdrop/helpers/objectTools.js';
 import { makeMarshal } from '@endo/marshal';
@@ -38,6 +43,7 @@ import { makeCopySet } from '@endo/patterns';
 import { makeStateMachine } from '../src/airdrop/helpers/stateMachine.js';
 import { makeRatio, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeRelTimeMaker } from './proveEligibility.test.js';
+import { AIRDROP_TIERS } from './data/account.utils.js';
 
 const Id = value => ({
   value,
@@ -155,15 +161,8 @@ const makeTimerPowers = async ({ consume }) => {
     relTimeMaker,
   };
 };
-// Example usage with AIRDROP_TIERS:
-const AIRDROP_TIERS = {
-  0: [1000, 800, 650, 500, 350],
-  1: [600, 480, 384, 307, 245],
-  2: [480, 384, 307, 200, 165],
-  3: [300, 240, 192, 153, 122],
-  4: [100, 80, 64, 51, 40],
-  5: [15, 13, 11, 9, 7],
-};
+
+
 /** @param {import('ava').ExecutionContext} t */
 const setupTestContext = async t => {
   const bc = await makeBundleCacheContext(t);
@@ -201,14 +200,15 @@ const setupTestContext = async t => {
   return { ...tools, ...bc };
 };
 const TOKEN_SUPPLY = {
-  BASE_SUPPLY: 10_000_000n
+  BASE_SUPPLY: 10_000_000n,
+  BONUS_SUPPLY: 100_000n
 }
 
-test('bonus mint ratios', t => {
-  const bonusRatio = makeRatio(1n, memeKit.brand);
+// test('bonus mint ratios', t => {
+//   const bonusRatio = makeRatio(1n, memeKit.brand);
 
 
-})
+// })
 
 const makeTestContext = async t => {
   const bootKit = await bootAndInstallBundles(t, bundleRoots);
@@ -223,27 +223,12 @@ const makeTestContext = async t => {
   const TOTAL_SUPPLY = memes(TOKEN_SUPPLY.BASE_SUPPLY);
   const bonusRatio = makeRatio(1n, memeKit.brand)
   t.deepEqual(multiplyBy(TOTAL_SUPPLY, bonusRatio), memes(100_000n))
-
-  // t.deepEqual(
-  //   await MemePurse.map(x => x.deposit(memeMint.mintPayment(memes(10_000n)))),
-  //   MemePurse.inspect(),
-  // );
-
-
-
-  const AIRDROP_PAYMENT = memeMint.mintPayment(TOTAL_SUPPLY);
-  const AIRDROP_PURSE = memeIssuer.makeEmptyPurse();
-  AIRDROP_PURSE.deposit(AIRDROP_PAYMENT);
+  
 
   const startTime = relTimeMaker(TimeIntervals.SECONDS.ONE_DAY);
   t.deepEqual(TimeMath.relValue(startTime), TimeIntervals.SECONDS.ONE_DAY);
   const isFrozen = x => Object.isFrozen(x);
 
-  t.deepEqual(
-    isFrozen(AIRDROP_PURSE),
-    true,
-    'Purse being passed into contract via privateArgs must be frozen.',
-  );
   t.deepEqual(
     isFrozen(timer),
     true,
@@ -258,13 +243,12 @@ const makeTestContext = async t => {
   const airdropInstallation = await E(zoe).install(airdropCampaign);
 
   const defaultCustomTerms = {
-    hash: TEST_TREE_DATA.rootHash,
-    basePayoutQuantity: memes(ONE_THOUSAND),
     startTime: relTimeMaker(TimeIntervals.SECONDS.ONE_DAY * 7n),
-    endTime: relTimeMaker(ONE_THOUSAND * ONE_THOUSAND),
+    baseSupply: TOKEN_SUPPLY.BASE_SUPPLY,
+    bonusSupply: TOKEN_SUPPLY.BONUS_SUPPLY,
+    epochLength: oneDay
   };
   const defaultPrivateArgs = {
-    purce: AIRDROP_PURSE,
     timer,
   };
 
@@ -280,21 +264,24 @@ const makeTestContext = async t => {
     TEST_TREE_DATA.tree,
     TEST_TREE_DATA.rootHash,
   );
+  const contractTerms = {
+    tiers: AIRDROP_TIERS,
+    totalEpochs: 5,
+    epochLength: TimeIntervals.SECONDS.ONE_DAY,
+    startTime: relTimeMaker(TimeIntervals.SECONDS.ONE_DAY * 3n),
+  }
   const instance = await E(zoe).startInstance(
     airdropInstallation,
     harden({ Token: memeIssuer }),
     harden({
       tiers: AIRDROP_TIERS,
-      startEpoch: 0,
       totalEpochs: 5,
       epochLength: TimeIntervals.SECONDS.ONE_DAY,
-      hash: TEST_TREE_DATA.rootHash,
-      basePayoutQuantity: memes(ONE_THOUSAND),
+      baseSupply: TOKEN_SUPPLY.BASE_SUPPLY,
+      bonusSupply: TOKEN_SUPPLY.BONUS_SUPPLY,
       startTime: relTimeMaker(TimeIntervals.SECONDS.ONE_DAY * 3n),
     }),
     harden({
-      purse: AIRDROP_PURSE,
-      bonusPurse: MemePurse.purse,
       TreeRemotable: testTreeRemotable,
       timer,
     }),
@@ -309,7 +296,6 @@ const makeTestContext = async t => {
     memeIssuer,
     zoe,
     timer,
-    primaryPurse: AIRDROP_PURSE,
     testTreeRemotable,
     makeStartOpts,
     airdropInstallation,
@@ -321,9 +307,11 @@ const makeTestContext = async t => {
 test.before(async t => {
   t.context = await setupTestContext(t);
 
+
+
   const testSetup = await makeTestContext(t);
 
-  const { installBundles } = testSetup;
+  const { installBundles } = t.context;
   console.time('installBundles');
   console.timeLog('installBundles', Object.keys(bundleRoots).length, 'todo');
   const bundles = await installBundles(bundleRoots, (...args) =>
@@ -342,6 +330,36 @@ test.before(async t => {
   console.log('context :: after', t.context);
 });
 
+test('wallet creation', async t =>{
+    const {makeQueryTool, provisionSmartWallet } = t.context;
+
+    const hub0 = makeAgoricNames(makeQueryTool());    
+    /** @type {import('./market-actors.js').WellKnown} */
+    const agoricNames = makeNameProxy(hub0);
+  
+    await null;
+    const { make: amt } = AmountMath;
+    const shared = {
+      rxAddr: 'agoric1aap7m84dt0rwhhfw49d4kv2gqetzl56vn8aaxj',
+      toSend: {
+        Pmt: amt(await agoricNames.brand.ATOM, 3n),
+      },
+      issuers: [await agoricNames.issuer.ATOM],
+    };
+  
+    const wallet = {
+      pete: await provisionSmartWallet(
+        'agoric1xe269y3fhye8nrlduf826wgn499y6wmnv32tw5',
+        { ATOM: 10n, BLD: 75n },
+      ),
+      rose: await provisionSmartWallet(shared.rxAddr, {
+        BLD: 20n,
+      }),
+    };
+
+    t.deepEqual(wallet,{})
+
+})
 
 const handleValidateProof =
   (tree = TEST_TREE_DATA.tree, hash = TEST_TREE_DATA.rootHash) =>
