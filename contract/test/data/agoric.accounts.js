@@ -55,9 +55,12 @@ const getProp = prop => object => object[prop];
 const getPubkey = getProp('pubkey');
 const getKey = getProp('key');
 
+const getPubkeyKey = ({ pubkey }) => pubkey.key;
+
 const toHexString = value => value.toString('hex');
 const getRoot = x => x.getRoot();
 const getProof = tree => value => tree.getProof(value);
+const getHexProof = tree => value => tree.getHexProof(value);
 
 const getRootHash = compose(toHexString, getRoot);
 
@@ -159,21 +162,17 @@ const gte = x => y => y >= x;
 const lte = x => y => y <= x;
 const gteZero = gte(0);
 const lteFour = lte(4);
-lteFour(4); //?
-gteZero(0); //?
 const and = (x, y) => x && y;
 
 const isWithinBounds = x => and(gteZero(x), lteFour(x));
 const isUndefined = x => x === undefined;
 const exists = x => !x === false;
-and(1 < 3, 0 > 1); //?
 
 // Helper function to safely concatenate properties within Either monad
-const concatenateProps = obj =>
-  and(isWithinBounds(obj.tier), exists(obj.pubKey.key))
+const concatenateProps = (obj = accounts[0]) =>
+  and(isWithinBounds(obj.tier), exists(obj.pubkey))
     ? Right(`${obj.pubkey.key}${obj.tier}`)
     : Left('Invalid object structure');
-Right(exampleAccountObject).chain(concatenateProps).map(trace('val')); //?
 
 const toString = x => String(x);
 
@@ -199,7 +198,9 @@ const processArray = array =>
     ),
   );
 
-const pubkeys = processArray(accounts);
+const pubkeys = processArray(accounts)
+  .map(x => x.slice(0, x.length - 1))
+  .map(trace('after slicing'));
 
 const getLast = array => array[array.length - 1];
 const stringToArray = string => [...string];
@@ -216,15 +217,20 @@ const TEST_TREE_DATA = {
   tree: tree1,
   rootHash: getRootHash(tree1),
   leaves: pubkeys,
+  hexLeaves: tree1.getHexLeaves(),
   proofs: pubkeys.map(getProof(tree1)),
+  hexProofs: pubkeys.map(getHexProof(tree1)),
 };
+
 const { tree: testTree, proofs } = TEST_TREE_DATA;
+
 const withProof = (o, i) => ({ ...o, proof: proofs[i], pubkey: pubkeys[i] });
 const preparedAccounts = accounts.map(withProof).map(formatTier);
 export {
   accounts,
   pubkeys,
   preparedAccounts,
+  makeSha256Hash,
   testTree,
   TEST_TREE_DATA,
   getLastChar,

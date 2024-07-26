@@ -1,51 +1,24 @@
-// @ts-check
-import { M, mustMatch } from '@endo/patterns';
+// @ts-nocheck
+import { M } from '@endo/patterns';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
-import {
-  AmountMath,
-  AmountShape,
-  BrandShape,
-  IssuerShape,
-  PurseShape,
-} from '@agoric/ertp';
+import { AmountMath, IssuerShape, PurseShape } from '@agoric/ertp';
 import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
 import { TimerShape } from '@agoric/zoe/src/typeGuards.js';
-import {
-  fromOnly,
-  toOnly,
-  atomicRearrange,
-  withdrawFromSeat,
-  makeRatio,
-} from '@agoric/zoe/src/contractSupport/index.js';
-import { makeMarshal } from '@endo/marshal';
-import { decodeBase64 } from '@endo/base64';
-import {
-  ceilMultiplyBy,
-  multiplyBy,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
-import { makeWaker, TimeIntervals } from './helpers/time.js';
+import { makeWaker } from './helpers/time.js';
 import {
   handleFirstIncarnation,
   makeCancelTokenMaker,
 } from './helpers/validation.js';
 import { makeStateMachine } from './helpers/stateMachine.js';
 import { createClaimSuccessMsg } from './helpers/messages.js';
-import { objectToMap } from './helpers/objectTools.js';
-import {
-  actionCreators,
-  createClaimReducerState,
-  createStore,
-  reducer,
-} from './helpers/reducers.js';
-
-const makeIncrementalDecayFn = r => p => i => p * r ** i;
+import { head, objectToMap } from './helpers/objectTools.js';
+import { actionCreators, createStore, reducer } from './helpers/reducers.js';
+import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 
 const { keys, values } = Object;
 
 const makeTrackerArray = x => Array.from({ length: x }, () => 0);
-
-const getLast = x => x.slice(x.length - 1);
 
 const cancelTokenMaker = makeCancelTokenMaker('airdrop-campaign');
 
@@ -86,8 +59,6 @@ export const meta = {
   privateArgsShape,
   upgradability: 'canUpgrade',
 };
-
-let issuerNumber = 1;
 
 /**
  * @param {string} addr
@@ -138,10 +109,6 @@ const makeSendInvitation = (zcf, recipient, issuers) => {
   return zcf.makeInvitation(handleSend, 'send');
 };
 
-const getKey = baggage => key => baggage.get(key);
-
-const setValue = baggage => key => newValue => baggage.set(key, newValue);
-
 /**
  * @param {TimestampRecord} sourceTs Base timestamp used to as the starting time which a new Timestamp will be created against.
  * @param {RelativeTimeRecordShape} inputTs Relative timestamp spanning the interval of time between sourceTs and the newly created timestamp
@@ -176,8 +143,9 @@ export const start = async (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage, 'rootZone');
 
   const { timer, TreeRemotable, marshaller } = privateArgs;
-
   /** @type {ContractTerms} */
+  const terms = zcf.getTerms();
+
   const {
     startTime,
     epochLength,
@@ -185,17 +153,8 @@ export const start = async (zcf, privateArgs, baggage) => {
     baseSupply = 10_000_000n,
     tokenName = 'Tribbles',
     tiers,
-    bonusMintThreshold = 1000,
-  } = zcf.getTerms();
+  } = terms;
   const tokenMint = await zcf.makeZCFMint(tokenName);
-
-  const tierSizes = {
-    0: 1200,
-    1: 4000,
-    2: 10000,
-    3: 50000,
-    4: 100000,
-  };
 
   const { brand: tokenBrand, issuer: tokenIssuer } =
     await tokenMint.getIssuerRecord();
@@ -206,6 +165,8 @@ export const start = async (zcf, privateArgs, baggage) => {
   };
 
   const { perClaim: claimDecay, perEpoch: epochDecay } = tokenDecayConfig;
+
+  console.log('INSIDE CONTRACT STASRT', { terms });
 
   const [baseAmount, bonusAmount] = [baseSupply, bonusSupply].map(x =>
     AmountMath.make(tokenBrand, x),
@@ -220,30 +181,26 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
   console.log('bonusSeat:::', bonusSeat.getCurrentAllocation());
 
-  const trace = label => value => {
-    console.log(label, '::::', value);
-    return value;
-  };
-
   const tiersStore = zone.mapStore('airdrop tiers');
   await objectToMap({ ...tiers, current: tiers[0] }, tiersStore);
 
-  const epochDataArray = await Object.entries(tiers)
-    .map(([key, value], index) => ({
+  const epochDataArray = await Object.entries(tiers).map(
+    ([key, value], index) => ({
       epoch: index,
       previousPayoutValues: value,
       claimTracker: makeTrackerArray(value.length),
       store: zone.mapStore(`epoch ${key} claim set`),
-    }))
-    .map(trace('after object creation'));
+    }),
+  );
+  // .map(trace('after object creation'));
 
-  const showKeys = store => [...store.keys()];
-  const showValues = store => [...store.values()];
+  const merkleTreeAPI = await E(privateArgs.TreeRemotable).getTreeAPI();
 
-  const [t0, handleProofVerification] = await Promise.all([
-    E(timer).getCurrentTimestamp(),
-    E(TreeRemotable).getVerificationFn(),
-  ]);
+  console.log('merkleTreeAPI::::', merkleTreeAPI);
+  const handleProofVerification = await E(
+    privateArgs.TreeRemotable,
+  ).getVerificationFn();
+  const t0 = await E(timer).getCurrentTimestamp();
 
   await objectToMap(
     {
@@ -265,10 +222,12 @@ export const start = async (zcf, privateArgs, baggage) => {
   const claimStore = createStore(reducer, {
     currentEpoch: 0,
     epochData: epochDataArray,
-    currentEpochData: epochDataArray[0],
+    currentEpochData: head(epochDataArray),
     claimDecayRate: 0.9999,
     epochDecayRate: 0.875,
   });
+
+  console.log('airdropContractState :: initial data', claimStore.getState());
 
   const getCurrentTier = () => tiersStore.get('current');
   airdropStatus.init('currentStatus', INITIALIZED);
@@ -340,24 +299,13 @@ export const start = async (zcf, privateArgs, baggage) => {
             BigInt(tiersStore.get('current')[tier]),
           );
         },
-        // combineAmounts() {
-        //   const { earlyClaimBonus, basePayout } = this.state;
-        //   mustMatch(
-        //     earlyClaimBonus,
-        //     AmountShape,
-        //     'earlyClaimBonus must be an amount.',
-        //   );
-        //   mustMatch(basePayout, AmountShape, 'basePayout must be an amount.');
-
-        //   return AmountMath.add(earlyClaimBonus, basePayout);
-        // },
         /**
          * @param {TimestampRecord} absTime
          * @param {number} epochIdx
          */
         updateEpochDetails(absTime, epochIdx) {
           const {
-            state: { currentEpoch, currentEpochEndTime },
+            state: { currentEpoch },
           } = this;
           const { helper } = this.facets;
 
@@ -442,13 +390,7 @@ export const start = async (zcf, privateArgs, baggage) => {
          *  - calculate the next payment for next individual
          *
          */
-        handleBookKeeping(store, { address, pubkey, amount, tier }) {
-          const maxClaimForEpoch = 1000;
-          const rate = 0.9999;
-          const maxClaimaints = 50;
-
-          const priorClaimants = store.getSize();
-
+        handleBookKeeping(store, { address, amount }) {
           // // k = current claimeer index. the first individual who clims will make out
           // // rate
           // for (let k = 1; k <= maxClaimaints; k++) {
@@ -544,6 +486,13 @@ export const start = async (zcf, privateArgs, baggage) => {
               console.log({ offerArgsInput });
 
               const proof = await E(offerArgsInput.proof).getProof();
+
+              await E(TreeRemotable)
+                .emptyVerifyfn(proof, offerArgsInput.pubkey)
+                .then(res => {
+                  console.log('verified proof', { res });
+                  return res;
+                });
 
               assert(
                 handleProofVerification(proof, offerArgsInput.pubkey),
