@@ -82,17 +82,17 @@ const always = a => b => a;
 
 const compose =
   (...fns) =>
-  args =>
-    fns.reduceRight((x, f) => f(x), args);
+    args =>
+      fns.reduceRight((x, f) => f(x), args);
 
 const getFunctor = x =>
-  harden({
+  ({
     value: x,
     map: f => getFunctor(x),
   });
 
 const setFunctor = x =>
-  harden({
+  ({
     value: x,
     map: f => setFunctor(f(x)),
   });
@@ -116,7 +116,4 @@ const over = curry((lens, f, obj) => lens(y => setFunctor(f(y)))(obj).value);
 
 const set = curry((lens, val, obj) => over(lens, always(val), obj));
 
-const pubkeyLens = lensProp('pubkey');
-accounts.map(x => view(pubkeyLens, x));
-
-export { lensPath, view, set };
+export { lens, lensPath, lensProp,view, set, over };

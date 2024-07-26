@@ -36,7 +36,7 @@ export const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 // What is <T> ?
 // head :: [x, ...xs] => x
 /** @type {<T>(x: T[]) => T} */
-const head = ([x, ...xs]) => x;
+export const head = ([x, ...xs]) => x;
 
 export const objectToMap = (obj, baggage) =>
   keys(obj).reduce((acc, val) => {

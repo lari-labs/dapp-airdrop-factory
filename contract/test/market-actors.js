@@ -47,7 +47,7 @@ export const payerPete = async (
   /** @type {WellKnown} */
   const agoricNames = makeNameProxy(hub);
 
-  const instance = await agoricNames.instance.postalService;
+  const instance = await agoricNames.instance.airdrop;
 
   t.log('Pete offers to send to', rxAddr, 'via contract', instance);
   /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
@@ -62,6 +62,7 @@ export const payerPete = async (
     proposal: { give: toSend },
   };
   t.snapshot(sendOffer, 'client sends offer');
+  console.log('executing offfer:::', { sendOffer })
   const updates = await E(wallet.offers).executeOffer(sendOffer);
 
   const seat = seatLike(updates);
