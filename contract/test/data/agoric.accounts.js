@@ -55,9 +55,12 @@ const getProp = prop => object => object[prop];
 const getPubkey = getProp('pubkey');
 const getKey = getProp('key');
 
+const getPubkeyKey = ({ pubkey }) => pubkey.key;
+
 const toHexString = value => value.toString('hex');
 const getRoot = x => x.getRoot();
 const getProof = tree => value => tree.getProof(value);
+const getHexProof = tree => value => tree.getHexProof(value);
 
 const getRootHash = compose(toHexString, getRoot);
 
@@ -67,6 +70,7 @@ const accounts = [
     name: 'tg-oracle',
     type: 'local',
     address: 'agoric1we6knu9ukr8szlrmd3229jlmengng9j68zd355',
+    prefix: 'agoric',
     pubkey: {
       type: '/cosmos.crypto.secp256k1.PubKey',
       key: 'AiFAg1ZqtHo7WoheNUAJEScqSLuQCiv7umfToaNjaEv1',
@@ -77,6 +81,7 @@ const accounts = [
     name: 'tg-test',
     type: 'local',
     address: 'agoric1d3pmtdzem9a8fqe8vkfswdwnuy9hcwjmhlh4zz',
+    prefix: 'agoric',
     pubkey: {
       type: '/cosmos.crypto.secp256k1.PubKey',
       key: 'A5A20phWctpT88lD+jbXxdA06llfvXd0aq3BnkRozDg8',
@@ -87,6 +92,7 @@ const accounts = [
     name: 'tgrex',
     type: 'local',
     address: 'agoric1zqhk63e5maeqjv4rgcl7lk2gdghqq5w60hhhdm',
+    prefix: 'agoric',
     pubkey: {
       type: '/cosmos.crypto.secp256k1.PubKey',
       key: 'AybVHbbXgexk5dz+RWfch+2a1rCS5IYl5vSJF9l/qE48',
@@ -97,6 +103,7 @@ const accounts = [
     name: 'u1',
     type: 'local',
     address: 'agoric1p2aqakv3ulz4qfy2nut86j9gx0dx0yw09h96md',
+    prefix: 'agoric',
     pubkey: {
       type: '/cosmos.crypto.secp256k1.PubKey',
       key: 'Anc5HuzkD5coFkPWAgC87lGbfC+SdzCPwRpOajFrGYSZ',
@@ -107,6 +114,7 @@ const accounts = [
     name: 'user1',
     type: 'local',
     address: 'agoric1xe269y3fhye8nrlduf826wgn499y6wmnv32tw5',
+    prefix: 'agoric',
     pubkey: {
       type: '/cosmos.crypto.secp256k1.PubKey',
       key: 'A4owcrbL34M4lCDua/zhpampsPRJHu5zKp9gc/u8c1YH',
@@ -117,6 +125,7 @@ const accounts = [
     name: 'user2local',
     type: 'local',
     address: 'agoric1ahsjklvps67a0y7wj0hqs0ekp55hxayppdw5az',
+    prefix: 'agoric',
     pubkey: {
       type: '/cosmos.crypto.secp256k1.PubKey',
       key: 'Anqep1Y/ZxRDMbiZ3ng03JmX3qyTl77x4OnXylI7w46b',
@@ -124,22 +133,44 @@ const accounts = [
   },
   {
     tier: 0,
-    name: 'victor-da-best',
-    type: 'local',
     address: 'agoric1vzqqm5dfdhlxh6n3pgkyp5z5thljklq3l02kug',
+    prefix: 'agoric',
     pubkey: {
       type: '/cosmos.crypto.secp256k1.PubKey',
       key: 'A+Si8+03Q85NQUAsvhW999q8Xw0fON08k3i6iZXg3S7/',
     },
   },
 ];
+const trace = label => value => {
+  console.log(label, '::::', value);
+  return value;
+};
+// The object below is an example of the account data objects we will process at construction time. The node value will be
+const exampleAccountObject = {
+  tier: 0,
+  address: 'agoric1vzqqm5dfdhlxh6n3pgkyp5z5thljklq3l02kug',
+  prefix: 'agoric',
+  pubkey: {
+    type: '/cosmos.crypto.secp256k1.PubKey',
+    key: 'A+Si8+03Q85NQUAsvhW999q8Xw0fON08k3i6iZXg3S7/',
+  },
+};
 
 // Importing Either from the provided codebase
 const { Right, Left } = Either;
+const gte = x => y => y >= x;
+const lte = x => y => y <= x;
+const gteZero = gte(0);
+const lteFour = lte(4);
+const and = (x, y) => x && y;
+
+const isWithinBounds = x => and(gteZero(x), lteFour(x));
+const isUndefined = x => x === undefined;
+const exists = x => !x === false;
 
 // Helper function to safely concatenate properties within Either monad
-const concatenateProps = obj =>
-  obj && obj.pubkey && obj.tier
+const concatenateProps = (obj = accounts[0]) =>
+  and(isWithinBounds(obj.tier), exists(obj.pubkey))
     ? Right(`${obj.pubkey.key}${obj.tier}`)
     : Left('Invalid object structure');
 
@@ -156,7 +187,7 @@ const toString = x => String(x);
  */
 
 /** @param {EligibleAccountObject} x */
-const formatTier = x => ({ ...x, tier: toString(x.tier) });
+const formatTier = x => ({ ...x, tier: toString(x.tier), tierInt: x.tier });
 
 // Processing array
 const processArray = array =>
@@ -167,11 +198,9 @@ const processArray = array =>
     ),
   );
 
-const pubkeys = processArray(accounts);
-const trace = label => value => {
-  console.log(label, '::::', value);
-  return value;
-};
+const pubkeys = processArray(accounts)
+  .map(x => x.slice(0, x.length - 1))
+  .map(trace('after slicing'));
 
 const getLast = array => array[array.length - 1];
 const stringToArray = string => [...string];
@@ -188,15 +217,20 @@ const TEST_TREE_DATA = {
   tree: tree1,
   rootHash: getRootHash(tree1),
   leaves: pubkeys,
+  hexLeaves: tree1.getHexLeaves(),
   proofs: pubkeys.map(getProof(tree1)),
+  hexProofs: pubkeys.map(getHexProof(tree1)),
 };
+
 const { tree: testTree, proofs } = TEST_TREE_DATA;
+
 const withProof = (o, i) => ({ ...o, proof: proofs[i], pubkey: pubkeys[i] });
 const preparedAccounts = accounts.map(withProof).map(formatTier);
 export {
   accounts,
   pubkeys,
   preparedAccounts,
+  makeSha256Hash,
   testTree,
   TEST_TREE_DATA,
   getLastChar,

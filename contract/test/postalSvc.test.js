@@ -177,7 +177,12 @@ test.serial('deliver payment using offer', async t => {
   };
   const pqt = makeQueryTool();
   for (const kind of ['instance', 'brand']) {
+    console.log('inside kind loop:::')
     const entries = await E(E(hub0).lookup(kind)).entries();
+    console.log('------------------------');
+    console.log('entries::', entries)
+    console.log('------------------------');
+    console.log('pqt::', pqt)
     pqt.fromCapData(qt.toCapData(entries));
   }
 
@@ -193,6 +198,7 @@ test('send invitation* from contract using publicFacet of postalService', async 
   const { powers, bundles } = await bootAndInstallBundles(t, bundleRoots);
 
   const bundleID = getBundleId(bundles.postalService);
+  console.log({powers})
   const postalPowers = extract(permit, powers);
   await startPostalService(postalPowers, {
     options: {

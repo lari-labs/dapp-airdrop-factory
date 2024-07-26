@@ -11,8 +11,8 @@ import * as ambientFsp from 'node:fs/promises';
 import { E, passStyleOf } from '@endo/far';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { extract } from '@agoric/vats/src/core/utils.js';
+import { makeIssuerKit } from '@agoric/ertp';
 
-import { permit, startPostalService } from '../src/postal-service.proposal.js';
 
 import { makeBundleCacheContext, getBundleId } from '../tools/bundle-tools.js';
 import { makeE2ETools } from '../tools/e2e-tools.js';
@@ -32,7 +32,6 @@ import {
   permit as airdropPermit,
   startAirdropCampaignContract,
 } from '../src/airdrop.proposal.js';
-import { makeIssuerKit } from '@agoric/ertp';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<setupTestContext>>>} */
 const test = anyTest;
@@ -211,7 +210,6 @@ test('send invitation* from contract using publicFacet of airdrop', async t => {
   });
   await startAirdropCampaignContract(postalPowers, {
     options: {
-      tokenKit: makeIssuerKit('Tribbles'),
       airdrop: { bundleID },
     },
   });

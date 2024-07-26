@@ -1,4 +1,6 @@
 import { Far } from '@endo/far';
+import { makeSha256Hash } from './agoric.accounts.js';
+import { pubkeyToAgoricAddress } from '../../src/check-sig.js';
 
 /**
  * @name makeTreeRemotable
@@ -11,12 +13,26 @@ import { Far } from '@endo/far';
  *  - construct tree by-hand (already have an implementation ready)
  *  -
  */
-const makeTreeRemotable = (tree, rootHash) =>
+const makeTreeRemotable = (tree, rootHash, TreeAPI, hashFn = makeSha256Hash) =>
   Far('Merkle Tree', {
+    getTreeAPI: () => TreeAPI,
+    staticVerify: (proof, targetNode) =>
+      TreeAPI.verify(proof, targetNode, rootHash),
+    emptyVerifyfn: (proof, targetNode) =>
+      new TreeAPI([], hashFn).verify(proof, targetNode, rootHash)
+        ? pubkeyToAgoricAddress(targetNode).fold(
+            error => error,
+            address => ({
+              msg: 'successfully verified proof',
+              pubkey: targetNode,
+              walletAddress: address,
+            }),
+          )
+        : new Error(`${targetNode} failed to pass verification.`),
     getTree: () => tree,
     getRootHash: () => rootHash,
     getVerificationFn() {
-      return (proof, nodeValue) => tree.verify(proof, nodeValue, rootHash);
+      return (proof, targetNode) => tree.verify(proof, targetNode, rootHash);
     },
   });
 

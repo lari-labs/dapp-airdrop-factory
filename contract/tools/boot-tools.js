@@ -225,6 +225,7 @@ export const makeMockTools = async (t, bundleCache) => {
     name: _todo,
   }) => {
     if (!behavior) throw Error('TODO: run core eval without live behavior');
+    console.log({behavior,powers, config})
     await behavior(powers, config);
     pid += 1;
     return { ...proposalResultDefault, proposal_id: pid };
