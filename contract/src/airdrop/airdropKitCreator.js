@@ -308,12 +308,6 @@ export const start = async (zcf, privateArgs, baggage) => {
           } = this;
           const { helper } = this.facets;
 
-          console.log('inside updateEpochDetails', {
-            absTime,
-            epochIdx,
-            currentEpoch,
-          });
-
           helper.updateDistributionMultiplier(
             TimeMath.addAbsRel(absTime, epochLength),
           );
@@ -335,11 +329,7 @@ export const start = async (zcf, privateArgs, baggage) => {
                 if (currentEpoch > 0) {
                   currentEpoch += 1;
                 }
-                console.log('last epoch:::', {
-                  latestTs,
-                  currentE: currentEpoch,
-                  currentEpochClaimCount,
-                });
+
                 claimStore.dispatch(
                   actionCreators.handleEpochChange(
                     epochDataArray[currentEpoch],
@@ -351,6 +341,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
                 currentEpoch = baggage.get('currentEpoch');
                 console.log('currentEpoch :::', currentEpoch);
+                // TODO: Investigate whether this logic is still necessary. If it is not, then remove.
 
                 currentEpoch <= 0
                   ? tiersStore.get('current')
@@ -359,11 +350,8 @@ export const start = async (zcf, privateArgs, baggage) => {
                       tiersStore.get(String(currentEpoch)),
                     );
 
-                // debugger
+                // console.log('LATEST SET:::', tiersStore.get('current'));
 
-                console.log('LATEST SET:::', tiersStore.get('current'));
-
-                console.log({ latestTs });
                 facets.helper.updateEpochDetails(latestTs, currentEpoch);
               },
             ),
@@ -403,38 +391,9 @@ export const start = async (zcf, privateArgs, baggage) => {
           //   let tokenAmount = maxClaimaints * Math.pow(rate, (k - 1));
           //   tokens.push(tokenAmount);
           //   }
+
+          // TODO: Remove in place of external value which tracks claim metrics.
           this.state.currentEpochClaimCount += 1;
-          debugger;
-          console.group('---------- inside handleBookKeeping----------');
-          console.log('------------------------');
-          console.log('------------------------');
-          console.log('amount::', amount);
-          console.log('------------------------');
-          console.log('claimStore.getState()::', claimStore.getState());
-          console.log('------------------------');
-          console.log(
-            'epochData::',
-            claimStore.getState().epochData.map(x => {
-              console.log('claimTracker::', x.claimTracker);
-              console.log('claimStore:: keys', [...x.store.keys()]);
-              console.log('claimStore:: values', [...x.store.values()]);
-
-              console.log('previousPayoutValues::', x.previousPayoutValues);
-              return x;
-            }),
-          );
-          console.log('------------------------');
-          console.log('claimStore.getState().currentEpochData.store.keys()::', [
-            ...claimStore.getState().currentEpochData.store.keys(),
-          ]);
-          console.log('------------------------');
-          console.log(
-            'currentClaimEpochCount::',
-            this.state.currentClaimEpochCount,
-          );
-
-          console.log('------------------------');
-          console.log('::');
 
           // Formulae for
 
@@ -508,14 +467,6 @@ export const start = async (zcf, privateArgs, baggage) => {
           const claimHandler =
             /** @type {OfferHandler} */
             async (seat, offerArgs) => {
-              console.log('------------------------');
-
-              console.log(
-                'this.state.currentEpoch',
-                baggage.get('currentEpoch'),
-              );
-              // console.log('claimaccountsSets:: keys', state);
-
               const state = claimStore.getState();
 
               const {
@@ -524,18 +475,8 @@ export const start = async (zcf, privateArgs, baggage) => {
               console.log('store:: LENS VIEW', accountSetStore, {
                 currentEpochState: state,
               });
-
-              console.log('------------------------');
-
-              console.log('accountSetStore:: LENS VIEW', accountSetStore);
               const offerArgsInput = marshaller.unmarshal(offerArgs);
-              // const vanillaVerify = await E(TreeRemotable).vanillaVerify:
-              //   offerArgsInput.hexProof,
-              //   offerArgsInput.pubkey,
-              // );
-              console.log({
-                offerArgsInput,
-              });
+
               const proof = await E(offerArgsInput.proof).getProof();
 
               await E(TreeRemotable)
@@ -551,6 +492,14 @@ export const start = async (zcf, privateArgs, baggage) => {
               );
 
               const { address, tier, pubkey } = offerArgsInput;
+
+              // TODO: replace accountSetStore with a top-level store.
+              //
+              // this allows us to track the time period a user exercised their right to claim, as well as their index within the queue claim of a particular epoch.
+              //  currently
+              //  - accountSetStore is only concerned with claimants who take action during a single epoch.
+              //  - epoch claim mgmt means accountSetStore has a clean slate, as a new Set is created per epoch.
+              // this allows us to track the time period a user exercised their right to claim, as well as their index within the queue claim of a particular epoch.
               assert(
                 !accountSetStore.has(pubkey),
                 `Allocation for address ${address} has already been claimed.`,
@@ -566,16 +515,6 @@ export const start = async (zcf, privateArgs, baggage) => {
                 tokenBrand,
                 claimStore.getSlice('currentEpochData').currentClaimAnount,
               );
-
-              console.log('------------------------');
-              console.log('scaledAmount::', paymentAmount);
-              this.facets.helper.handleBookKeeping(accountSetStore, {
-                address,
-                pubkey,
-                amount: paymentAmount,
-                tier: claimantTier,
-              });
-
               seat.incrementBy(
                 primarySeat.decrementBy({ Payment: paymentAmount }),
               );
