@@ -15,7 +15,7 @@ import { createClaimSuccessMsg } from './helpers/messages.js';
 import { head, objectToMap } from './helpers/objectTools.js';
 import { actionCreators, createStore, reducer } from './helpers/reducers.js';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
-
+import { lensProp, view } from './helpers/lenses.js';
 const { keys, values } = Object;
 
 const makeTrackerArray = x => Array.from({ length: x }, () => 0);
@@ -187,7 +187,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const epochDataArray = await Object.entries(tiers).map(
     ([key, value], index) => ({
       epoch: index,
-      previousPayoutValues: value,
+      previousPayoutValues: value.map(x => BigInt(x)),
       claimTracker: makeTrackerArray(value.length),
       store: zone.mapStore(`epoch ${key} claim set`),
     }),
@@ -221,7 +221,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const airdropStatus = baggage.get('airdropStatusTracker');
   const claimStore = createStore(reducer, {
     currentEpoch: 0,
-    epochData: epochDataArray,
+    epochData: [],
     currentEpochData: head(epochDataArray),
     claimDecayRate: 0.9999,
     epochDecayRate: 0.875,
@@ -265,7 +265,6 @@ export const start = async (zcf, privateArgs, baggage) => {
         makeClaimInvitation: M.call().returns(M.promise()),
         getAirdropTokenIssuer: M.call().returns(IssuerShape),
         getIssuer: M.call().returns(IssuerShape),
-
         getStatus: M.call().returns(M.string()),
       }),
     },
@@ -333,12 +332,19 @@ export const start = async (zcf, privateArgs, baggage) => {
               /** @param {TimestampRecord} latestTs */
               ({ absValue: latestTs }) => {
                 let { currentEpoch, currentEpochClaimCount } = this.state;
+                if (currentEpoch > 0) {
+                  currentEpoch += 1;
+                }
                 console.log('last epoch:::', {
                   latestTs,
                   currentE: currentEpoch,
                   currentEpochClaimCount,
                 });
-                claimStore.dispatch(actionCreators.handleEpochChange());
+                claimStore.dispatch(
+                  actionCreators.handleEpochChange(
+                    epochDataArray[currentEpoch],
+                  ),
+                );
                 this.facets.creator.handleBonusMintLogic(
                   currentEpochClaimCount,
                 );
@@ -397,14 +403,35 @@ export const start = async (zcf, privateArgs, baggage) => {
           //   let tokenAmount = maxClaimaints * Math.pow(rate, (k - 1));
           //   tokens.push(tokenAmount);
           //   }
+          this.state.currentEpochClaimCount += 1;
+          debugger;
           console.group('---------- inside handleBookKeeping----------');
           console.log('------------------------');
           console.log('------------------------');
           console.log('amount::', amount);
           console.log('------------------------');
+          console.log('claimStore.getState()::', claimStore.getState());
+          console.log('------------------------');
+          console.log(
+            'epochData::',
+            claimStore.getState().epochData.map(x => {
+              console.log('claimTracker::', x.claimTracker);
+              console.log('claimStore:: keys', [...x.store.keys()]);
+              console.log('claimStore:: values', [...x.store.values()]);
+
+              console.log('previousPayoutValues::', x.previousPayoutValues);
+              return x;
+            }),
+          );
+          console.log('------------------------');
           console.log('claimStore.getState().currentEpochData.store.keys()::', [
             ...claimStore.getState().currentEpochData.store.keys(),
           ]);
+          console.log('------------------------');
+          console.log(
+            'currentClaimEpochCount::',
+            this.state.currentClaimEpochCount,
+          );
 
           console.log('------------------------');
           console.log('::');
@@ -439,6 +466,12 @@ export const start = async (zcf, privateArgs, baggage) => {
           console.log('------------------------');
           console.groupEnd();
           return `Successfully added ${address} to setStore.`;
+        },
+        getState() {
+          return claimStore.getState();
+        },
+        getSlice(key = '') {
+          view(lensProp(key), claimStore.getState());
         },
       },
       creator: {
@@ -475,16 +508,34 @@ export const start = async (zcf, privateArgs, baggage) => {
           const claimHandler =
             /** @type {OfferHandler} */
             async (seat, offerArgs) => {
-              const state = claimStore.getState();
               console.log('------------------------');
-              console.log('claimaccountsSets:: keys', state);
 
-              const accountSetStore = state.currentEpochData.store;
+              console.log(
+                'this.state.currentEpoch',
+                baggage.get('currentEpoch'),
+              );
+              // console.log('claimaccountsSets:: keys', state);
 
+              const state = claimStore.getState();
+
+              const {
+                currentEpochData: { store: accountSetStore },
+              } = state;
+              console.log('store:: LENS VIEW', accountSetStore, {
+                currentEpochState: state,
+              });
+
+              console.log('------------------------');
+
+              console.log('accountSetStore:: LENS VIEW', accountSetStore);
               const offerArgsInput = marshaller.unmarshal(offerArgs);
-
-              console.log({ offerArgsInput });
-
+              // const vanillaVerify = await E(TreeRemotable).vanillaVerify:
+              //   offerArgsInput.hexProof,
+              //   offerArgsInput.pubkey,
+              // );
+              console.log({
+                offerArgsInput,
+              });
               const proof = await E(offerArgsInput.proof).getProof();
 
               await E(TreeRemotable)
@@ -529,7 +580,6 @@ export const start = async (zcf, privateArgs, baggage) => {
                 primarySeat.decrementBy({ Payment: paymentAmount }),
               );
               zcf.reallocate(primarySeat, seat);
-              this.state.currentEpochClaimCount += 1;
 
               this.facets.helper.handleBookKeeping(accountSetStore, {
                 address,

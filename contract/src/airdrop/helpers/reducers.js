@@ -1,5 +1,36 @@
-import { compose } from './objectTools';
+import { lens, lensPath, lensProp, view } from './lenses.js';
+import { compose } from './objectTools.js';
+lensPath;
+const initEpoch = (
+  { previousPayoutValues },
+  { currentEpoch },
+  claimTracker = [0, 0, 0, 0, 0],
+  store,
+) => ({
+  previousPayoutValues,
+  epochIndex: currentEpoch + 1,
+  claimTracker,
+  store,
+});
 
+/**
+ * An array of epoch data objects containing historical data of each epoch that has passed.+
+ * @type {Array<{
+ *   epoch: number,
+ *   previousPayoutValues: number[],
+ *   claimTracker: number[],
+ *   store: Map<any, any>
+ * }>}
+ *
+ * @property {number} epoch - The index position of the epoch.
+ * @property {number[]} previousPayoutValues - An array containing the final allocation of tokens recieved by claimants, seperated by tier.
+ * @property {number[]} claimTracker - An array
+ * @property {Map<any, any>} store - A Map object used to store additional data for this epoch.
+ *
+ * @description This array contains data for multiple epochs, each represented by an object.
+ * The data includes information about payouts, claim tracking, and additional storage for each epoch.
+ * It's likely used in a system that manages periodic rewards or state changes.
+ */
 const epochDataArray = [
   {
     epoch: 0,
@@ -55,30 +86,45 @@ const createClaimReducerState = ({
   currentEpochData,
 });
 const updateArray = array => index => newData =>
-  array.slice(0, index).concat(newData, array.slice(index + 1));
+  index === 0
+    ? [newData].concat(array.slice(0))
+    : [].concat(array.slice(0, index), newData, array.slice(index));
+
+const rest = ([x, ...xs]) => xs;
+
+const updateArrayAtIndex = (array, index, newData) =>
+  index === 0
+    ? [].concat(newData, ...rest(array))
+    : []
+        .concat(array.slice(0, index))
+        .concat(newData)
+        .concat(array.slice(index + 1));
+
 const uncurriedUpdateArray = uncurry(updateArray);
 const { CLAIM, CHANGE_EPOCH } = ACTION_TYPES;
 
-const reducer = (state = {}, { type = '', payload = {} }) => {
+const reducer = (
+  state = { epochData: [], currentEpoch: 0 },
+  { type = '', payload = {} },
+) => {
   switch (type) {
     case CHANGE_EPOCH: {
       console.log({ type, payload, state });
       const newState = {
         ...state,
-        epochData: uncurriedUpdateArray(state.epochData, state.currentEpoch, {
-          claimTracker: state.currentEpochData.claimTracker,
-          store: state.currentEpochData.store,
-          epoch: state.currentEpoch,
-          previousPayoutValues: state.currentEpochData.previousPayoutValues,
-        }),
+        epochData: state.epochData.concat(state.currentEpochData),
         currentEpoch: state.currentEpoch + 1,
-        currentEpochData: state.epochData[state.currentEpoch + 1],
+        currentEpochData: {
+          ...payload,
+          previousPayoutValues: state.currentEpochData.previousPayoutValues,
+        },
       };
       console.log({ type, payload, state });
       return newState;
     }
     case CLAIM: {
-      const { address, tier, pubkey } = payload;
+      const { address, pubkey } = payload;
+      const tier = Number(payload.tier);
       const { currentEpochData } = state;
       console.group('---------- inside CLAIM----------');
       console.log('------------------------');
@@ -94,8 +140,9 @@ const reducer = (state = {}, { type = '', payload = {} }) => {
       console.log({ previousPayoutValues, tier });
       const size = store.getSize() + 1;
       const claimAmount = toWholeBigInt(
-        previousPayoutValues[tier] * state.claimDecayRate ** (size - 1),
+        Number(previousPayoutValues[tier]) * state.claimDecayRate ** (size - 1),
       );
+      console.log('Claim AMount :::', claimAmount);
       store.init(
         pubkey,
         harden({
@@ -109,14 +156,17 @@ const reducer = (state = {}, { type = '', payload = {} }) => {
         ...state,
         currentEpochData: {
           currentClaimAnount: claimAmount,
-          claimTracker: uncurriedUpdateArray(
+          claimTracker: updateArrayAtIndex(
             claimTracker,
             tier,
             claimTracker[tier] + 1,
           ),
           store,
-          previousPayoutValues:
-            updateArray(previousPayoutValues)(tier)(claimAmount),
+          previousPayoutValues: updateArrayAtIndex(
+            previousPayoutValues,
+            tier,
+            claimAmount,
+          ),
         },
       };
       console.group('------------ STATE vs NEW STATE');
@@ -138,7 +188,7 @@ const createStore = (reducerFn = reducer, initialState) => {
   return {
     dispatch,
     getState: () => state,
-    getSlice: prop => state[prop],
+    getSlice: prop => view(lensProp(prop), state),
   };
 };
 
@@ -147,7 +197,7 @@ const actionCreators = {
     type: CLAIM,
     payload: { address, tier, pubkey, hash },
   }),
-  handleEpochChange: () => ({ type: CHANGE_EPOCH }),
+  handleEpochChange: data => ({ type: CHANGE_EPOCH, payload: data }),
 };
 const head = ([x, ...xs]) => x;
 
