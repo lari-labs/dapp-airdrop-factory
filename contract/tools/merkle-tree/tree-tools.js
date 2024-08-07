@@ -44,6 +44,9 @@ const getLeafNodeDirectionInMerkleTree = (hash, merkleTree) => {
   return hashIndex % 2 === 0 ? LEFT : RIGHT;
 };
 
+const isEven = (x = 0) => x % 2 === 0;
+const negate = x => !x;
+
 /**
  * If the hashes length is not even, then it copies the last hashes and adds it to the
  * end of the array, so it can be hashed with itself.
@@ -116,7 +119,7 @@ const getMerkleRootFromMerkleProof = merkleProof => {
  * @param {Array<string>} hashes
  * @returns {Array<Array<string>>} merkleTree
  */
-const generateMerkleTree = hashes => {
+const generateMerkleTree = (hashes = []) => {
   if (!hashes || hashes.length === 0) {
     return [];
   }
