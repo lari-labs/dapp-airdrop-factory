@@ -152,5 +152,5 @@ const testKeys = [
       key: 'A4owcrbL34M4lCDua/zhpampsPRJHu5zKp9gc/u8c1YH',
     },
   },
-].map(x => x.pubkey.key);
+];
 export default testKeys;
