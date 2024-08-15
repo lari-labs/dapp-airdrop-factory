@@ -1,6 +1,6 @@
-import { lens, lensPath, lensProp, view } from './lenses.js';
+import { lens, lensPath, lensProp, uncurry, view } from './lenses.js';
 import { compose } from './objectTools.js';
-lensPath;
+
 const initEpoch = (
   { previousPayoutValues },
   { currentEpoch },
@@ -63,10 +63,7 @@ const ACTION_TYPES = {
   CLAIM: 'user/handleClaimAirdrop',
   CHANGE_EPOCH: 'system/handleEpochChange',
 };
-const uncurry =
-  fn =>
-  (...args) =>
-    args.reduce((fn, arg) => fn(arg), fn);
+
 const roundNumber = number => Math.round(number);
 const toBigInt = x => BigInt(x);
 

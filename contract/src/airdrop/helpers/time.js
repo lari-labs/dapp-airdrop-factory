@@ -1,4 +1,5 @@
 import { Far } from '@endo/marshal';
+import { uncurry } from './lenses.js';
 
 /**
  * Represents the number one thousand as a BigInt.
@@ -13,18 +14,6 @@ const ONE_THOUSAND = 1_000n;
  * @constant {bigint}
  */
 const SIXTY = 60n;
-
-/**
- * Transforms a curried function into an uncurried function.
- *
- * @function
- * @param {Function} fn - The curried function to uncurry.
- * @returns {Function} The uncurried function.
- */
-const uncurry =
-  fn =>
-  (...args) =>
-    args.reduce((fn, arg) => fn(arg), fn);
 
 /**
  * A curried multiply function.

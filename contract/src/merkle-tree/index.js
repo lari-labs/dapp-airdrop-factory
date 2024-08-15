@@ -2,6 +2,9 @@
 import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex } from '@noble/hashes/utils';
 import { accounts as accountData } from '../../test/data/agd-keys.js';
+import { lensProp, view } from '../airdrop/helpers/lenses.js';
+import { Either } from '../airdrop/helpers/adts.js';
+import { compose } from '../airdrop/helpers/objectTools.js';
 
 const accounts = accountData.map(x => x.pubkey.key);
 
@@ -13,11 +16,22 @@ const trace = label => value => {
   return value;
 };
 const hashes = accounts.slice(0, 40);
-const compose =
-  (...fns) =>
-  x =>
-    fns.reduceRight((y, f) => f(y), x);
 
+/**
+ * @typedef {string} PublicKeyHash - A SHA-256 hash of a public key, represented as a hexadecimal string.
+ */
+
+/**
+ * An array of SHA-256 hashes, each computed against a different cryptocurrency public key.
+ * @typedef {PublicKeyHash[]} PubkeyHashArray
+ */
+
+/**
+ * Computes the SHA-256 hash of a Uint8Array and encodes it as a hexadecimal string.
+ *
+ * @param {Uint8Array} data - The input Uint8Array to hash.
+ * @returns {string} The hexadecimal representation of the SHA-256 hash of the input data.
+ */
 const computeHexEncodedSha256Hash = compose(
   // trace('after bytesToHex'),
   bytesToHex,
@@ -51,7 +65,7 @@ const negate = x => !x;
 /**
  * If the hashes length is not even, then it copies the last hashes and adds it to the
  * end of the array, so it can be hashed with itself.
- * @param {Array<string>} hashes
+ * @param {PubkeyHashArray} hashes
  */
 const ensureEven = hashes =>
   hashes.length % 2 !== 0 && hashes.push(hashes[hashes.length - 1]);
@@ -60,10 +74,12 @@ const ensureEven = hashes =>
  * Generates the merkle root of the hashes passed through the parameter.
  * Recursively concatenates pair of hash hashes and calculates each sha256 hash of the
  * concatenated hashes until only one hash is left, which is the merkle root, and returns it.
- * @param {Array<string>} hashes
+ * @param {PubkeyHashArray} hashes
  * @returns merkleRoot
  */
 const generateMerkleRoot = hashes => {
+  console.log('inside generateMerkleRoot ------ hashes ::::', hashes);
+  console.log('----------------------------------');
   if (!hashes || hashes.length === 0) {
     return '';
   }
@@ -82,6 +98,24 @@ const generateMerkleRoot = hashes => {
   return generateMerkleRoot(combinedHashes);
 };
 
+const createHash = fn => (h1, h2) => ({ hash: fn(h2 + h1) });
+const createSha256HashObj = createHash(computeHexEncodedSha256Hash);
+
+const computeProofReducer = ({ hash: h1 }, { hash: h2, direction }) =>
+  direction === RIGHT
+    ? createSha256HashObj(h2, h1)
+    : createSha256HashObj(h1, h2);
+
+const reducerFn = fn => array => array.reduce(fn);
+const hashLens = lensProp('hash');
+const getHash = compose(view(hashLens));
+const handleComputeProof = compose(
+  trace('after get hash'),
+  getHash,
+  trace('after compute proof reducer'),
+  reducerFn(computeProofReducer),
+);
+
 /**
  * Calculates the merkle root using the merkle proof by concatenating each pair of
  * hash hashes with the correct tree branch direction (left, right) and calculating
@@ -96,25 +130,13 @@ const generateMerkleRoot = hashes => {
 const getMerkleRootFromMerkleProof = (
   merkleProof,
   hashFn = computeHexEncodedSha256Hash,
-) => {
-  if (!merkleProof || merkleProof.length === 0) {
-    return '';
-  }
-  const merkleRootFromProof = merkleProof.reduce((hashProof1, hashProof2) => {
-    if (hashProof2.direction === RIGHT) {
-      const hash = hashFn(hashProof1.hash + hashProof2.hash);
-      return { hash };
-    }
-    const hash = hashFn(hashProof2.hash + hashProof1.hash);
-    console.log('hashProof2 ::::', { hashProof1, hashProof2 });
-    console.log('----------------------------------');
-    return { hash };
-  });
-  return merkleRootFromProof.hash;
-};
+) =>
+  !merkleProof || merkleProof.length === 0
+    ? ''
+    : handleComputeProof(merkleProof);
 
 /**
- * Creates a merkle tree, recursively, from the provided hash hashes, represented
+ * Creates a merkle tree, recursively, from the provided hashes, represented
  * with an array of arrays of hashes/nodes. Where each array in the array, or hash list,
  * is a tree level with all the hashes/nodes in that level.
  * In the array at position tree[0] (the first array of hashes) there are
@@ -123,7 +145,7 @@ const getMerkleRootFromMerkleProof = (
  * hashes in the position tree[0], and so on.
  * In the last position (tree[tree.length - 1]) there is only one hash, which is the
  * root of the tree, or merkle root.
- * @param {Array<string>} hashes
+ * @param {PubkeyHashArray} hashes
  * @returns {Array<Array<string>>} merkleTree
  */
 const generateMerkleTree = (hashes = []) => {
@@ -137,11 +159,17 @@ const generateMerkleTree = (hashes = []) => {
     }
     ensureEven(hashes);
     const combinedHashes = [];
+    console.log('combinedHashes ::::', combinedHashes);
+    console.log('----------------------------------');
     for (let i = 0; i < hashes.length; i += 2) {
+      console.log('i, {hashes: hashes[i]} ::::', i, { hashes: hashes[i] });
+      console.log('----------------------------------');
       const hashesConcatenated = hashes[i] + hashes[i + 1];
       const hash = computeHexEncodedSha256Hash(hashesConcatenated);
       combinedHashes.push(hash);
     }
+    console.log('combinedHashes :::: AFTER ', combinedHashes);
+    console.log('----------------------------------');
     tree.push(combinedHashes);
     return generate(combinedHashes, tree);
   };
@@ -168,7 +196,7 @@ const generateMerkleTree = (hashes = []) => {
  * to find the hash associated with the index of a previous hash in the next level in constant time.
  * Then we simply return this merkle proof.
  * @param {string} hash
- * @param {Array<string>} hashes
+ * @param {PubkeyHashArray} hashes
  * @returns {null | Array<node>} merkleProof
  */
 const generateMerkleProof = (hash, hashes) => {
@@ -184,6 +212,10 @@ const generateMerkleProof = (hash, hashes) => {
   ];
   let hashIndex = tree[0].findIndex(h => h === hash);
   for (let level = 0; level < tree.length - 1; level++) {
+    console.log('i, {hashes: hashes[i]} ::::', level, {
+      treeAtLevel: tree[level],
+    });
+    console.log('----------------------------------');
     const isLeftChild = hashIndex % 2 === 0;
     const siblingDirection = isLeftChild ? RIGHT : LEFT;
     const siblingIndex = isLeftChild ? hashIndex + 1 : hashIndex - 1;
@@ -197,10 +229,23 @@ const generateMerkleProof = (hash, hashes) => {
   return merkleProof;
 };
 
-export {
-  hashes,
-  generateMerkleProof,
-  generateMerkleRoot,
-  generateMerkleTree,
-  getMerkleRootFromMerkleProof,
+export const merkleTreeAPI = {
+  generateMerkleRoot(pks) {
+    return generateMerkleRoot(pks.map(computeHexEncodedSha256Hash));
+  },
+  generateMerkleTree(pks) {
+    return generateMerkleTree(pks.map(computeHexEncodedSha256Hash));
+  },
+  generateMerkleProof(pkHash, hashes) {
+    return generateMerkleProof(
+      computeHexEncodedSha256Hash(pkHash),
+      hashes.map(computeHexEncodedSha256Hash),
+    );
+  },
+  getMerkleRootFromMerkleProof(proof) {
+    return getMerkleRootFromMerkleProof(proof, computeHexEncodedSha256Hash);
+  },
 };
+
+harden(merkleTreeAPI);
+export { hashes };

@@ -78,24 +78,34 @@ const curry = (f, arity = f.length, ...args) =>
     ? f(...args)
     : (...argz) => curry(f, arity, ...args, ...argz);
 
+/**
+ * Transforms a curried function into an uncurried function.
+ *
+ * @function
+ * @param {Function} fn - The curried function to uncurry.
+ * @returns {Function} The uncurried function.
+ */
+const uncurry =
+  fn =>
+  (...args) =>
+    args.reduce((fn, arg) => fn(arg), fn);
+
 const always = a => b => a;
 
 const compose =
   (...fns) =>
-    args =>
-      fns.reduceRight((x, f) => f(x), args);
+  args =>
+    fns.reduceRight((x, f) => f(x), args);
 
-const getFunctor = x =>
-  ({
-    value: x,
-    map: f => getFunctor(x),
-  });
+const getFunctor = x => ({
+  value: x,
+  map: f => getFunctor(x),
+});
 
-const setFunctor = x =>
-  ({
-    value: x,
-    map: f => setFunctor(f(x)),
-  });
+const setFunctor = x => ({
+  value: x,
+  map: f => setFunctor(f(x)),
+});
 
 const prop = curry((k, obj) => (obj ? obj[k] : undefined));
 
@@ -116,4 +126,4 @@ const over = curry((lens, f, obj) => lens(y => setFunctor(f(y)))(obj).value);
 
 const set = curry((lens, val, obj) => over(lens, always(val), obj));
 
-export { lens, lensPath, lensProp,view, set, over };
+export { curry, uncurry, lens, lensPath, lensProp, view, set, over };
