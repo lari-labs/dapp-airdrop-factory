@@ -45,8 +45,11 @@ const AIRDROP_TIERS = {
   5: [15, 13, 11, 9, 7],
 };
 
+const AIRDROP_TIERS_STATIC = [9000, 6500, 3500, 1500, 750];
+
 export {
   AIRDROP_TIERS,
+  AIRDROP_TIERS_STATIC,
   formatTestAccounts,
   generateInt,
   generateTierValue,
