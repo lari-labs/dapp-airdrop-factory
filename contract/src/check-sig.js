@@ -54,6 +54,8 @@ export const pkToAddress = prefix =>
   );
 
 export const pubkeyToAgoricAddress = pkToAddress('agoric');
+export const pubkeyToCosmosAddress = pkToAddress('cosmos');
+
 // https://github.com/cosmos/cosmjs/blob/main/packages/encoding/src/bech32.ts#L3C1-L6C2
 export function toBech32(prefix, data, limit) {
   const address = bech32.encode(prefix, bech32.toWords(data), limit);

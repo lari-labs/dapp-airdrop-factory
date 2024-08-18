@@ -49,7 +49,8 @@ export const startContract = async (
   } = powers;
 
   const installation = await consumeInstallation[name];
-
+  console.group('################ inside startContract ##############');
+  console.log('----------------------------------');
   console.log(name, 'start args:', startArgs);
   const started = await E(startUpgradable)({
     ...startArgs,
@@ -63,6 +64,11 @@ export const startContract = async (
   console.log(name, 'started');
 
   if (issuerNames) {
+    console.log('----- BLOCK ####### if(issuerNames) #######----::::');
+    console.log('issuerNames:::', issuerNames);
+    console.log('----------------------------------------');
+    console.log(' ::::');
+
     /** @type {BootstrapPowers & import('./board-aux.core').BoardAuxPowers} */
     // @ts-expect-error cast
     const auxPowers = powers;
@@ -71,13 +77,22 @@ export const startContract = async (
     const { produce: produceIssuer } = auxPowers.issuer;
     const { produce: produceBrand } = auxPowers.brand;
     const { brands, issuers } = await E(zoe).getTerms(instance);
-
+    console.group('################ inside startContract ##############');
+    console.log('----------------------------------------');
+    console.log('brands ::::', brands);
+    console.log('----------------------------------------');
+    console.log('issuers ::::', issuers);
+    console.groupEnd();
     await Promise.all(
       issuerNames.map(async issuerName => {
+        console.group('----------------------------------------');
+        console.log('======= Promise.all @@ resolution ========');
         const brand = brands[issuerName];
         const issuer = issuers[issuerName];
         console.log('CoreEval script: share via agoricNames:', brand);
-
+        console.log('### issuerNames.map(issuerName)::::', { brand, issuer });
+        console.log('----------------------------------------');
+        console.groupEnd();
         produceBrand[issuerName].reset();
         produceIssuer[issuerName].reset();
         produceBrand[issuerName].resolve(brand);
@@ -87,6 +102,7 @@ export const startContract = async (
       }),
     );
   }
+  console.groupEnd();
 
   return started;
 };
