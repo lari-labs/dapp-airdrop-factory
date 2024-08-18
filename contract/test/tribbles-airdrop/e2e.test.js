@@ -1,8 +1,9 @@
+/* eslint-disable import/order */
 // @ts-check
 /* global setTimeout, fetch */
 // XXX what's the state-of-the-art in ava setup?
 // eslint-disable-next-line import/order
-import { test as anyTest } from './prepare-test-env-ava.js';
+import { test as anyTest } from '../prepare-test-env-ava.js';
 
 import { createRequire } from 'module';
 import { env as ambientEnv } from 'node:process';
@@ -13,37 +14,37 @@ import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { extract } from '@agoric/vats/src/core/utils.js';
 import process from 'process';
 import {
-  makeAirdropContextTerms,
   permit,
-  startTribblesDistribution,
-} from '../src/tribbles-distribution.proposal.js';
+  startTribblesDistribution as startTribblesAirdrop,
+} from '../../src/tribbles-distribution.proposal.js';
 
-import { makeBundleCacheContext, getBundleId } from '../tools/bundle-tools.js';
-import { makeE2ETools } from '../tools/e2e-tools.js';
 import {
-  payerPete,
-  receiverRex,
-  receiverRose,
-  senderContract,
-} from './market-actors.js';
+  makeBundleCacheContext,
+  getBundleId,
+} from '../../tools/bundle-tools.js';
+import { makeE2ETools } from '../../tools/e2e-tools.js';
+
 import {
   makeNameProxy,
   makeAgoricNames,
-} from '../tools/ui-kit-goals/name-service-client.js';
-import { mockWalletFactory } from '../tools/wallet-tools.js';
-import { bootAndInstallBundles, makeMockTools } from '../tools/boot-tools.js';
-import { merkleTreeAPI } from '../src/merkle-tree/index.js';
-import { oneDay, TimeIntervals } from '../src/airdrop/helpers/time.js';
-import { agdTestKeys } from './eligibility-tree/tree.data.js';
+} from '../../tools/ui-kit-goals/name-service-client.js';
+import { mockWalletFactory } from '../../tools/wallet-tools.js';
+import {
+  bootAndInstallBundles,
+  makeMockTools,
+} from '../../tools/boot-tools.js';
+import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
+import { oneDay, TimeIntervals } from '../../src/airdrop/helpers/time.js';
+import { agdTestKeys } from '../eligibility-tree/tree.data.js';
 import {
   produceBoardAuxManager,
   permit as boardAuxPermit,
-} from '../src/platform-goals/board-aux.core.js';
+} from '../../src/platform-goals/board-aux.core.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeClientMarshaller } from './marshalTables.js';
+import { makeClientMarshaller } from '../marshalTables.js';
 import bundleSource from '@endo/bundle-source';
 import { makeMarshal } from '@endo/marshal';
-import { makeStableFaucet } from './mintStable.js';
+import { makeStableFaucet } from '../mintStable.js';
 const makeRelTimeMaker = brand => nat =>
   harden({ timerBrand: brand, relValue: nat });
 
@@ -53,10 +54,9 @@ const test = anyTest;
 const AIRDROP_TIERS_STATIC = [9000, 6500, 3500, 1500, 750];
 const defaultCustomTerms = {
   tiers: AIRDROP_TIERS_STATIC,
-  totalEpochs: 5,
-  epochLength: TimeIntervals.SECONDS.ONE_DAY * 10n,
-  bonusSupply: 100_000n,
-  baseSupply: 10_000_000n,
+  targetNumberOfEpochs: 5,
+  targetEpochLength: TimeIntervals.SECONDS.ONE_DAY * 10n,
+  targetTokenSupply: 10_000_000n,
   tokenName: 'Tribbles',
   startTime: brand =>
     makeRelTimeMaker(brand)(TimeIntervals.SECONDS.ONE_DAY * 3n),
@@ -120,15 +120,14 @@ const createTestScenarios = async (t, pubkeys = agdTestKeys) => {
 const nodeRequire = createRequire(import.meta.url);
 
 const bundleRoots = {
-  tribblesDistribution: nodeRequire.resolve(
-    '../src/tribbles-distribution.contract.js',
+  tribblesAirdrop: nodeRequire.resolve(
+    '../../src/tribbles-distribution.contract.js',
   ),
 };
 
 const scriptRoots = {
-  postalService: nodeRequire.resolve('../src/postal-service.proposal.js'),
-  tribblesDistribution: nodeRequire.resolve(
-    '../src/tribbles-distribution.proposal.js',
+  tribblesAirdrop: nodeRequire.resolve(
+    '../../src/tribbles-distribution.proposal.js',
   ),
 };
 
@@ -140,7 +139,7 @@ const makeTestContext = async t => {
   const { execFileSync, execFile } = ambientChildProcess;
   const { writeFile } = ambientFsp;
 
-  /** @type {import('../tools/agd-lib.js').ExecSync} */
+  /** @type {import('../../tools/agd-lib.js').ExecSync} */
   const dockerExec = (file, args, opts = { encoding: 'utf-8' }) => {
     const workdir = '/workspace/contract';
     const execArgs = ['compose', 'exec', '--workdir', workdir, 'agd'];
@@ -170,7 +169,7 @@ const makeTestContext = async t => {
   console.log('bundles ::::', bundles);
   console.log('----------------------------------');
   const runLocalInstallAndStart = async (contractBundle, contractArgs) => {
-    const bundle = await bundleSource(bundleRoots.tribblesDistribution);
+    const bundle = await bundleSource(bundleRoots.tribblesAirdrop);
     const installation = await E(zoe);
     const customTerms = makeAirdropContextTerms(defaultCustomTerms);
     const startArgs = {
@@ -198,7 +197,7 @@ const makeTestContext = async t => {
           ),
         }
       : tools;
-  return { ...instantiateContractFn, ...bc };
+  return { ...tools, ...bc };
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
@@ -225,40 +224,61 @@ test.serial('install bundle: postalService / send', async t => {
 
   console.timeEnd('installBundles');
 
-  const id = getBundleId(bundles.tribblesDistribution);
+  const id = getBundleId(bundles.tribblesAirdrop);
   const shortId = id.slice(0, 8);
-  t.log('postalService', shortId);
+  t.log('bundleId', shortId);
   t.is(id.length, 3 + 128, 'bundleID length');
   t.regex(id, /^b1-.../);
-
+  console.group('################ inside installBundle Test ##############');
+  console.log('----------------------------------------');
+  console.log('shortId ::::', shortId);
+  console.log('----------------------------------------');
+  console.log('bundles ::::', bundles);
+  console.groupEnd();
   Object.assign(t.context.shared, { bundles });
 });
+const containsSubstring = (substring, string) =>
+  new RegExp(substring, 'i').test(string);
 
-test.serial('deploy contract with core eval: postalService / send', async t => {
-  const { runCoreEval } = t.context;
-  const { bundles } = t.context.shared;
-  const bundleID = getBundleId(bundles.tribblesDistribution);
+test.serial(
+  'deploy contract with core eval: tribblesAirdrop / tribblesAirdrop',
+  async t => {
+    const { runCoreEval } = t.context;
+    const { bundles } = t.context.shared;
+    const bundleID = getBundleId(bundles.tribblesAirdrop);
 
-  const { zoe } = await powers.consume;
-  const result = await E(zoe).installBundleID(bundleID, 'airdrop');
+    t.deepEqual(
+      containsSubstring(bundles.tribblesAirdrop.endoZipBase64Sha512, bundleID),
+      true,
+    );
+    const name = 'tribblesAirdrop';
+    const result = await runCoreEval({
+      name,
+      behavior: startTribblesAirdrop,
+      entryFile: scriptRoots.tribblesAirdrop,
+      config: {
+        options: { tribblesAirdrop: { bundleID } },
+      },
+    });
 
-  t.log(result.voting_end_time, '#', result.proposal_id, 'Airdrop');
-  t.like(result, {
-    content: {
-      '@type': '/agoric.swingset.CoreEvalProposal',
-    },
-    status: 'PROPOSAL_STATUS_PASSED',
-  });
-});
+    t.log(result.voting_end_time, '#', result.proposal_id, name);
+    t.like(result, {
+      content: {
+        '@type': '/agoric.swingset.CoreEvalProposal',
+      },
+      status: 'PROPOSAL_STATUS_PASSED',
+    });
+  },
+);
 
-test.serial('agoricNames.instances has contract: postalService', async t => {
+test.serial('agoricNames.instances has contract: tribblesAirdrop', async t => {
   const { makeQueryTool } = t.context;
   const hub0 = makeAgoricNames(makeQueryTool());
   const agoricNames = makeNameProxy(hub0);
   await null;
   const instances = await agoricNames.instance;
   console.log('instances::::', { keys: [...instances.keys()] }, instances);
-  const instance = await agoricNames.instance.tribblesDistribution;
+  const instance = await agoricNames.instance.tribblesAirdrop;
   t.log(instance);
   t.is(passStyleOf(instance), 'remotable');
 });
@@ -271,41 +291,34 @@ test.todo('E2E: send using publicFacet using contract');
 test('send invitation* from contract using publicFacet of postalService', async t => {
   const { powers, bundles } = await bootAndInstallBundles(t, bundleRoots);
 
-  const bundleID = getBundleId(bundles.tribblesDistribution);
-
-  console.log({ powers });
-  const postalPowers = extract(permit, powers);
   const { zoe, namesByAddressAdmin, chainTimerService, feeMintAccess } =
     await powers.consume;
 
-  const timer = await chainTimerService;
-  const timerBrand = await E(timer).getTimerBrand();
-  const relTimeMaker = makeRelTimeMaker(timerBrand);
-  const customStartTerms = makeAirdropContextTerms({
-    startTime: relTimeMaker(oneDay),
-    tiers: AIRDROP_TIERS_STATIC,
-    targetEpochLength: oneDay,
-    targetNumberOfEpochs: 5,
-    tokenName: 'Tribbles',
-  });
+  const bundleID = getBundleId(bundles.tribblesAirdrop);
+  console.log({ powers });
 
-  const installation = await E(zoe).install(
-    await bundleSource(bundleRoots.tribblesDistribution),
-  );
+  const timerBrand = await E(chainTimerService).getTimerBrand();
 
+  t.log('timerBrand ::: inside send invitation test', timerBrand);
   const smartWalletIssuers = {
     Invitation: await E(zoe).getInvitationIssuer(),
     IST: await E(zoe).getFeeIssuer(),
   };
+  const airdropPowers = extract(permit, powers);
+  await startTribblesAirdrop(airdropPowers, {
+    options: {
+      privateArgs: { timer: chainTimerService },
+      customTerms: {
+        ...defaultCustomTerms,
+        startTime: defaultCustomTerms.startTime(timerBrand),
+        feePrice: AmountMath.make(smartWalletIssuers.IST, 5n),
+      },
+      tribblesAirdrop: { bundleID },
+    },
+  });
+  console.log({ powers });
 
-  const instance = await E(zoe).startInstance(
-    installation,
-    { Fee: smartWalletIssuers.IST },
-    { ...customStartTerms, startTime: relTimeMaker(oneDay) },
-    { timer },
-  );
-
-  console.log('instance ::::', instance);
+  console.log('instance ::::');
   console.log('----------------------------------');
   // TODO: use CapData across vats
   // const boardMarshaller = await E(board).getPublishingMarshaller();
@@ -314,7 +327,7 @@ test('send invitation* from contract using publicFacet of postalService', async 
     smartWalletIssuers,
   );
 
-  /** @type {StartedInstanceKit<import('../src/postal-service.contract.js').tribblesDistributionFn>['instance']} */
+  /** @type {StartedInstanceKit<import('../../src/postal-service.contract.js').tribblesAirdropFn>['instance']} */
   // @ts-expect-error not (yet?) in BootstrapPowers
 
   const shared = {
@@ -326,20 +339,12 @@ test('send invitation* from contract using publicFacet of postalService', async 
       ),
     },
   };
-
-  const wallet = await walletFactory.makeSmartWallet(shared.rxAddr);
-
-  await E(timer).advanceTo(oneDay * (oneDay / 2n));
-
-  await E(timer).tickN(10n);
-
-  const feeAmt = (x = 5n) => AmountMath.make(smartWalletIssuers.IST, x);
-
   const stableFaucet = makeStableFaucet({
     feeMintAccess,
     zoe,
     bundleCache: t.context.bundleCache,
   });
+
   const simulateClaim = async invitation => {
     const seat = await E(zoe).offer(
       invitation,

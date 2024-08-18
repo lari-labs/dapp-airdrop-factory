@@ -3,17 +3,18 @@
 import { test as anyTest } from '../prepare-test-env-ava.js';
 import { createRequire } from 'module';
 
-import {
-  generateMerkleProof,
-  generateMerkleRoot,
-  generateMerkleTree,
-  getMerkleRootFromMerkleProof,
-  hashes,
-} from '../../src/merkle-tree/index.js';
+import { merkleTreeAPI, hashes } from '../../src/merkle-tree/index.js';
 import { agdTestKeys } from './tree.data.js';
 import { isHexString } from '../../src/verifyProof.js';
 import { hexToBytes } from '@noble/hashes/utils';
 import { sha256 } from '@noble/hashes/sha256';
+
+const {
+  generateMerkleProof,
+  generateMerkleRoot,
+  generateMerkleTree,
+  getMerkleRootFromMerkleProof,
+} = merkleTreeAPI;
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeBundleCacheContext>>>} */
 const test = anyTest;
@@ -34,11 +35,24 @@ test('proof verification :: given a pubkey that exists the tree', t => {
     getMerkleRootFromMerkleProof(generatedMerkleProof);
 
   t.log('tree', merkleTree);
+
+  console.group('################ inside validation test ##############');
+  console.log('----------------------------------------');
+  console.log(' merkleTree::::', merkleTree);
+  console.log('merkleRoot ::::', merkleRoot);
+  console.log('----------------------------------');
+  console.log('----------------------------------------');
+  console.log(' generatedMerkleProof::::', generatedMerkleProof);
+  console.groupEnd('----------------------------------');
+
+  t.log(
+    `compose root: ${merkleRoot} to computed root: ${merkleRootFromMerkleProof}`,
+  );
   t.deepEqual(
     merkleRootFromMerkleProof === merkleRoot,
     true,
     'should return a hash that equal to the correct root hash.',
-  ); //?
+  );
 });
 
 test('proof verification :: given a pubkey that does not exist in the tree', t => {
@@ -55,11 +69,23 @@ test('proof verification :: given a pubkey that does not exist in the tree', t =
   const merkleRootFromMerkleProof =
     getMerkleRootFromMerkleProof(generatedMerkleProof);
 
+  console.group(
+    '################ inside incorrect validation test ##############',
+  );
+  console.log('----------------------------------------');
+  console.log(' merkleTree::::', merkleTree);
+  console.log('----------------------------------------');
+  console.log(' generatedMerkleProof::::', generatedMerkleProof);
+  console.groupEnd('----------------------------------');
+  t.log(
+    `compose root: ${merkleRoot} to computed root: ${merkleRootFromMerkleProof}`,
+  );
+
   t.deepEqual(
     merkleRootFromMerkleProof !== merkleRoot,
     true,
     'should return a hash that is not equal to the correct root hash.',
-  ); //?
+  );
 });
 
 test('isHexString function:: given a hex string', t => {
