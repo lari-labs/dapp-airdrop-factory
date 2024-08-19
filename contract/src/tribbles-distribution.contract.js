@@ -5,6 +5,7 @@ import { E } from '@endo/far';
 import { AmountMath, AmountShape, IssuerShape, PurseShape } from '@agoric/ertp';
 import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
 import { InvitationShape, TimerShape } from '@agoric/zoe/src/typeGuards.js';
+import { sha256 } from '@noble/hashes/sha256.js';
 import { makeWaker, oneDay } from './airdrop/helpers/time.js';
 import {
   handleFirstIncarnation,
@@ -19,9 +20,8 @@ import {
   reducer,
 } from './airdrop/helpers/reducers.js';
 import { lensProp, view } from './airdrop/helpers/lenses.js';
-
+// @ts-check
 const { keys, values } = Object;
-
 const makeTrackerArray = x => Array.from({ length: x }, () => 0);
 
 const cancelTokenMaker = makeCancelTokenMaker('airdrop-campaign');
@@ -88,6 +88,7 @@ export const customTermsShape = harden({
   targetTokenSupply: M.bigint(),
   targetNumberOfEpochs: M.number(),
   startTime: RelativeTimeRecordShape,
+  merkleRoot: M.string(),
 });
 
 /**
@@ -131,6 +132,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     targetTokenSupply = 10_000_000n,
     tokenName = 'Tribbles',
     tiers = [9000, 6500, 3500, 1500, 750],
+    merkleRoot,
   } = zcf.getTerms();
 
   const airdropStatusTracker = zone.mapStore('airdrop claim window status');
@@ -161,8 +163,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     {
       // exchange this for a purse created from ZCFMint
       incarnationRef: baggage.get('LifecycleIteration'),
-      payouts: tiers,
-      airdropTiers: tiers,
       epochLength: targetEpochLength,
       currentEpoch: zone.mapStore(),
       tokenIssuer,
@@ -172,7 +172,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
     baggage,
   );
-  console.log('----------------------------------');
 
   console.log('[...baggage.values() ::::', [...baggage.values()]);
   console.log('baggage.get(payouts) ::::', baggage.get('payouts'));
@@ -256,6 +255,8 @@ export const start = async (zcf, privateArgs, baggage) => {
           } = this;
           const { helper } = this.facets;
           console.log('inside updateEpochDetails ::::');
+          console.log('currentEpoch ::::', currentEpoch);
+          console.log('----------------------------------');
           console.log('----------------------------------');
 
           // add logic for updating claim amounts for each tier
@@ -284,10 +285,6 @@ export const start = async (zcf, privateArgs, baggage) => {
                 if (currentEpoch > 0) {
                   currentEpoch += 1;
                 }
-
-                // TODO: Investigate whether this logic is still necessary. If it is not, then remove.
-
-                // console.log('LATEST SET:::', tiersStore.get('current'));
 
                 facets.helper.updateEpochDetails(latestTs, currentEpoch);
               },
@@ -385,9 +382,16 @@ export const start = async (zcf, privateArgs, baggage) => {
       },
       public: {
         makeClaimTokensInvitation() {
-          return zcf.makeInvitation(seat => {
+          return zcf.makeInvitation((seat, offerArgs) => {
             console.log('---- OFFER HANDLER ---');
+            console.log('offerArgs ::::', offerArgs);
+            console.log('----------------------------------');
             console.log('seat ::::', seat);
+            console.log(
+              'getMerkleRootFromMerkleProof(offerArgs.pubkey) ::::',
+              getMerkleRootFromMerkleProof(offerArgs.pubkey),
+            );
+            console.log('----------------------------------');
             console.log('----------------------------------');
           }, 'claim airdrop invitation');
         },

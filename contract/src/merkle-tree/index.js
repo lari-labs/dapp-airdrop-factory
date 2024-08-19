@@ -6,8 +6,6 @@ import { lensProp, view } from '../airdrop/helpers/lenses.js';
 import { Either } from '../airdrop/helpers/adts.js';
 import { compose } from '../airdrop/helpers/objectTools.js';
 
-const accounts = accountData.map(x => x.pubkey.key);
-
 const LEFT = 'left';
 const RIGHT = 'right';
 
@@ -15,7 +13,6 @@ const trace = label => value => {
   console.log(label, ':::', value);
   return value;
 };
-const hashes = accounts.slice(0, 40);
 
 /**
  * @typedef {string} PublicKeyHash - A SHA-256 hash of a public key, represented as a hexadecimal string.
@@ -127,14 +124,12 @@ const handleComputeProof = compose(
  * @param {Function} hashFn
  * @returns {string} merkleRoot
  */
-const getMerkleRootFromMerkleProof = (
+export const getMerkleRootFromMerkleProof = (
   merkleProof,
   hashFn = computeHexEncodedSha256Hash,
-) =>
-  !merkleProof || merkleProof.length === 0
-    ? ''
-    : handleComputeProof(merkleProof);
+) => (!merkleProof || merkleProof.length === 0 ? '' : hashFn(merkleProof));
 
+harden(getMerkleRootFromMerkleProof);
 /**
  * Creates a merkle tree, recursively, from the provided hashes, represented
  * with an array of arrays of hashes/nodes. Where each array in the array, or hash list,
@@ -199,6 +194,7 @@ const generateMerkleTree = (hashes = []) => {
  * @param {PubkeyHashArray} hashes
  * @returns {null | Array<node>} merkleProof
  */
+
 const generateMerkleProof = (hash, hashes) => {
   if (!hash || !hashes || hashes.length === 0) {
     return null;
@@ -226,6 +222,7 @@ const generateMerkleProof = (hash, hashes) => {
     merkleProof.push(siblingNode);
     hashIndex = Math.floor(hashIndex / 2);
   }
+
   return merkleProof;
 };
 
@@ -247,5 +244,58 @@ export const merkleTreeAPI = {
   },
 };
 
+const withMerkleTreeApi =
+  ({ hashFn = computeHexEncodedSha256Hash, data }) =>
+  o => {
+    const accounts = data.map(hashFn);
+    const inputData = data;
+    return {
+      ...o,
+      getInputData() {
+        return inputData;
+      },
+      getHashedData() {
+        return accounts;
+      },
+    };
+  };
+
+const withMerkeTreeCreationFns = o => {
+  let root = null;
+  return {
+    ...o,
+    setRoot(x) {
+      root = x;
+      return this;
+    },
+    getRoot() {
+      return root;
+    },
+    generateMerkleRoot() {
+      console.log(this.getHashedData());
+      return this.setRoot(generateMerkleRoot(this.getHashedData()));
+    },
+    generateMerkleTree(pks) {
+      return generateMerkleTree(pks.map(computeHexEncodedSha256Hash));
+    },
+    generateMerkleProof(pubkey) {
+      return generateMerkleProof(
+        computeHexEncodedSha256Hash(pubkey),
+        this.getHashedData(),
+      );
+    },
+    getMerkleRootFromMerkleProof(proof) {
+      return getMerkleRootFromMerkleProof(proof);
+    },
+  };
+};
+
+const tree = compose(
+  withMerkleTreeApi({ hashFn: computeHexEncodedSha256Hash, data: accounts }),
+  withMerkeTreeCreationFns,
+)({});
+
+const localAccounts = accountData;
+const mtree = tree.generateMerkleRoot(); //
 harden(merkleTreeAPI);
-export { hashes };
+export { localAccounts, mtree };
