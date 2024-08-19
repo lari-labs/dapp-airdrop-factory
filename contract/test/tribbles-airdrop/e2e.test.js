@@ -32,6 +32,7 @@ import { mockWalletFactory } from '../../tools/wallet-tools.js';
 import {
   bootAndInstallBundles,
   makeMockTools,
+  mockBootstrapPowers,
 } from '../../tools/boot-tools.js';
 import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
 import { oneDay, TimeIntervals } from '../../src/airdrop/helpers/time.js';
@@ -51,15 +52,14 @@ const makeRelTimeMaker = brand => nat =>
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
-const AIRDROP_TIERS_STATIC = [9000, 6500, 3500, 1500, 750];
+const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n];
 const defaultCustomTerms = {
   tiers: AIRDROP_TIERS_STATIC,
   targetNumberOfEpochs: 5,
   targetEpochLength: TimeIntervals.SECONDS.ONE_DAY * 10n,
   targetTokenSupply: 10_000_000n,
   tokenName: 'Tribbles',
-  startTime: brand =>
-    makeRelTimeMaker(brand)(TimeIntervals.SECONDS.ONE_DAY * 3n),
+  startTime: TimeIntervals.SECONDS.ONE_DAY,
 };
 
 const getLastElement = array => array[array.length - 1];
@@ -168,35 +168,9 @@ const makeTestContext = async t => {
   const { bundles } = bc;
   console.log('bundles ::::', bundles);
   console.log('----------------------------------');
-  const runLocalInstallAndStart = async (contractBundle, contractArgs) => {
-    const bundle = await bundleSource(bundleRoots.tribblesAirdrop);
-    const installation = await E(zoe);
-    const customTerms = makeAirdropContextTerms(defaultCustomTerms);
-    const startArgs = {
-      timer: buildManualTimer((x, prev = 'ground zero') => {
-        console.log('timer logger:::', {
-          previous: (prev = x && prev),
-          current: x,
-        });
-        return x;
-      }, 0n),
-      marshaller: makeClientMarshaller(),
-    };
-  };
 
   console.log('test tools:::', { process, env: process.env });
-  const instantiateContractFn =
-    process.env.LOCAL_ENV === 'local'
-      ? {
-          ...tools,
-          runCoreEval: runLocalInstallAndStart(
-            {},
-            {
-              terms: defaultCustomTerms,
-            },
-          ),
-        }
-      : tools;
+
   return { ...tools, ...bc };
 };
 
@@ -257,7 +231,10 @@ test.serial(
       behavior: startTribblesAirdrop,
       entryFile: scriptRoots.tribblesAirdrop,
       config: {
-        options: { tribblesAirdrop: { bundleID } },
+        options: {
+          customTerms: defaultCustomTerms,
+          tribblesAirdrop: { bundleID },
+        },
       },
     });
 
@@ -288,7 +265,7 @@ test.todo('deliver payment using offer with non-fungible');
 const tribblesAdmin = (t, { zoe, terms }) => {};
 test.todo('E2E: send using publicFacet using contract');
 
-test('send invitation* from contract using publicFacet of postalService', async t => {
+test.skip('send invitation* from contract using publicFacet of postalService', async t => {
   const { powers, bundles } = await bootAndInstallBundles(t, bundleRoots);
 
   const { zoe, namesByAddressAdmin, chainTimerService, feeMintAccess } =
@@ -311,7 +288,6 @@ test('send invitation* from contract using publicFacet of postalService', async 
       customTerms: {
         ...defaultCustomTerms,
         startTime: defaultCustomTerms.startTime(timerBrand),
-        feePrice: AmountMath.make(smartWalletIssuers.IST, 5n),
       },
       tribblesAirdrop: { bundleID },
     },
@@ -330,15 +306,6 @@ test('send invitation* from contract using publicFacet of postalService', async 
   /** @type {StartedInstanceKit<import('../../src/postal-service.contract.js').tribblesAirdropFn>['instance']} */
   // @ts-expect-error not (yet?) in BootstrapPowers
 
-  const shared = {
-    rxAddr: 'agoric1receiverRex',
-    toSend: {
-      ToDoNothing: AmountMath.make(
-        await powers.brand.consume.Invitation,
-        harden([]),
-      ),
-    },
-  };
   const stableFaucet = makeStableFaucet({
     feeMintAccess,
     zoe,

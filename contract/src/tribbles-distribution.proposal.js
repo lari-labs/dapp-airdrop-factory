@@ -5,16 +5,10 @@ import { oneDay } from './airdrop/helpers/time.js';
 import { allValues } from './objectTools.js';
 import { fixHub } from './fixHub.js';
 
-const AIRDROP_TIERS_STATIC = [9000, 6500, 3500, 1500, 750];
-
-import {
-  installContract,
-  startContract,
-} from './platform-goals/start-contract.js';
 import { lensProp, view } from './airdrop/helpers/lenses.js';
 import { makeMarshal } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
-
+import { installContract, startContract } from './airdrop/airdrop.coreEval.js';
 /** @import { StartArgs } from './platform-goals/start-contract.js'; */
 
 /*  */
@@ -28,10 +22,6 @@ import { AmountMath } from '@agoric/ertp';
 // @ts-check
 
 const { Fail } = assert;
-const makeStartTime = (timerBrand, ts = oneDay) =>
-  harden({ brand: timerBrand, relValue: ts });
-
-const makeFeePrice = feeBrand => AmountMath.make(feeBrand, 5n);
 
 // /**
 //  * @param {BootstrapPowers} powers
@@ -39,7 +29,7 @@ const makeFeePrice = feeBrand => AmountMath.make(feeBrand, 5n);
 //  *   bundleID: string;
 //  * }}}} [config]
 //  */
-// export const startTribblesDistribution = async (powers, config) => {
+// export const startTribblesAirdrop = async (powers, config) => {
 //   const {
 //     consume: { namesByAddressAdmin },
 //   } = powers;
@@ -70,14 +60,12 @@ const makeTimerPowers = async ({ consume }) => {
   return {
     timer,
     timerBrand,
-    relTimeMaker: x => harden({ timerBrand, relValue: x }),
   };
 };
+const relTimeMaker = (timerBrand, x = 0n) =>
+  harden({ timerBrand, relValue: x });
 const contractName = 'tribblesAirdrop';
 
-const bundleIdLens = lensProp('bundleID');
-
-const customTermsLens = lensProp('customTerms');
 /**
  * Core eval script to start contract
  *
@@ -90,47 +78,35 @@ const customTermsLens = lensProp('customTerms');
  *   instance: PromiseSpaceOf<{ sellConcertTickets: Instance }>
  * }} StartAirdropCampaign
  */
-export const startTribblesDistribution = async (permittedPowers, config) => {
+export const startTribblesAirdrop = async (permittedPowers, config) => {
   const {
-    brand: {
-      consume: { IST: feeBrand },
-    },
-    issuer: {
-      consume: { IST: feeIssuer },
-    },
-    consume: { namesByAddressAdmin, chainTimerService },
+    consume: { chainTimerService },
   } = permittedPowers;
-
-  const { timerBrand, timer, relTimeMaker } =
-    await makeTimerPowers(permittedPowers);
 
   const {
     // must be supplied by caller or template-replaced
     bundleID = config.bundleID,
   } = config?.options?.[contractName] ?? {};
-  const feeIssuerDetails = await allValues({
-    brand: permittedPowers.brand.consume.IST,
-    issuer: permittedPowers.issuer.consume.IST,
-  });
+  const [{ issuer: issuerIST, brand: brandIST }, timer, timerBrand] =
+    await Promise.all([
+      allValues({
+        brand: permittedPowers.brand.consume.IST,
+        issuer: permittedPowers.issuer.consume.IST,
+      }),
+      chainTimerService,
+      E(chainTimerService).getTimerBrand(),
+    ]);
 
-  console.log('feeIssuerDetails::', { feeIssuerDetails });
-  const { customTerms, privateArgs: privateArguments } = config.options;
+  const { customTerms } = config.options;
 
   console.log('TimerBrand:::', timerBrand);
 
-  const contractLaunchConfig = {
+  console.log('contract launch config object :::');
+
+  const terms = {
     ...customTerms,
-    startTime: relTimeMaker(oneDay),
+    startTime: relTimeMaker(timerBrand, customTerms.startTime),
   };
-
-  console.log('contract launch config object :::', contractLaunchConfig);
-
-  // const {tiers = AIRDROP_TIERS, epochLength = ONE_DAY, tokenName = 'Tribbles', bonusSupply =  100_000n, baseSupply = 10_000_000 } = config.terms;
-  console.log('insidde startAirdropCampaign :::::', {
-    config,
-    airdrop: config.options.tribblesAirdrop,
-  });
-
   const installation = await installContract(permittedPowers, {
     name: contractName,
     bundleID,
@@ -144,12 +120,6 @@ export const startTribblesDistribution = async (permittedPowers, config) => {
   console.log('------------------------');
   console.groupEnd();
 
-  const namesByAddress = await fixHub(namesByAddressAdmin);
-  const terms = harden({
-    ...contractLaunchConfig,
-    namesByAddress,
-  });
-
   console.log('TERMS:::', { terms });
 
   /** @type {StartArgs} */
@@ -157,7 +127,7 @@ export const startTribblesDistribution = async (permittedPowers, config) => {
   const startArgs = {
     installation,
     issuerKeywordRecord: {
-      Fee: feeIssuer,
+      Fee: issuerIST,
     },
     terms,
     privateArgs: { timer },
@@ -171,30 +141,25 @@ export const startTribblesDistribution = async (permittedPowers, config) => {
 
   console.log(contractName, '(re)started');
 };
-
-export const manifest = /** @type {const} */ ({
-  [startTribblesDistribution.name]: {
-    consume: {
-      bankManager: true,
-      chainTimerService: true,
-      agoricNames: true,
-      namesByAddress: true,
-      namesByAddressAdmin: true,
-      brandAuxPublisher: true,
-      startUpgradable: true, // to start contract and save adminFacet
-      zoe: true, // to get contract terms, including issuer/brand
-    },
-    installation: {
-      consume: { [contractName]: true },
-      produce: { [contractName]: true },
-    },
-    instance: { produce: { [contractName]: true } },
-    issuer: { consume: { IST: true }, produce: { Tribbles: true } },
-    brand: { consume: { IST: true } },
-    produce: { Tribbles: true },
+/** @type { import("@agoric/vats/src/core/lib-boot").BootstrapManifestPermit } */
+export const permit = harden({
+  consume: {
+    bankManager: true,
+    chainTimerService: true,
+    agoricNames: true,
+    namesByAddress: true,
+    namesByAddressAdmin: true,
+    brandAuxPublisher: true,
+    startUpgradable: true, // to start contract and save adminFacet
+    zoe: true, // to get contract terms, including issuer/brand,
   },
+  installation: {
+    consume: { [contractName]: true },
+    produce: { [contractName]: true },
+  },
+  issuer: { consume: { IST: true }, produce: { Tribbles: true } },
+  brand: { consume: { IST: true }, produce: { Tribbles: true } },
+  instance: { produce: { [contractName]: true } },
 });
 
-export const permit = Object.values(manifest)[0];
-
-export const main = startTribblesDistribution;
+export const main = startTribblesAirdrop;

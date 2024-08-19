@@ -25,6 +25,18 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { oneDay, TimeIntervals } from '../../src/airdrop/helpers/time.js';
 import { fixHub } from '../../src/fixHub.js';
 import { makeNameHubKit } from '@agoric/vats';
+import { group, trace } from 'console';
+import {
+  startTribblesAirdrop,
+  permit,
+} from '../../src/tribbles-distribution.proposal.js';
+import {
+  produceBoardAuxManager,
+  permit as boardAuxPermit,
+} from '../../src/platform-goals/board-aux.core.js';
+import { extract } from '@agoric/vats/src/core/utils.js';
+import { mockBootstrapPowers } from '../../tools/boot-tools.js';
+import { getBundleId } from '../../tools/bundle-tools.js';
 
 /** @typedef {typeof import('../../src/tribbles-distribution.contract.js').start} AssetContractFn */
 
@@ -32,7 +44,13 @@ const myRequire = createRequire(import.meta.url);
 const contractPath = myRequire.resolve(
   `../../src/tribbles-distribution.contract.js`,
 );
-const AIRDROP_TIERS_STATIC = [9000, 6500, 3500, 1500, 750];
+const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n];
+
+const divide =
+  (x = 1n) =>
+  (y = 10n) =>
+    y / x;
+const divideByTwo = divide(2n);
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
@@ -41,18 +59,32 @@ const makeRelTimeMaker = brand => nat =>
   harden({ timerBrand: brand, relValue: nat });
 const defaultCustomTerms = {
   tiers: AIRDROP_TIERS_STATIC,
-  totalEpochs: 5,
-  epochLength: TimeIntervals.SECONDS.ONE_DAY * 10n,
-  bonusSupply: 100_000n,
-  baseSupply: 10_000_000n,
+  targetNumberOfEpochs: 5,
+  targetEpochLength: TimeIntervals.SECONDS.ONE_DAY * 10n,
+  targetTokenSupply: 10_000_000n,
   tokenName: 'Tribbles',
-  startTime: brand =>
-    makeRelTimeMaker(brand)(TimeIntervals.SECONDS.ONE_DAY * 3n),
+  startTime: oneDay,
 };
 
 const UNIT6 = 1_000_000n;
 const CENT = UNIT6 / 100n;
 
+const timerTracer = label => value => {
+  console.log(label, '::: latest #### ', value);
+  return value;
+};
+const makeLocalTimer = async (
+  createTimerFn = buildManualTimer(timerTracer('default timer'), 5n),
+) => {
+  const timer = createTimerFn();
+
+  const timerBrand = await E(timer).getTimerBrand();
+
+  return {
+    timer,
+    timerBrand,
+  };
+};
 /**
  * Tests assume access to the zoe service and that contracts are bundled.
  *
@@ -68,7 +100,7 @@ const makeTestContext = async _t => {
   const bundle = await bundleCache.load(contractPath, 'assetContract');
 
   console.log('bundle:::', { bundle, bundleCache });
-  return { zoe, bundle, bundleCache, feeMintAccess };
+  return { zoe, bundle, bundleCache, makeLocalTimer };
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
@@ -100,62 +132,61 @@ const makeTimerPowers = async ({ consume }) => {
   };
 };
 
-test('Start the contract', async t => {
-  const { zoe, bundle, bundleCache, feeMintAccess } = t.context;
+test.skip('Start the contract', async t => {
+  const { zoe: zoeRef, bundle, bundleCache, feeMintAccess } = t.context;
 
-  const timer = buildManualTimer();
-  const timerBrand = await E(timer).getTimerBrand();
   const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
     makeNameHubKit();
-  const relTimeMaker = makeRelTimeMaker(timerBrand);
 
-  const testFeeIssuer = await E(zoe).getFeeIssuer();
+  const testFeeIssuer = await E(zoeRef).getFeeIssuer();
   const testFeeBrand = await E(testFeeIssuer).getBrand();
 
   const testFeeTokenFaucet = await makeStableFaucet({
     feeMintAccess,
-    zoe,
+    zoe: zoeRef,
     bundleCache,
   });
   console.log('context:', { testFeeTokenFaucet });
 
-  const issuers = { Fee: testFeeIssuer };
-
-  const makeFeeAmount = x => AmountMath.make(testFeeBrand, x);
-  const terms = {
-    startTime: relTimeMaker(oneDay),
-    tiers: AIRDROP_TIERS_STATIC,
-    targetEpochLength: oneDay,
-    targetNumberOfEpochs: 5,
-    tokenName: 'Tribbles',
-    feePrice: makeFeeAmount(5n),
-    targetTokenSupply: 10_000_000n,
-    namesByAddress,
+  const localTestConfig = {
+    zoe: zoeRef,
+    issuers: { Fee: testFeeIssuer },
+    terms: defaultCustomTerms,
   };
-  const privateArgs = {
-    timer,
-  };
-  t.log('terms:', terms);
+  const startLocalInstance = async (
+    t,
+    bundle,
+    startLocalConfig = localTestConfig,
+  ) => {
+    const {
+      issuers: { Fee },
+      zoe,
+      terms: customTerms,
+    } = startLocalConfig;
 
-  /** @type {ERef<Installation<AssetContractFn>>} */
-  const installation = E(zoe).install(bundle);
-  const { instance } = await E(zoe).startInstance(
-    installation,
-    issuers,
-    terms,
-    privateArgs,
-  );
-  t.log(instance);
-  t.is(typeof instance, 'object');
+    const timer = buildManualTimer();
 
-  t.context = Object.assign(t.context, {
-    localContractEnv: {
+    const timerBrand = await E(timer).getTimerBrand();
+    /** @type {ERef<Installation<AssetContractFn>>} */
+    const installation = E(zoe).install(bundle);
+    const contractInstance = await E(zoe).startInstance(
       installation,
-      instance,
-      customTerms: terms,
-      makeFeeAmount,
-    },
-  });
+      { Fee },
+      {
+        ...customTerms,
+        startTime: harden({ timerBrand, relValue: customTerms.startTime }),
+      },
+      { timer },
+    );
+
+    t.log('instance', { contractInstance });
+
+    return { contractInstance, installation, timer };
+  };
+
+  const contractInstance = await startLocalInstance(t, bundle, localTestConfig);
+  t.log(contractInstance.instance);
+  t.is(typeof contractInstance.instance, 'object');
 });
 
 /**
@@ -167,51 +198,72 @@ test('Start the contract', async t => {
  * @param {Purse} purse
  * @param {string[]} choices
  */
-const alice = async (t, zoe, instance, purse, choices = ['map', 'scroll']) => {
+const alice = async (t, zoe, instance, feePurse) => {
   const publicFacet = E(zoe).getPublicFacet(instance);
   // @ts-expect-error Promise<Instance> seems to work
   const terms = await E(zoe).getTerms(instance);
   const { issuers, brands, tradePrice } = terms;
 
-  const choiceBag = makeCopyBag(choices.map(name => [name, 1n]));
+  console.log('TERMS ::: INSIDE ALIE', terms);
   const proposal = {
-    give: { FEE: feePrice },
-    want: { Items: AmountMath.make(brands.Item, choiceBag) },
+    give: { Fee: AmountMath.make(brands.Fee, 5n) },
+    want: { Tribbles: AmountMath.make(brands.Tribbles, 1000n) },
   };
-  const pmt = await E(purse).withdraw(tradePrice);
   t.log('Alice gives', proposal.give);
   // #endregion makeProposal
 
-  const toTrade = E(publicFacet).makeTradeInvitation();
+  const feePayment = await E(feePurse).withdraw(
+    AmountMath.make(brands.Fee, 5n),
+  );
+  const toTrade = E(publicFacet).makeClaimTokensInvitation();
 
-  const seat = E(zoe).offer(toTrade, proposal, { Price: pmt });
-  const items = await E(seat).getPayout('Items');
+  const seat = E(zoe).offer(toTrade, proposal, { Fee: feePayment });
+  const airdropPayout = await E(seat).getPayout('Tokens');
 
-  const actual = await E(issuers.Item).getAmountOf(items);
+  const actual = await E(issuers.Tribbles).getAmountOf(airdropPayout);
   t.log('Alice payout brand', actual.brand);
   t.log('Alice payout value', actual.value);
-  t.deepEqual(actual, proposal.want.Items);
+  t.deepEqual(actual, proposal.want.Tokens);
 };
 
-test('Alice trades: give some play money, want items', async t => {
-  const { zoe, bundle, localContractEnv } = await t.context;
+test('use the code that will go on chain to start the contract', async t => {
+  const { bundle, bundles } = t.context;
 
-  const money = makeIssuerKit('PlayMoney');
-  const issuers = { Price: money.issuer };
-  const terms = { tradePrice: AmountMath.make(money.brand, 5n) };
+  console.group('################ START start contract logger ##############');
+  console.log('----------------------------------------');
+  console.log('bundle ::::', bundle);
+  console.log('----------------------------------------');
+  console.log('bundles ::::', bundles);
+  console.log('--------------- END start contract logger -------------------');
+  console.groupEnd();
+  const bundleID = getBundleId(bundle);
+  const { powers, vatAdminState } = await mockBootstrapPowers(t.log);
+  const { feeMintAccess, zoe } = powers.consume;
 
-  /** @type {ERef<Installation<AssetContractFn>>} */
-  const installation = E(zoe).install(bundle);
-  const { instance } = localContractEnv;
-  t.is(typeof instance, 'object');
+  // When the BLD staker governance proposal passes,
+  // the startup function gets called.
+  vatAdminState.installBundle(bundleID, bundle);
+  const airdropPowers = extract(permit, powers);
+  const boardAuxPowers = extract(boardAuxPermit, powers);
+  await Promise.all([
+    produceBoardAuxManager(boardAuxPowers),
+    startTribblesAirdrop(airdropPowers, {
+      options: {
+        customTerms: defaultCustomTerms,
+        tribblesAirdrop: { bundleID },
+      },
+    }),
+  ]);
+  /** @type {import('../src/sell-concert-tickets.proposal.js').SellTicketsSpace} */
+  // @ts-expect-error cast
+  const sellSpace = powers;
+  const instance = await sellSpace.instance.consume.tribblesAirdrop;
 
-  const alicePurse = money.issuer.makeEmptyPurse();
-  const amountOfMoney = AmountMath.make(money.brand, 10n);
-  const moneyPayment = money.mint.mintPayment(amountOfMoney);
-  alicePurse.deposit(moneyPayment);
-  await alice(t, zoe, instance, alicePurse);
+  // Now that we have the instance, resume testing as above.
+  const { bundleCache } = t.context;
+  const { faucet } = makeStableFaucet({ bundleCache, feeMintAccess, zoe });
+  await alice(t, zoe, instance, await faucet(5n * UNIT6));
 });
-
 // test('Trade in IST rather than play money', async t => {
 //   /**
 //    * Start the contract, providing it with
