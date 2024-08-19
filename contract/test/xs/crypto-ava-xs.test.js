@@ -19,6 +19,7 @@ const cases = [
 
 test('pubkeyToAddress matches cosmjs tests', t => {
   for (const { prefix, pubkey, expected } of cases) {
+    console.log({prefix})
     const actual = pubkeyToAddress(pubkey.value, prefix);
     t.is(actual, expected);
   }

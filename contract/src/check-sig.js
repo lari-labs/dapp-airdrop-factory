@@ -7,8 +7,42 @@ import {
   makeSignDoc as makeSignDocAmino,
   serializeSignDoc,
 } from '@cosmjs/amino';
-
 import { ripemd160 } from '@noble/hashes/ripemd160';
+import { Either } from './airdrop/helpers/adts.js';
+import { compose } from './airdrop/helpers/objectTools.js';
+
+const { Left, Right } = Either;
+
+const safeByteLengthCheck = pk =>
+  pk.byteLength === 33
+    ? Right(pk)
+    : Left('pubkey.bytelength is not the correct value');
+
+const createHash = hashFn => data => hashFn.create().update(data).digest();
+const createSha256Hash = createHash(sha256);
+const createRipeMdHash = createHash(ripemd160);
+
+const toWords = bytes => bech32.toWords(bytes);
+
+// https://github.com/cosmos/cosmjs/blob/main/packages/encoding/src/bech32.ts#L3C1-L6C2
+const toBech32Address = prefix => (hash, limit) =>
+  bech32.encode(prefix, toWords(hash), limit);
+
+const mapFn = fn => type => type.map(fn);
+
+export const pkToAddress = prefix =>
+  compose(
+    mapFn(toBech32Address(prefix)),
+    // trace('after create ripe'),
+    mapFn(createRipeMdHash),
+    // trace('after create'),
+    mapFn(createSha256Hash),
+    safeByteLengthCheck,
+    decodeBase64,
+  );
+
+export const pubkeyToAgoricAddress = pkToAddress('agoric');
+export const pubkeyToCosmosAddress = pkToAddress('cosmos');
 
 // https://github.com/cosmos/cosmjs/blob/main/packages/encoding/src/bech32.ts#L3C1-L6C2
 export function toBech32(prefix, data, limit) {
@@ -59,7 +93,10 @@ const ADR36 = {
  */
 export const checkSig = async (kSig, signer) => {
   const prefix = 'agoric'; // TODO: support others
-  const addr = pubkeyToAddress(kSig.pub_key.value, prefix);
+  const addr = pkToAddress(prefix)(kSig.pub_key.value).fold(
+    x => x,
+    x => x,
+  );
   addr === signer || fail('pubKey does not match address');
 
   const fixed = decodeBase64(kSig.signature);
