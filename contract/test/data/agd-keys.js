@@ -154,4 +154,4 @@ const accounts = [
 const getPubkeyKey = ({ pubkey }) => `${pubkey.key}`;
 const agoricPubkeys = accounts.map(getPubkeyKey);
 
-export { accounts, agoricPubkeys };
+export { agoricPubkeys, accounts };

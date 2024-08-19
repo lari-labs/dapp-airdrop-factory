@@ -19,7 +19,6 @@ import { makeCopyBag } from '@endo/patterns';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-
 import { makeStableFaucet } from '../mintStable.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { oneDay, TimeIntervals } from '../../src/airdrop/helpers/time.js';
@@ -37,7 +36,21 @@ import {
 import { extract } from '@agoric/vats/src/core/utils.js';
 import { mockBootstrapPowers } from '../../tools/boot-tools.js';
 import { getBundleId } from '../../tools/bundle-tools.js';
+import {
+  localAccounts,
+  mtree as merkleTreeApi,
+} from '../../src/merkle-tree/index.js';
+import { simulateClaim } from './actors.js';
+import { generateInt } from '../data/tree.utils.js';
 
+import { head } from '../../src/airdrop/helpers/objectTools.js';
+const getRandomInt = generateInt(4);
+const { generateMerkleProof } = merkleTreeApi;
+const makeClaimOfferArgs = ({ pubkey, address } = head(localAccounts)) => ({
+  pubkey,
+  tier: getRandomInt(),
+  address,
+});
 /** @typedef {typeof import('../../src/tribbles-distribution.contract.js').start} AssetContractFn */
 
 const myRequire = createRequire(import.meta.url);
@@ -64,6 +77,7 @@ const defaultCustomTerms = {
   targetTokenSupply: 10_000_000n,
   tokenName: 'Tribbles',
   startTime: oneDay,
+  merkleRoot: merkleTreeApi.getRoot(),
 };
 
 const UNIT6 = 1_000_000n;
@@ -134,7 +148,7 @@ const makeTimerPowers = async ({ consume }) => {
 
 test.skip('Start the contract', async t => {
   const { zoe: zoeRef, bundle, bundleCache, feeMintAccess } = t.context;
-
+  console.log('rootHash::::', { rootHash });
   const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
     makeNameHubKit();
 
@@ -217,7 +231,16 @@ const alice = async (t, zoe, instance, feePurse) => {
   );
   const toTrade = E(publicFacet).makeClaimTokensInvitation();
 
-  const seat = E(zoe).offer(toTrade, proposal, { Fee: feePayment });
+  console.log({ localAccounts });
+  const seat = E(zoe).offer(
+    toTrade,
+    proposal,
+    { Fee: feePayment },
+    {
+      ...makeClaimOfferArgs(head(localAccounts)),
+      proof: merkleTreeApi.generateMerkleProof(head(localAccounts).pubkey.key),
+    },
+  );
   const airdropPayout = await E(seat).getPayout('Tokens');
 
   const actual = await E(issuers.Tribbles).getAmountOf(airdropPayout);
@@ -243,6 +266,8 @@ test('use the code that will go on chain to start the contract', async t => {
   // When the BLD staker governance proposal passes,
   // the startup function gets called.
   vatAdminState.installBundle(bundleID, bundle);
+
+  t.log('vatAdminState:::', vatAdminState);
   const airdropPowers = extract(permit, powers);
   const boardAuxPowers = extract(boardAuxPermit, powers);
   await Promise.all([
@@ -264,6 +289,7 @@ test('use the code that will go on chain to start the contract', async t => {
   const { faucet } = makeStableFaucet({ bundleCache, feeMintAccess, zoe });
   await alice(t, zoe, instance, await faucet(5n * UNIT6));
 });
+
 // test('Trade in IST rather than play money', async t => {
 //   /**
 //    * Start the contract, providing it with
