@@ -105,7 +105,8 @@ const makeStateMachine = (
       console.log('------- BEFORE setStatus -----------');
       assert(allowedTransitions.get(state).includes(nextState));
       state = nextState;
-      statusTracker.set(STATE_MACHINE_STATUS_KEY, state);
+
+      console.log('currentState::', { state });
       console.log('----------------------------------');
       console.log(
         '------- AFTER setStatus -----------',

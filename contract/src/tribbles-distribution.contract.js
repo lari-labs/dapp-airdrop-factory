@@ -26,6 +26,10 @@ const makeTrackerArray = x => Array.from({ length: x }, () => 0);
 
 const cancelTokenMaker = makeCancelTokenMaker('airdrop-campaign');
 
+const mapper = fn => array => array.map(fn);
+
+const divideByTwo = x => x / 2n;
+
 /**
  * @param {ZCFSeat} seat
  */
@@ -78,12 +82,10 @@ export const privateArgsShape = harden({
 });
 
 export const customTermsShape = harden({
-  feePrice: AmountShape,
   targetEpochLength: M.bigint(),
-  tiers: M.any(),
+  tiers: M.arrayOf(M.bigint()),
   tokenName: M.string(),
   targetTokenSupply: M.bigint(),
-  namesByAddress: M.remotable('namesByAddress'),
   targetNumberOfEpochs: M.number(),
   startTime: RelativeTimeRecordShape,
 });
@@ -125,7 +127,6 @@ export const start = async (zcf, privateArgs, baggage) => {
   /** @type {ContractTerms} */
   const {
     startTime,
-    feePrice,
     targetEpochLength = oneDay,
     targetTokenSupply = 10_000_000n,
     tokenName = 'Tribbles',
@@ -160,6 +161,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     {
       // exchange this for a purse created from ZCFMint
       incarnationRef: baggage.get('LifecycleIteration'),
+      payouts: tiers,
       airdropTiers: tiers,
       epochLength: targetEpochLength,
       currentEpoch: zone.mapStore(),
@@ -173,7 +175,8 @@ export const start = async (zcf, privateArgs, baggage) => {
   console.log('----------------------------------');
 
   console.log('[...baggage.values() ::::', [...baggage.values()]);
-
+  console.log('baggage.get(payouts) ::::', baggage.get('payouts'));
+  console.log('----------------------------------');
   console.log('----------------------------------');
 
   console.log('[...baggage.keys() ::::', [...baggage.keys()]);
@@ -211,7 +214,7 @@ export const start = async (zcf, privateArgs, baggage) => {
      * @param {CopySet} store
      * @param {CancelToken} currentCancelToken
      */
-    (store, currentCancelToken) => {
+    (payouts, store, currentCancelToken) => {
       console.log('this value::', this);
 
       const contractSeatWithTokens = mintTokenSupply(
