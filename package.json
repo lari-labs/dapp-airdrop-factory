@@ -38,7 +38,9 @@
     "@endo/netstring": "0.3.26",
     "@endo/stream-node": "0.2.26",
     "@babel/code-frame": "7.18.6",
-    "@babel/highlight": "7.22.5"
+    "@babel/highlight": "7.22.5",
+    "**/@typescript-eslint/typescript-estree": "^7.15.0",
+    "**/@noble/hashes": "github:paulmillr/noble-hashes#ae060daa6252f3ff2aa2f84e887de0aab491281d"
   },
   "scripts": {
     "start:docker": "cd contract && docker compose up -d",
