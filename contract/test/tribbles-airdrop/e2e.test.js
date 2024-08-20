@@ -46,17 +46,21 @@ import { makeClientMarshaller } from '../marshalTables.js';
 import bundleSource from '@endo/bundle-source';
 import { makeMarshal } from '@endo/marshal';
 import { makeStableFaucet } from '../mintStable.js';
+import { simulateClaim } from './actors.js';
 const makeRelTimeMaker = brand => nat =>
   harden({ timerBrand: brand, relValue: nat });
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
+const UNIT6 = 1_000_000n;
+const CENT = UNIT6 / 100n;
+
 const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n];
 const defaultCustomTerms = {
   tiers: AIRDROP_TIERS_STATIC,
   targetNumberOfEpochs: 5,
-  targetEpochLength: TimeIntervals.SECONDS.ONE_DAY * 10n,
+  targetEpochLength: TimeIntervals.SECONDS.ONE_DAY,
   targetTokenSupply: 10_000_000n,
   tokenName: 'Tribbles',
   startTime: TimeIntervals.SECONDS.ONE_DAY,
@@ -265,71 +269,53 @@ test.todo('deliver payment using offer with non-fungible');
 const tribblesAdmin = (t, { zoe, terms }) => {};
 test.todo('E2E: send using publicFacet using contract');
 
-test.skip('send invitation* from contract using publicFacet of postalService', async t => {
-  const { powers, bundles } = await bootAndInstallBundles(t, bundleRoots);
+test('use the code that will go on chain to start the contract', async t => {
+  const { bundle, bundles } = t.context;
 
-  const { zoe, namesByAddressAdmin, chainTimerService, feeMintAccess } =
-    await powers.consume;
+  console.group('################ START start contract logger ##############');
+  console.log('----------------------------------------');
+  console.log('bundle ::::', bundle);
+  console.log('----------------------------------------');
+  console.log('bundles ::::', bundles);
+  console.log('--------------- END start contract logger -------------------');
+  console.groupEnd();
+  const bundleID = getBundleId(bundle);
+  const { powers, vatAdminState } = await mockBootstrapPowers(t.log);
+  const { feeMintAccess, zoe } = powers.consume;
 
-  const bundleID = getBundleId(bundles.tribblesAirdrop);
-  console.log({ powers });
-
-  const timerBrand = await E(chainTimerService).getTimerBrand();
-
-  t.log('timerBrand ::: inside send invitation test', timerBrand);
-  const smartWalletIssuers = {
-    Invitation: await E(zoe).getInvitationIssuer(),
-    IST: await E(zoe).getFeeIssuer(),
-  };
+  // When the BLD staker governance proposal passes,
+  // the startup function gets called.
+  vatAdminState.installBundle(bundleID, bundle);
   const airdropPowers = extract(permit, powers);
-  await startTribblesAirdrop(airdropPowers, {
-    options: {
-      privateArgs: { timer: chainTimerService },
-      customTerms: {
-        ...defaultCustomTerms,
-        startTime: defaultCustomTerms.startTime(timerBrand),
+  const boardAuxPowers = extract(boardAuxPermit, powers);
+  await Promise.all([
+    produceBoardAuxManager(boardAuxPowers),
+    startTribblesAirdrop(airdropPowers, {
+      options: {
+        customTerms: defaultCustomTerms,
+        tribblesAirdrop: { bundleID },
       },
-      tribblesAirdrop: { bundleID },
-    },
-  });
-  console.log({ powers });
-
-  console.log('instance ::::');
-  console.log('----------------------------------');
-  // TODO: use CapData across vats
-  // const boardMarshaller = await E(board).getPublishingMarshaller();
-  const walletFactory = mockWalletFactory(
-    { zoe, namesByAddressAdmin },
-    smartWalletIssuers,
-  );
-
-  /** @type {StartedInstanceKit<import('../../src/postal-service.contract.js').tribblesAirdropFn>['instance']} */
-  // @ts-expect-error not (yet?) in BootstrapPowers
-
-  const stableFaucet = makeStableFaucet({
-    feeMintAccess,
-    zoe,
-    bundleCache: t.context.bundleCache,
-  });
-
-  const simulateClaim = async invitation => {
-    const seat = await E(zoe).offer(
-      invitation,
-      harden({
-        give: {
-          Fee: AmountMath.make(smartWalletIssuers.IST, 5n),
-        },
-      }),
-      harden({
-        Fee: stableFaucet.mintBrandedPayment(5n),
-      }),
-    );
-  };
-
-  const [invitation] = await Promise.all([
-    E(instance.publicFacet).makeClaimTokensInvitation(),
+    }),
   ]);
-  await simulateClaim(invitation);
-});
+  /** @type {import('../src/sell-concert-tickets.proposal.js').SellTicketsSpace} */
+  // @ts-expect-error cast
+  const sellSpace = powers;
+  const instance = await sellSpace.instance.consume.tribblesAirdrop;
 
+  const timerService = await powers.consume.timerSerivce;
+
+  // Now that we have the instance, resume testing as above.
+  const { bundleCache } = t.context;
+  const { faucet } = makeStableFaucet({ bundleCache, feeMintAccess, zoe });
+  await t.throwsAsync(
+    simulateClaim(t, zoe, instance, await faucet(5n * UNIT6)),
+    {
+      message: 'Claim attempt failed.',
+    },
+  );
+  const publicFacet = E(zoe).getPublicFacet(instance);
+  await E(timerService).advanceTo(oneDay);
+
+  t.deepEqual(await E(publicFacet).getStatus(), 'should return prepared');
+});
 test.todo('partial failure: send N+1 payments where >= 1 delivery fails');
