@@ -37,6 +37,15 @@ import {
 import { extract } from '@agoric/vats/src/core/utils.js';
 import { mockBootstrapPowers } from '../../tools/boot-tools.js';
 import { getBundleId } from '../../tools/bundle-tools.js';
+import { head } from '../../src/airdrop/helpers/objectTools.js';
+import { accounts } from '../data/agd-keys.js';
+import {
+  generateMerkleProof,
+  generateMerkleRoot,
+  merkleTreeAPI,
+} from '../../src/merkle-tree/index.js';
+import { simulateClaim } from './actors.js';
+import { OPEN, PREPARED } from '../../src/tribbles-distribution.contract.js';
 
 /** @typedef {typeof import('../../src/tribbles-distribution.contract.js').start} AssetContractFn */
 
@@ -54,16 +63,18 @@ const divideByTwo = divide(2n);
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
+const publicKeys = accounts.map(x => x.pubkey.key);
 
 const makeRelTimeMaker = brand => nat =>
   harden({ timerBrand: brand, relValue: nat });
 const defaultCustomTerms = {
   tiers: AIRDROP_TIERS_STATIC,
   targetNumberOfEpochs: 5,
-  targetEpochLength: TimeIntervals.SECONDS.ONE_DAY * 10n,
+  targetEpochLength: TimeIntervals.SECONDS.ONE_DAY,
   targetTokenSupply: 10_000_000n,
   tokenName: 'Tribbles',
   startTime: oneDay,
+  merkleRoot: merkleTreeAPI.generateMerkleRoot(publicKeys),
 };
 
 const UNIT6 = 1_000_000n;
@@ -98,9 +109,25 @@ const makeTestContext = async _t => {
 
   const bundleCache = await makeNodeBundleCache('bundles/', {}, s => import(s));
   const bundle = await bundleCache.load(contractPath, 'assetContract');
+  const testFeeIssuer = await E(zoe).getFeeIssuer();
+  const testFeeBrand = await E(testFeeIssuer).getBrand();
 
+  const testFeeTokenFaucet = await makeStableFaucet({
+    feeMintAccess,
+    zoe,
+    bundleCache,
+  });
   console.log('bundle:::', { bundle, bundleCache });
-  return { zoe, bundle, bundleCache, makeLocalTimer };
+  return {
+    zoe,
+    bundle,
+    bundleCache,
+    makeLocalTimer,
+    testFeeTokenFaucet,
+    faucet: testFeeTokenFaucet.faucet,
+    testFeeBrand,
+    testFeeIssuer,
+  };
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
@@ -132,11 +159,35 @@ const makeTimerPowers = async ({ consume }) => {
   };
 };
 
-test.skip('Start the contract', async t => {
-  const { zoe: zoeRef, bundle, bundleCache, feeMintAccess } = t.context;
+const startLocalInstance = async (
+  t,
+  bundle,
+  { issuers: { Fee }, zoe, terms: customTerms },
+) => {
+  const timer = buildManualTimer();
 
-  const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
-    makeNameHubKit();
+  const timerBrand = await E(timer).getTimerBrand();
+  /** @type {ERef<Installation<AssetContractFn>>} */
+  const installation = await E(zoe).install(bundle);
+
+  const instance = await E(zoe).startInstance(
+    installation,
+    { Fee },
+    {
+      ...customTerms,
+      startTime: harden({ timerBrand, relValue: customTerms.startTime }),
+    },
+    { timer },
+  );
+
+  const publicFacet = await instance.publicFacet;
+  t.log('instance', { instance });
+
+  return { instance, installation, timer, publicFacet };
+};
+
+test.serial('Start the contract', async t => {
+  const { zoe: zoeRef, bundle, bundleCache, feeMintAccess } = t.context;
 
   const testFeeIssuer = await E(zoeRef).getFeeIssuer();
   const testFeeBrand = await E(testFeeIssuer).getBrand();
@@ -153,40 +204,61 @@ test.skip('Start the contract', async t => {
     issuers: { Fee: testFeeIssuer },
     terms: defaultCustomTerms,
   };
-  const startLocalInstance = async (
-    t,
-    bundle,
-    startLocalConfig = localTestConfig,
-  ) => {
-    const {
-      issuers: { Fee },
-      zoe,
-      terms: customTerms,
-    } = startLocalConfig;
-
-    const timer = buildManualTimer();
-
-    const timerBrand = await E(timer).getTimerBrand();
-    /** @type {ERef<Installation<AssetContractFn>>} */
-    const installation = E(zoe).install(bundle);
-    const contractInstance = await E(zoe).startInstance(
-      installation,
-      { Fee },
-      {
-        ...customTerms,
-        startTime: harden({ timerBrand, relValue: customTerms.startTime }),
-      },
-      { timer },
-    );
-
-    t.log('instance', { contractInstance });
-
-    return { contractInstance, installation, timer };
-  };
 
   const contractInstance = await startLocalInstance(t, bundle, localTestConfig);
   t.log(contractInstance.instance);
   t.is(typeof contractInstance.instance, 'object');
+});
+
+const makeOfferArgs = ({ tier, pubkey: { key }, address }) => ({
+  key,
+  proof: merkleTreeAPI.generateMerkleProof(key, publicKeys),
+  address,
+  tier,
+});
+
+test('Airdrop ::: happy paths', async t => {
+  const {
+    zoe: zoeRef,
+    bundle,
+    bundleCache,
+    feeMintAccess,
+    faucet,
+  } = await t.context;
+  console.log(t.context);
+  const { instance, publicFacet, timer } = await startLocalInstance(t, bundle, {
+    zoe: zoeRef,
+    issuers: { Fee: await E(zoeRef).getFeeIssuer() },
+    terms: defaultCustomTerms,
+  });
+
+  await E(timer).advanceBy(oneDay * (oneDay / 2n));
+
+  t.deepEqual(await E(publicFacet).getStatus(), OPEN);
+  const mockPowers = mockBootstrapPowers(t.log);
+
+  t.log({ faucet });
+  await E(timer).advanceBy(oneDay);
+  const feePurse = await faucet(5n * UNIT6);
+  t.log(feePurse);
+  await t.deepEqual(
+    feePurse.getCurrentAmount(),
+    AmountMath.make(t.context.testFeeBrand, 5_000_000n),
+  );
+  const offerargs = makeOfferArgs(head(accounts));
+
+  console.log({ offerargs });
+  await simulateClaim(t, zoeRef, instance.instance, feePurse, offerargs);
+
+  await E(timer).advanceBy(oneDay);
+
+  t.deepEqual(await E(publicFacet).getStatus(), 'claim-window-open');
+
+  await E(timer).advanceBy(oneDay);
+
+  t.deepEqual(await E(publicFacet).getStatus(), 'claim-window-open');
+
+  await E(timer).advanceBy(oneDay);
 });
 
 /**
@@ -198,7 +270,13 @@ test.skip('Start the contract', async t => {
  * @param {Purse} purse
  * @param {string[]} choices
  */
-const alice = async (t, zoe, instance, feePurse) => {
+const alice = async (
+  t,
+  zoe,
+  instance,
+  feePurse,
+  claimOfferArgs = head(accounts),
+) => {
   const publicFacet = E(zoe).getPublicFacet(instance);
   // @ts-expect-error Promise<Instance> seems to work
   const terms = await E(zoe).getTerms(instance);
@@ -215,9 +293,14 @@ const alice = async (t, zoe, instance, feePurse) => {
   const feePayment = await E(feePurse).withdraw(
     AmountMath.make(brands.Fee, 5n),
   );
-  const toTrade = E(publicFacet).makeClaimTokensInvitation();
+  const toTrade = await E(publicFacet).makeClaimTokensInvitation();
 
-  const seat = E(zoe).offer(toTrade, proposal, { Fee: feePayment });
+  const seat = E(zoe).offer(
+    toTrade,
+    proposal,
+    { Fee: feePayment },
+    harden(makeOfferArgs(claimOfferArgs)),
+  );
   const airdropPayout = await E(seat).getPayout('Tokens');
 
   const actual = await E(issuers.Tribbles).getAmountOf(airdropPayout);
@@ -226,7 +309,7 @@ const alice = async (t, zoe, instance, feePurse) => {
   t.deepEqual(actual, proposal.want.Tokens);
 };
 
-test('use the code that will go on chain to start the contract', async t => {
+test.skip('use the code that will go on chain to start the contract', async t => {
   const { bundle, bundles } = t.context;
 
   console.group('################ START start contract logger ##############');
@@ -259,10 +342,17 @@ test('use the code that will go on chain to start the contract', async t => {
   const sellSpace = powers;
   const instance = await sellSpace.instance.consume.tribblesAirdrop;
 
+  const timerService = await powers.consume.timerSerivce;
+
   // Now that we have the instance, resume testing as above.
   const { bundleCache } = t.context;
   const { faucet } = makeStableFaucet({ bundleCache, feeMintAccess, zoe });
-  await alice(t, zoe, instance, await faucet(5n * UNIT6));
+  await t.throwsAsync(
+    simulateClaim(t, zoe, instance, await faucet(5n * UNIT6)),
+    {
+      message: 'Claim attempt failed.',
+    },
+  );
 });
 // test('Trade in IST rather than play money', async t => {
 //   /**

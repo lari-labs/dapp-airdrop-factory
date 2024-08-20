@@ -40,58 +40,6 @@ const makeStateMachine = (
 
   statusTracker.init(STATE_MACHINE_STATUS_KEY, initialState);
   statusTracker.init(EPOCH_TRACKER_KEY, null);
-  const trackEpoch = status => {
-    switch (status) {
-      case 'prepared': {
-        console.log(
-          'prepared ### status ::::',
-          statusTracker.get(EPOCH_TRACKER_KEY),
-        );
-        console.log('----------------------------------');
-        statusTracker.set(EPOCH_TRACKER_KEY, 0);
-        console.log(
-          'prepared ### status :::: UPDATED',
-          statusTracker.get(EPOCH_TRACKER_KEY),
-        );
-
-        return statusTracker.get(EPOCH_TRACKER_KEY);
-      }
-      case 'claim-window-open': {
-        console.log(
-          'claim-window-open ### status ::::',
-          statusTracker.get(EPOCH_TRACKER_KEY),
-        );
-
-        statusTracker.set(
-          EPOCH_TRACKER_KEY,
-          statusTracker.get(EPOCH_TRACKER_KEY) + 1,
-        );
-        console.log(
-          'claim-window-open ### status :::: UPDATED',
-          statusTracker.get(EPOCH_TRACKER_KEY),
-        );
-
-        return statusTracker.get(EPOCH_TRACKER_KEY);
-      }
-      default: {
-        console.log(
-          'default ### status ::::',
-          statusTracker.get(EPOCH_TRACKER_KEY),
-        );
-
-        statusTracker.set(
-          EPOCH_TRACKER_KEY,
-          statusTracker.get(EPOCH_TRACKER_KEY) + 1,
-        );
-        console.log(
-          'default ### status :::: UPDATED',
-          statusTracker.get(EPOCH_TRACKER_KEY),
-        );
-
-        return statusTracker.get(EPOCH_TRACKER_KEY);
-      }
-    }
-  };
   return harden({
     canTransitionTo: nextState =>
       allowedTransitions.get(state).includes(nextState),
@@ -105,14 +53,10 @@ const makeStateMachine = (
       console.log('------- BEFORE setStatus -----------');
       assert(allowedTransitions.get(state).includes(nextState));
       state = nextState;
-
+      statusTracker.set(STATE_MACHINE_STATUS_KEY, state);
       console.log('currentState::', { state });
       console.log('----------------------------------');
-      console.log(
-        '------- AFTER setStatus -----------',
-        statusTracker.get(STATE_MACHINE_STATUS_KEY),
-      );
-      trackEpoch(state);
+      console.log('------- AFTER setStatus -----------');
       console.groupEnd();
     },
     getStatus: () => statusTracker.get(STATE_MACHINE_STATUS_KEY),
