@@ -1876,6 +1876,10 @@
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.4.0.tgz#45814aa329f30e4fe0ba49426f49dfccdd066426"
   integrity sha512-V1JJ1WTRUqHHrOSh597hURcMqVKVGL/ea3kv0gSnEdsEZ0/+VyPghM1lMNGc00z7CIQorSvbKpuJkxvuHbvdbg==
 
+"@noble/hashes@github:paulmillr/noble-hashes#ae060da":
+  version "1.4.0"
+  resolved "https://codeload.github.com/paulmillr/noble-hashes/tar.gz/ae060daa6252f3ff2aa2f84e887de0aab491281d"
+
 "@noble/secp256k1@^2.1.0":
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/@noble/secp256k1/-/secp256k1-2.1.0.tgz#71d829a0b8ce84aea137708f82273977eea84597"

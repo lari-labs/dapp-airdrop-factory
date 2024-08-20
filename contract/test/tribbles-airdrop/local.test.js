@@ -40,7 +40,6 @@ import {
   localAccounts,
   mtree as merkleTreeApi,
 } from '../../src/merkle-tree/index.js';
-import { simulateClaim } from './actors.js';
 import { generateInt } from '../data/tree.utils.js';
 
 import { head } from '../../src/airdrop/helpers/objectTools.js';

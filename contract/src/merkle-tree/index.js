@@ -1,6 +1,7 @@
 /* eslint-disable no-shadow */
-import { sha256 } from '@noble/hashes/sha256';
-import { bytesToHex } from '@noble/hashes/utils';
+import { sha256 } from '../cryptography-lib/sha256.vendor.js';
+import { bytesToHex } from '../cryptography-lib/utils.vendor.js';
+
 import { accounts as accountData } from '../../test/data/agd-keys.js';
 import { lensProp, view } from '../airdrop/helpers/lenses.js';
 import { Either } from '../airdrop/helpers/adts.js';
@@ -29,7 +30,7 @@ const trace = label => value => {
  * @param {Uint8Array} data - The input Uint8Array to hash.
  * @returns {string} The hexadecimal representation of the SHA-256 hash of the input data.
  */
-const computeHexEncodedSha256Hash = compose(
+export const computeHexEncodedSha256Hash = compose(
   // trace('after bytesToHex'),
   bytesToHex,
   // trace('after hashing'),

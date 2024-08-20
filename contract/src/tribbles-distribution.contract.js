@@ -5,7 +5,7 @@ import { E } from '@endo/far';
 import { AmountMath, AmountShape, IssuerShape, PurseShape } from '@agoric/ertp';
 import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
 import { InvitationShape, TimerShape } from '@agoric/zoe/src/typeGuards.js';
-import { sha256 } from '@noble/hashes/sha256.js';
+
 import { makeWaker, oneDay } from './airdrop/helpers/time.js';
 import {
   handleFirstIncarnation,
@@ -20,6 +20,7 @@ import {
   reducer,
 } from './airdrop/helpers/reducers.js';
 import { lensProp, view } from './airdrop/helpers/lenses.js';
+import { sha256 } from './cryptography-lib/sha256.vendor.js';
 // @ts-check
 const { keys, values } = Object;
 const makeTrackerArray = x => Array.from({ length: x }, () => 0);

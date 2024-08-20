@@ -1,8 +1,8 @@
 import { MerkleTree } from 'merkletreejs';
-import { sha256 } from '@noble/hashes/sha256';
 import { compose } from '../../src/airdrop/helpers/objectTools.js';
 import { Either } from '../../src/airdrop/helpers/adts.js';
 import { accounts } from './agd-keys.js';
+import { sha256 } from '../../src/cryptography-lib/sha256.vendor.js';
 const hashInput = algo => data => algo(data);
 const makeSha256Hash = hashInput(sha256);
 const getProp = prop => object => object[prop];

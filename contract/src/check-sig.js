@@ -1,15 +1,15 @@
 // @ts-check
 import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { bech32 } from 'bech32';
-import { sha256 } from '@noble/hashes/sha256';
 import { Secp256k1, Secp256k1Signature } from '@cosmjs/crypto';
 import {
   makeSignDoc as makeSignDocAmino,
   serializeSignDoc,
 } from '@cosmjs/amino';
-import { ripemd160 } from '@noble/hashes/ripemd160';
 import { Either } from './airdrop/helpers/adts.js';
 import { compose } from './airdrop/helpers/objectTools.js';
+import { sha256 } from './cryptography-lib/sha256.vendor.js';
+import { ripemd160 } from './cryptography-lib/ripemd160.vendor.js';
 
 const { Left, Right } = Either;
 
