@@ -32,7 +32,7 @@ const hashes = accounts.slice(0, 40);
  * @param {Uint8Array} data - The input Uint8Array to hash.
  * @returns {string} The hexadecimal representation of the SHA-256 hash of the input data.
  */
-const computeHexEncodedSha256Hash = compose(
+export const computeHexEncodedSha256Hash = compose(
   // trace('after bytesToHex'),
   bytesToHex,
   // trace('after hashing'),
@@ -124,13 +124,9 @@ const handleComputeProof = compose(
  * The first hash needs to be in the first position of this array, with its
  * corresponding tree branch direction.
  * @param {Array<node> | null} merkleProof
- * @param {Function} hashFn
  * @returns {string} merkleRoot
  */
-const getMerkleRootFromMerkleProof = (
-  merkleProof,
-  hashFn = computeHexEncodedSha256Hash,
-) =>
+const getMerkleRootFromMerkleProof = merkleProof =>
   !merkleProof || merkleProof.length === 0
     ? ''
     : handleComputeProof(merkleProof);
@@ -231,6 +227,7 @@ const generateMerkleProof = (hash, hashes) => {
 
 export const merkleTreeAPI = {
   generateMerkleRoot(pks) {
+    console.log('pks::', { pks });
     return generateMerkleRoot(pks.map(computeHexEncodedSha256Hash));
   },
   generateMerkleTree(pks) {
@@ -243,9 +240,15 @@ export const merkleTreeAPI = {
     );
   },
   getMerkleRootFromMerkleProof(proof) {
-    return getMerkleRootFromMerkleProof(proof, computeHexEncodedSha256Hash);
+    return getMerkleRootFromMerkleProof(proof);
   },
 };
 
 harden(merkleTreeAPI);
-export { hashes };
+export {
+  hashes,
+  getMerkleRootFromMerkleProof,
+  generateMerkleProof,
+  generateMerkleTree,
+  generateMerkleRoot,
+};

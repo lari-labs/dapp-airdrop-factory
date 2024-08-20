@@ -37,6 +37,13 @@ import {
 import { extract } from '@agoric/vats/src/core/utils.js';
 import { mockBootstrapPowers } from '../../tools/boot-tools.js';
 import { getBundleId } from '../../tools/bundle-tools.js';
+import { head } from '../../src/airdrop/helpers/objectTools.js';
+import { accounts } from '../data/agd-keys.js';
+import {
+  generateMerkleProof,
+  generateMerkleRoot,
+  merkleTreeAPI,
+} from '../../src/merkle-tree/index.js';
 
 /** @typedef {typeof import('../../src/tribbles-distribution.contract.js').start} AssetContractFn */
 
@@ -54,6 +61,7 @@ const divideByTwo = divide(2n);
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
+const publicKeys = accounts.map(x => x.pubkey.key);
 
 const makeRelTimeMaker = brand => nat =>
   harden({ timerBrand: brand, relValue: nat });
@@ -64,6 +72,7 @@ const defaultCustomTerms = {
   targetTokenSupply: 10_000_000n,
   tokenName: 'Tribbles',
   startTime: oneDay,
+  merkleRoot: merkleTreeAPI.generateMerkleRoot(publicKeys),
 };
 
 const UNIT6 = 1_000_000n;
@@ -189,6 +198,13 @@ test.skip('Start the contract', async t => {
   t.is(typeof contractInstance.instance, 'object');
 });
 
+const makeOfferArgs = ({ tier, pubkey: { key }, address }) => ({
+  key,
+  proof: merkleTreeAPI.generateMerkleProof(key, publicKeys),
+  address,
+  tier,
+});
+
 /**
  * Alice trades by paying the price from the contract's terms.
  *
@@ -198,7 +214,13 @@ test.skip('Start the contract', async t => {
  * @param {Purse} purse
  * @param {string[]} choices
  */
-const alice = async (t, zoe, instance, feePurse) => {
+const alice = async (
+  t,
+  zoe,
+  instance,
+  feePurse,
+  claimOfferArgs = head(accounts),
+) => {
   const publicFacet = E(zoe).getPublicFacet(instance);
   // @ts-expect-error Promise<Instance> seems to work
   const terms = await E(zoe).getTerms(instance);
@@ -215,9 +237,14 @@ const alice = async (t, zoe, instance, feePurse) => {
   const feePayment = await E(feePurse).withdraw(
     AmountMath.make(brands.Fee, 5n),
   );
-  const toTrade = E(publicFacet).makeClaimTokensInvitation();
+  const toTrade = await E(publicFacet).makeClaimTokensInvitation();
 
-  const seat = E(zoe).offer(toTrade, proposal, { Fee: feePayment });
+  const seat = E(zoe).offer(
+    toTrade,
+    proposal,
+    { Fee: feePayment },
+    harden(makeOfferArgs(claimOfferArgs)),
+  );
   const airdropPayout = await E(seat).getPayout('Tokens');
 
   const actual = await E(issuers.Tribbles).getAmountOf(airdropPayout);
@@ -262,7 +289,9 @@ test('use the code that will go on chain to start the contract', async t => {
   // Now that we have the instance, resume testing as above.
   const { bundleCache } = t.context;
   const { faucet } = makeStableFaucet({ bundleCache, feeMintAccess, zoe });
-  await alice(t, zoe, instance, await faucet(5n * UNIT6));
+  await t.throwsAsync(alice(t, zoe, instance, await faucet(5n * UNIT6)), {
+    message: 'Claim attempt failed.',
+  });
 });
 // test('Trade in IST rather than play money', async t => {
 //   /**
