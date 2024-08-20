@@ -3,7 +3,6 @@ import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex } from '@noble/hashes/utils';
 import { accounts as accountData } from '../../test/data/agd-keys.js';
 import { lensProp, view } from '../airdrop/helpers/lenses.js';
-import { Either } from '../airdrop/helpers/adts.js';
 import { compose } from '../airdrop/helpers/objectTools.js';
 
 const accounts = accountData.map(x => x.pubkey.key);
@@ -58,9 +57,6 @@ const getLeafNodeDirectionInMerkleTree = (hash, merkleTree) => {
   const hashIndex = merkleTree[0].findIndex(h => h === hash);
   return hashIndex % 2 === 0 ? LEFT : RIGHT;
 };
-
-const isEven = (x = 0) => x % 2 === 0;
-const negate = x => !x;
 
 /**
  * If the hashes length is not even, then it copies the last hashes and adds it to the

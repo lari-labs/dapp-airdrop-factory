@@ -1,15 +1,7 @@
 import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import { head } from '../../src/airdrop/helpers/objectTools.js';
-import { accounts, agoricPubkeys } from '../data/agd-keys.js';
-import { generateMerkleProof } from '../../src/merkle-tree/index.js';
-
-const makeOfferArgs = ({ tier, pubkey: { key }, address }) => ({
-  key,
-  proof: generateMerkleProof(key, agoricPubkeys),
-  address,
-  tier,
-});
+import { accounts } from '../data/agd-keys.js';
 
 /**
  * Alice trades by paying the price from the contract's terms.
@@ -17,8 +9,6 @@ const makeOfferArgs = ({ tier, pubkey: { key }, address }) => ({
  * @param {import('ava').ExecutionContext} t
  * @param {ZoeService} zoe
  * @param {ERef<import('@agoric/zoe/src/zoeService/utils').Instance<AssetContractFn>} instance
- * @param {Purse} purse
- * @param {string[]} choices
  * @param feePurse
  * @param claimOfferArgs
  */
@@ -29,7 +19,6 @@ const simulateClaim = async (
   feePurse,
   claimOfferArgs = head(accounts),
 ) => {
-  const { publicFacet } = instance;
   const [pfFromZoe, terms] = await Promise.all([
     E(zoe).getPublicFacet(instance),
     E(zoe).getTerms(instance),
@@ -38,25 +27,22 @@ const simulateClaim = async (
 
   console.log('TERMS:::', { terms });
   console.log(instance.instance);
-  // @ts-expect-error Promise<Instance> seems to work
 
   const proposal = {
     give: { Fee: AmountMath.make(brands.Fee, 5n) },
   };
   t.log('Alice gives', proposal.give);
-  // #endregion makeProposal
 
   const feePayment = await E(feePurse).withdraw(
     AmountMath.make(brands.Fee, 5n),
   );
-  const [toTrade, payoutValues, epoch] = await Promise.all([
+  const [invitation, payoutValues] = await Promise.all([
     E(pfFromZoe).makeClaimTokensInvitation(),
     E(pfFromZoe).getPayoutValues(),
-    E(pfFromZoe).getEpoch(),
   ]);
 
   const seat = E(zoe).offer(
-    toTrade,
+    invitation,
     proposal,
     { Fee: feePayment },
     harden(claimOfferArgs),

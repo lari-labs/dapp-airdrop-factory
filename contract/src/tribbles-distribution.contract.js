@@ -2,15 +2,9 @@
 import { M, mustMatch } from '@endo/patterns';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
-import {
-  AmountMath,
-  AmountShape,
-  BrandShape,
-  IssuerShape,
-  PurseShape,
-} from '@agoric/ertp';
+import { AmountMath, BrandShape } from '@agoric/ertp';
 import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
-import { InvitationShape, TimerShape } from '@agoric/zoe/src/typeGuards.js';
+import { TimerShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeWaker, oneDay } from './airdrop/helpers/time.js';
 import {
   handleFirstIncarnation,
@@ -18,24 +12,12 @@ import {
 } from './airdrop/helpers/validation.js';
 import { makeStateMachine } from './airdrop/helpers/stateMachine.js';
 import { createClaimSuccessMsg } from './airdrop/helpers/messages.js';
-import { compose, head, objectToMap } from './airdrop/helpers/objectTools.js';
-import {
-  actionCreators,
-  createStore,
-  reducer,
-} from './airdrop/helpers/reducers.js';
-import { lensProp, view } from './airdrop/helpers/lenses.js';
+import { objectToMap } from './airdrop/helpers/objectTools.js';
 import { getMerkleRootFromMerkleProof } from './merkle-tree/index.js';
 
 const { keys, values } = Object;
 
-const makeTrackerArray = x => Array.from({ length: x }, () => 0);
-
 const cancelTokenMaker = makeCancelTokenMaker('airdrop-campaign');
-
-const mapper = fn => array => array.map(fn);
-
-const divideByTwo = x => x / 2n;
 
 /**
  * @param {ZCFSeat} seat
@@ -45,25 +27,6 @@ const getSeatAllocationDetils = seat => ({
   stagedAllocation: seat.getStagedAllocation(),
   hasExited: seat.hasExited(),
 });
-
-const currentAllocationLens = lensProp('currentAllocation');
-const viewCurrentAllocation = view(currentAllocationLens);
-
-const makeInspectAmountString = amount =>
-  `Inspecting an object holding ${amount.value} tokens.`;
-const trace = label => value => {
-  console.log(label, ':::', value);
-  return value;
-};
-const makeCurrentAllocationMsg = compose(
-  makeInspectAmountString,
-  view(currentAllocationLens),
-  trace('after getSeatAllocationDetils'),
-  getSeatAllocationDetils,
-);
-const mintTokenSupply = (tokenMint, amount, toSeat) => {
-  return tokenMint.mintGains({ AirdropToken: amount }, toSeat);
-};
 
 const AIRDROP_STATES = {
   INITIALIZED: 'initialized',
@@ -200,7 +163,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     ),
     public: M.interface('public facet', {
       makeClaimTokensInvitation: M.call().returns(M.promise()),
-      getAirdropTokenIssuer: M.call().returns(IssuerShape),
       getStatus: M.call().returns(M.string()),
       getEpoch: M.call().returns(M.bigint()),
       getPayoutValues: M.call().returns(M.array()),
@@ -226,31 +188,15 @@ export const start = async (zcf, privateArgs, baggage) => {
      */
     (store, currentCancelToken) => {
       console.log('this value::', this);
-
-      const contractSeatWithTokens = mintTokenSupply(
-        tokenMint,
-        AmountMath.make(tokenBrand, targetTokenSupply),
-        contractSeat,
-      );
       const state = {
         /** @type { object } */
-        contractSeat: zcf.makeEmptySeatKit().zcfSeat,
         currentCancelToken,
         claimCount: 0,
         claimedAccounts: store,
         payoutArray: baggage.get('payouts'),
         currentEpoch: null,
       };
-      console.log(
-        'getSeatAllocationDetils ::::',
-        getSeatAllocationDetils(contractSeatWithTokens),
-      );
-      console.log('----------------------------------');
-      console.log('contractSeatWithTokens ::::', contractSeatWithTokens);
-      console.log('----------------------------------');
-      console.log('state ::::', state);
-      console.log('----------------------------------');
-      return { ...state, contractSeat: contractSeatWithTokens };
+      return state;
     };
   const prepareContract = zone.exoClassKit(
     'Tribble Token Distribution',
@@ -263,14 +209,9 @@ export const start = async (zcf, privateArgs, baggage) => {
          * @param {number} epochIdx
          */
         updateEpochDetails(absTime, epochIdx) {
-          const {
-            state: { currentEpoch },
-          } = this;
           const { helper } = this.facets;
-          console.log('inside updateEpochDetails ::::');
-          console.log('----------------------------------');
           this.state.currentEpoch = BigInt(epochIdx);
-
+          console.log('current epoch', this.state.currentEpoch);
           this.state.payoutArray = harden(
             this.state.payoutArray.map(x => x / 2n),
           );
@@ -279,14 +220,6 @@ export const start = async (zcf, privateArgs, baggage) => {
             zcf.shutdown('Airdrop complete');
             stateMachine.transitionTo(EXPIRED);
           }
-
-          console.log('this.state.payoutArray ::::', this.state.payoutArray);
-          console.log('----------------------------------');
-          // add logic for updating claim amounts for each tier
-          // 1. add claimAmounts: tiers to initState
-          // 2. update state.claimAmounts using the following logic:
-          // claimAmountsArray.map(x => AmountMath.make(tokenBrand, x / 2))
-
           helper.updateDistributionMultiplier(
             TimeMath.addAbsRel(absTime, targetEpochLength),
           );
@@ -308,7 +241,7 @@ export const start = async (zcf, privateArgs, baggage) => {
                 // console.log('LATEST SET:::', tiersStore.get('current'));
                 facets.helper.updateEpochDetails(
                   latestTs,
-                  this.state.currentEpoch + 1,
+                  this.state.currentEpoch + 1n,
                 );
               },
             ),
@@ -488,9 +421,6 @@ export const start = async (zcf, privateArgs, baggage) => {
             };
           return zcf.makeInvitation(claimHandler, 'airdrop claim handler');
         },
-        getAirdropTokenIssuer() {
-          return tokenIssuer;
-        },
         getStatus() {
           return stateMachine.getStatus();
         },
@@ -500,26 +430,11 @@ export const start = async (zcf, privateArgs, baggage) => {
         getPayoutValues() {
           return this.state.payoutArray;
         },
-        // makeClaimTokensInvitation() {
-        //   return zcf.makeInvitation((seat, offerArgs) => {
-        //     console.log('---- OFFER HANDLER ---');
-        //     console.log('seat ::::', { seat, offerArgs });
-        //     console.log(
-        //       'verifying merkle proof::',
-        //       getMerkleRootFromMerkleProof(offerArgs.proof),
-        //     );
-
-        //     assert(
-        //       getMerkleRootFromMerkleProof(offerArgs.proof) === merkleRoot,
-        //       'Computed proof does not equal the correct root hash. ',
-        //     );
-
-        //     console.log('----------------------------------');
-        //   }, 'claim airdrop invitation');
-        // },
       },
       creator: {
-        pauseContract() {},
+        pauseContract() {
+          // TODO setOfferFilter
+        },
       },
     },
   );
@@ -534,10 +449,8 @@ export const start = async (zcf, privateArgs, baggage) => {
   await E(timer).setWakeup(
     baggage.get('startTime'),
     makeWaker('claimWindowOpenWaker', ({ absValue }) => {
-      console.log('inside makeWakerxxaa:::', { absValue });
-      airdropStatusTracker.init('currentEpoch', 0);
-      helper.updateEpochDetails(absValue, 0);
-
+      airdropStatusTracker.init('currentEpoch', 0n);
+      helper.updateEpochDetails(absValue, 0n);
       stateMachine.transitionTo(OPEN);
     }),
   );
