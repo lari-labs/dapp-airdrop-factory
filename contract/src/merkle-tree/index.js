@@ -39,7 +39,7 @@ export const computeHexEncodedSha256Hash = compose(
 );
 
 /**
- * @typedef {object} node
+ * @typedef {object} Node
  * @property {string} hash
  * @property {string} direction
  */
@@ -103,12 +103,8 @@ const computeProofReducer = ({ hash: h1 }, { hash: h2, direction }) =>
 const reducerFn = fn => array => array.reduce(fn);
 const hashLens = lensProp('hash');
 const getHash = compose(view(hashLens));
-const handleComputeProof = compose(
-  trace('after get hash'),
-  getHash,
-  trace('after compute proof reducer'),
-  reducerFn(computeProofReducer),
-);
+
+const handleComputeProof = compose(getHash, reducerFn(computeProofReducer));
 
 /**
  * Calculates the merkle root using the merkle proof by concatenating each pair of
@@ -117,7 +113,7 @@ const handleComputeProof = compose(
  * and returned.
  * The first hash needs to be in the first position of this array, with its
  * corresponding tree branch direction.
- * @param {Array<node> | null} merkleProof
+ * @param {Array<Node> | null} merkleProof
  * @returns {string} merkleRoot
  */
 const getMerkleRootFromMerkleProof = merkleProof =>
@@ -183,7 +179,7 @@ const generateMerkleTree = (hashes = []) => {
  * Then we simply return this merkle proof.
  * @param {string} hash
  * @param {PubkeyHashArray} hashes
- * @returns {null | Array<node>} merkleProof
+ * @returns {null | Array<Node>} merkleProof
  */
 const generateMerkleProof = (hash, hashes) => {
   if (!hash || !hashes || hashes.length === 0) {
@@ -197,6 +193,7 @@ const generateMerkleProof = (hash, hashes) => {
     },
   ];
   let hashIndex = tree[0].findIndex(h => h === hash);
+  // eslint-disable-next-line no-plusplus
   for (let level = 0; level < tree.length - 1; level++) {
     const isLeftChild = hashIndex % 2 === 0;
     const siblingDirection = isLeftChild ? RIGHT : LEFT;
