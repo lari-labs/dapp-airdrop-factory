@@ -77,7 +77,7 @@ export const TimeIntervals = {
   /**
    * Time intervals represented in seconds.
    *
-   * @type {Object}
+   * @type {object}
    * @property {bigint} ONE_DAY - Number of seconds in one day.
    * @property {bigint} ONE_HOUR - Number of seconds in one hour.
    */
@@ -88,7 +88,7 @@ export const TimeIntervals = {
   /**
    * Time intervals represented in milliseconds.
    *
-   * @type {Object}
+   * @type {object}
    * @property {number} ONE_DAY - Number of milliseconds in one day.
    * @property {number} ONE_WEEK - Number of milliseconds in one week.
    */

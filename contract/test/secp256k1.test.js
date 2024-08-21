@@ -8,10 +8,12 @@ import { webcrypto } from 'node:crypto';
 import { hmac } from '@noble/hashes/hmac';
 import { sha256 } from '@noble/hashes/sha256';
 // @ts-ignore
+// eslint-disable-next-line no-undef
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
 secp.etc.hmacSha256Sync = (k, ...m) =>
   hmac(sha256, k, secp.etc.concatBytes(...m));
 secp.etc.hmacSha256Async = (k, ...m) =>
+  // @ts-ignore
   Promise.resolve(secp.etc.hmacSha256Sync(k, ...m));
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeBundleCacheContext>>>} */

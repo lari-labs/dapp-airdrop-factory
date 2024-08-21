@@ -19,7 +19,7 @@ const cases = [
 
 test('pubkeyToAddress matches cosmjs tests', t => {
   for (const { prefix, pubkey, expected } of cases) {
-    console.log({prefix})
+    console.log({ prefix });
     const actual = pubkeyToAddress(pubkey.value, prefix);
     t.is(actual, expected);
   }
@@ -29,6 +29,7 @@ test('pubkeyToAddress matches cosmjs tests', t => {
 const hashBench = logn => {
   const [{ prefix, pubkey }] = cases;
 
+  // eslint-disable-next-line no-bitwise
   const n = 1 << logn;
   for (let i = 0; i < n; i += 1) {
     pubkeyToAddress(pubkey.value, prefix);
@@ -40,6 +41,7 @@ test('pubkeyToAddress performance: 1<<8 iterations', t => {
   console.log('pubkeyToAddress performance start');
   const n = 8;
   hashBench(n);
+  // eslint-disable-next-line no-bitwise
   console.log(n, 'end', 1 << n);
   t.pass();
 });
@@ -48,6 +50,7 @@ test('pubkeyToAddress performance: 1<<12 iterations', t => {
   console.log('pubkeyToAddress performance start');
   const n = 12;
   hashBench(n);
+  // eslint-disable-next-line no-bitwise
   console.log(n, 'end', 1 << n);
   t.pass();
 });
@@ -56,6 +59,7 @@ test('pubkeyToAddress performance: 1<<14 iterations', t => {
   console.log('pubkeyToAddress performance start');
   const n = 14;
   hashBench(n);
+  // eslint-disable-next-line no-bitwise
   console.log(n, 'end', 1 << n);
   t.pass();
 });

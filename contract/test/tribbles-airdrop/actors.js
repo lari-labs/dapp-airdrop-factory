@@ -1,31 +1,23 @@
 import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
-import { head } from '../../src/airdrop/helpers/objectTools.js';
-import { accounts } from '../data/agd-keys.js';
 
 /**
- * Alice trades by paying the price from the contract's terms.
+ * Eligible claimant exercises their right to claim tokens.
  *
  * @param {import('ava').ExecutionContext} t
  * @param {ZoeService} zoe
- * @param {ERef<import('@agoric/zoe/src/zoeService/utils').Instance<AssetContractFn>} instance
- * @param feePurse
- * @param claimOfferArgs
+ * @param {import('@agoric/zoe/src/zoeService/utils').StartContractInstance<Installation>} instance
+ * @param {import('@agoric/ertp/src/types').Purse} feePurse
+ * @param {{pubkey: string, address: string, tier: number, proof: Array}} claimOfferArgs
  */
-const simulateClaim = async (
-  t,
-  zoe,
-  instance,
-  feePurse,
-  claimOfferArgs = head(accounts),
-) => {
+const simulateClaim = async (t, zoe, instance, feePurse, claimOfferArgs) => {
   const [pfFromZoe, terms] = await Promise.all([
     E(zoe).getPublicFacet(instance),
     E(zoe).getTerms(instance),
   ]);
   const { brands, issuers } = terms;
 
-  console.log('TERMS:::', { terms });
+  console.log('TERMS:::', { terms, claimOfferArgs });
   console.log(instance.instance);
 
   const proposal = {

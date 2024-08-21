@@ -1,4 +1,4 @@
-/* global hardne  */
+/* global harden  */
 
 const createStore = (reducer, initialState = defaultState) => {
   let state = initialState;

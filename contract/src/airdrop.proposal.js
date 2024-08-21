@@ -1,55 +1,25 @@
 // @ts-check
 import { E } from '@endo/far';
-import { makeIssuerKit } from '@agoric/ertp/src/issuerKit.js';
-import {
-  AmountMath,
-  installContract,
-  startContract,
-} from './airdrop/airdrop.coreEval.js';
-import { TimeIntervals } from './airdrop/helpers/time.js';
 import { allValues } from './objectTools.js';
-import { AIRDROP_TIERS } from '../test/data/account.utils.js';
-import { makeTreeRemotable } from '../test/data/tree.utils.js';
-import { fixHub } from './fixHub.js';
 
-const defaultContractTemrs = {
-  tiers: AIRDROP_TIERS,
-  startEpoch: 0,
-  totalEpochs: 5,
-  epochLength: TimeIntervals.SECONDS.ONE_DAY,
-  bonusSupply: 100_000n,
-  baseSupply: 10_000_000n,
-  tokenName: 'Tribbles',
-}
-const { SECONDS: { ONE_DAY } } = TimeIntervals
+import { installContract, startContract } from './airdrop/airdrop.coreEval.js';
+/** @import { StartArgs } from './platform-goals/start-contract.js'; */
 
-// const defaultArgs = 
-// {
-//   tiers: AIRDROP_TIERS,
-//   startEpoch: 0,
-//   totalEpochs: 5,
-//   epochLength: TimeIntervals.SECONDS.ONE_DAY,
-//   bonusSupply: 100_000n,
-//   baseSupply: 10_000_000n,
-//   tokenName: 'Tribbles',
-//   startTime: makeRelTimeMaker(ONE_DAY * 3n),
-// }
-/** @import { Payment, Brand, Issuer } from '@agoric/ertp/src/types.js'; */
-// TODO: Get to the bottom of using bankManager
-// /** @import { AssetIssuerKit } from '@agoric/vats/src/vat-bank.js' */
-// /** @import {ERef} from '@endo/far'  */
+/*  */
+/**
+ * @file core eval script* to start the postalService contract.
+ *
+ * * see rollup.config.mjs to make a script from this file.
+ *
+ * The `permit` export specifies the corresponding permit.
+ */
+// @ts-check
 
-// /**
-//  *
-//  * @param {string} denom lower-level denomination string
-//  * @param {string} issuerName
-//  * @param {string} proposedName
-//  * @param {import('@agoric/vats/src/vat-bank.js').AssetIssuerKit & { payment?: ERef<Payment> }} kit ERTP issuer
-//  *
-//  */
 const { Fail } = assert;
 
-const contractName = 'airdrop';
+const relTimeMaker = (timerBrand, x = 0n) =>
+  harden({ timerBrand, relValue: x });
+const contractName = 'tribblesAirdrop';
 
 /**
  * Core eval script to start contract
@@ -58,28 +28,42 @@ const contractName = 'airdrop';
  * @param {*} config
  *
  * @typedef {{
- *   brand: PromiseSpaceOf<{ Ticket: Brand }>;
- *   issuer: PromiseSpaceOf<{ Ticket: Issuer }>;
+ *   brand: PromiseSpaceOf<{ Ticket: import('@agoric/ertp/src/types.js').Brand }>;
+ *   issuer: PromiseSpaceOf<{ Ticket: import('@agoric/ertp/src/types.js').Issuer }>;
  *   instance: PromiseSpaceOf<{ sellConcertTickets: Instance }>
  * }} StartAirdropCampaign
  */
-export const startAirdropCampaignContract = async (permittedPowers, config) => {
-  console.log('core eval for', contractName);
+export const startTribblesAirdrop = async (permittedPowers, config) => {
+  const {
+    consume: { chainTimerService },
+  } = permittedPowers;
+
   const {
     // must be supplied by caller or template-replaced
-    consume: { namesByAddressAdmin },
+    bundleID = config.bundleID,
   } = config?.options?.[contractName] ?? {};
+  const [{ issuer: issuerIST }, timer, timerBrand] = await Promise.all([
+    allValues({
+      brand: permittedPowers.brand.consume.IST,
+      issuer: permittedPowers.issuer.consume.IST,
+    }),
+    chainTimerService,
+    E(chainTimerService).getTimerBrand(),
+  ]);
 
+  const { customTerms } = config.options;
 
-  // const {tiers = AIRDROP_TIERS, epochLength = ONE_DAY, tokenName = 'Tribbles', bonusSupply =  100_000n, baseSupply = 10_000_000 } = config.terms;
-  console.log('insidde startAirdropCampaign :::::', {
-    config,
-    airdrop: config.options.airdrop,
-  });
+  console.log('TimerBrand:::', timerBrand);
 
+  console.log('contract launch config object :::');
+
+  const terms = {
+    ...customTerms,
+    startTime: relTimeMaker(timerBrand, customTerms.startTime),
+  };
   const installation = await installContract(permittedPowers, {
     name: contractName,
-    bundleID: config.options.airdrop.bundleID,
+    bundleID,
   });
 
   console.group('---------- inside startAirdropCampaignContract----------');
@@ -90,40 +74,27 @@ export const startAirdropCampaignContract = async (permittedPowers, config) => {
   console.log('------------------------');
   console.groupEnd();
 
-  const [ist, timer] = await Promise.all([allValues({
-    brand: permittedPowers.brand.consume.IST,
-    issuer: permittedPowers.issuer.consume.IST,
-  }), permittedPowers.consume.chainTimerService]);
+  console.log('TERMS:::', { terms });
 
-  const timerBrand = await E(timer).getTimerBrand();
+  /** @type {StartArgs} */
 
-  const namesByAddress = await fixHub(namesByAddressAdmin);
-  const terms = harden({ 
-    ...defaultContractTemrs, 
-    namesByAddress, 
-    startTime: ({ timerBrand, relValue: ONE_DAY })
-  });
+  const startArgs = {
+    installation,
+    issuerKeywordRecord: {
+      Fee: issuerIST,
+    },
+    terms,
+    privateArgs: { timer },
+  };
 
   await startContract(permittedPowers, {
     name: contractName,
-    startArgs: {
-      installation,
-      issuerKeywordRecord: {
-        Price: ist.issuer
-      },
-      terms,
-      privateArgs: {
-        timer,
-        TreeRemotable: makeTreeRemotable()
-        // TODO: think about this approach....
-      },
-      issuerNames: ['Tribbles']
-    },
+    startArgs,
+    issuerNames: ['Tribbles'],
   });
 
   console.log(contractName, '(re)started');
 };
-
 /** @type { import("@agoric/vats/src/core/lib-boot").BootstrapManifestPermit } */
 export const permit = harden({
   consume: {
@@ -134,15 +105,15 @@ export const permit = harden({
     namesByAddressAdmin: true,
     brandAuxPublisher: true,
     startUpgradable: true, // to start contract and save adminFacet
-    zoe: true, // to get contract terms, including issuer/brand
+    zoe: true, // to get contract terms, including issuer/brand,
   },
   installation: {
     consume: { [contractName]: true },
     produce: { [contractName]: true },
   },
-  instance: { produce: { [contractName]: true } },
   issuer: { consume: { IST: true }, produce: { Tribbles: true } },
-  brand: { consume: { IST: true } }, produce: { Tribbles: true },
+  brand: { consume: { IST: true }, produce: { Tribbles: true } },
+  instance: { produce: { [contractName]: true } },
 });
 
-export const main = startAirdropCampaignContract;
+export const main = startTribblesAirdrop;

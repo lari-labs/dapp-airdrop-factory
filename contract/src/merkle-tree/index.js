@@ -74,8 +74,6 @@ const ensureEven = hashes =>
  * @returns merkleRoot
  */
 const generateMerkleRoot = hashes => {
-  console.log('inside generateMerkleRoot ------ hashes ::::', hashes);
-  console.log('----------------------------------');
   if (!hashes || hashes.length === 0) {
     return '';
   }
@@ -127,6 +125,20 @@ const getMerkleRootFromMerkleProof = merkleProof =>
     ? ''
     : handleComputeProof(merkleProof);
 
+const generate = (hashes, tree) => {
+  if (hashes.length === 1) {
+    return hashes;
+  }
+  ensureEven(hashes);
+  const combinedHashes = [];
+  for (let i = 0; i < hashes.length; i += 2) {
+    const hashesConcatenated = hashes[i] + hashes[i + 1];
+    const hash = computeHexEncodedSha256Hash(hashesConcatenated);
+    combinedHashes.push(hash);
+  }
+  tree.push(combinedHashes);
+  return generate(combinedHashes, tree);
+};
 /**
  * Creates a merkle tree, recursively, from the provided hashes, represented
  * with an array of arrays of hashes/nodes. Where each array in the array, or hash list,
@@ -145,26 +157,8 @@ const generateMerkleTree = (hashes = []) => {
     return [];
   }
   const tree = [hashes];
-  const generate = (hashes, tree) => {
-    if (hashes.length === 1) {
-      return hashes;
-    }
-    ensureEven(hashes);
-    const combinedHashes = [];
-    console.log('combinedHashes ::::', combinedHashes);
-    console.log('----------------------------------');
-    for (let i = 0; i < hashes.length; i += 2) {
-      console.log('i, {hashes: hashes[i]} ::::', i, { hashes: hashes[i] });
-      console.log('----------------------------------');
-      const hashesConcatenated = hashes[i] + hashes[i + 1];
-      const hash = computeHexEncodedSha256Hash(hashesConcatenated);
-      combinedHashes.push(hash);
-    }
-    console.log('combinedHashes :::: AFTER ', combinedHashes);
-    console.log('----------------------------------');
-    tree.push(combinedHashes);
-    return generate(combinedHashes, tree);
-  };
+
+  console.log('calling generate:::', { hashes, tree });
   generate(hashes, tree);
   return tree;
 };
@@ -204,10 +198,6 @@ const generateMerkleProof = (hash, hashes) => {
   ];
   let hashIndex = tree[0].findIndex(h => h === hash);
   for (let level = 0; level < tree.length - 1; level++) {
-    console.log('i, {hashes: hashes[i]} ::::', level, {
-      treeAtLevel: tree[level],
-    });
-    console.log('----------------------------------');
     const isLeftChild = hashIndex % 2 === 0;
     const siblingDirection = isLeftChild ? RIGHT : LEFT;
     const siblingIndex = isLeftChild ? hashIndex + 1 : hashIndex - 1;

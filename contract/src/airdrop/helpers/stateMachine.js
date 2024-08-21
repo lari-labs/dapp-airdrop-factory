@@ -17,6 +17,7 @@ const getKeyAlt = flip(getKey);
  * 1. `canTransitionTo::(nextState:string)=>bool` - takes in a string that expected to correspond to a pre-defined states and checks if a transition from the current `state` value to the value of `nextState` is valid before returning true|false.
  *
  * 2. `transitionTo::(nextState:string)=>undefined` - asserts whether or not the transition from the current state to the state passed as input is allowed. if yes, `state` is updated to equal `nextState`.
+ * @param statusTracker
  *
  * 3. `getStatus::()=>string` - returns the current value assigned to the (private) `state` variable.
  *

@@ -41,5 +41,5 @@
 
 /**
  * Represents a testable account with cosmos account information and expected value.
- * @typedef {cosmosAccountInformation & {tier: String}} EligibleAccountObject
+ * @typedef {cosmosAccountInformation & {tier: string}} EligibleAccountObject
  */

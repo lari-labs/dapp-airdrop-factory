@@ -1,17 +1,5 @@
-import { lens, lensPath, lensProp, uncurry, view } from './lenses.js';
+import { lensProp, uncurry, view } from './lenses.js';
 import { compose } from './objectTools.js';
-
-const initEpoch = (
-  { previousPayoutValues },
-  { currentEpoch },
-  claimTracker = [0, 0, 0, 0, 0],
-  store,
-) => ({
-  previousPayoutValues,
-  epochIndex: currentEpoch + 1,
-  claimTracker,
-  store,
-});
 
 /**
  * An array of epoch data objects containing historical data of each epoch that has passed.+
@@ -87,7 +75,7 @@ const updateArray = array => index => newData =>
     ? [newData].concat(array.slice(0))
     : [].concat(array.slice(0, index), newData, array.slice(index));
 
-const rest = ([x, ...xs]) => xs;
+const rest = ([, ...xs]) => xs;
 
 const updateArrayAtIndex = (array, index, newData) =>
   index === 0
@@ -97,7 +85,6 @@ const updateArrayAtIndex = (array, index, newData) =>
         .concat(newData)
         .concat(array.slice(index + 1));
 
-const uncurriedUpdateArray = uncurry(updateArray);
 const { CLAIM, CHANGE_EPOCH } = ACTION_TYPES;
 
 const reducer = (
@@ -196,7 +183,6 @@ const actionCreators = {
   }),
   handleEpochChange: data => ({ type: CHANGE_EPOCH, payload: data }),
 };
-const head = ([x, ...xs]) => x;
 
 const { handleClaim, handleEpochChange } = actionCreators;
 

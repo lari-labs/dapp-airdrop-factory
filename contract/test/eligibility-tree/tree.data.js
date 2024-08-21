@@ -448,6 +448,6 @@ const localAccounts = [
 const pubkeyLens = lensPath(['pubkey', 'key']);
 
 const getPubkeyFromAccount = view(pubkeyLens);
-const agdTestKeys = localAccounts.map(getPubkeyFromAccount); //?
+const agdTestKeys = localAccounts.map(getPubkeyFromAccount); // ?
 
 export { agdTestKeys };

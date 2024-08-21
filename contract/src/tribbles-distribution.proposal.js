@@ -1,13 +1,7 @@
 // @ts-check
-import { E, Far } from '@endo/far';
-import { makeIssuerKit } from '@agoric/ertp/src/issuerKit.js';
-import { oneDay } from './airdrop/helpers/time.js';
+import { E } from '@endo/far';
 import { allValues } from './objectTools.js';
-import { fixHub } from './fixHub.js';
 
-import { lensProp, view } from './airdrop/helpers/lenses.js';
-import { makeMarshal } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp';
 import { installContract, startContract } from './airdrop/airdrop.coreEval.js';
 /** @import { StartArgs } from './platform-goals/start-contract.js'; */
 
@@ -23,45 +17,6 @@ import { installContract, startContract } from './airdrop/airdrop.coreEval.js';
 
 const { Fail } = assert;
 
-// /**
-//  * @param {BootstrapPowers} powers
-//  * @param {{ options?: { postalService: {
-//  *   bundleID: string;
-//  * }}}} [config]
-//  */
-// export const startTribblesAirdrop = async (powers, config) => {
-//   const {
-//     consume: { namesByAddressAdmin },
-//   } = powers;
-//   const {
-//     // must be supplied by caller or template-replaced
-//     bundleID = Fail`no bundleID`,
-//   } = config?.options?.[contractName] ?? {};
-
-//   const installation = await installContract(powers, {
-//     name: contractName,
-//     bundleID,
-//   });
-
-//   const namesByAddress = await fixHub(namesByAddressAdmin);
-//   const terms = harden({ namesByAddress });
-
-//   await startContract(powers, {
-//     name: contractName,
-//     startArgs: { installation, terms },
-//   });
-// };
-
-const makeTimerPowers = async ({ consume }) => {
-  const timer = await consume.chainTimerService;
-
-  const timerBrand = await E(timer).getTimerBrand();
-
-  return {
-    timer,
-    timerBrand,
-  };
-};
 const relTimeMaker = (timerBrand, x = 0n) =>
   harden({ timerBrand, relValue: x });
 const contractName = 'tribblesAirdrop';
@@ -73,8 +28,8 @@ const contractName = 'tribblesAirdrop';
  * @param {*} config
  *
  * @typedef {{
- *   brand: PromiseSpaceOf<{ Ticket: Brand }>;
- *   issuer: PromiseSpaceOf<{ Ticket: Issuer }>;
+ *   brand: PromiseSpaceOf<{ Ticket: import('@agoric/ertp/src/types.js').Brand }>;
+ *   issuer: PromiseSpaceOf<{ Ticket: import('@agoric/ertp/src/types.js').Issuer }>;
  *   instance: PromiseSpaceOf<{ sellConcertTickets: Instance }>
  * }} StartAirdropCampaign
  */
@@ -87,15 +42,14 @@ export const startTribblesAirdrop = async (permittedPowers, config) => {
     // must be supplied by caller or template-replaced
     bundleID = config.bundleID,
   } = config?.options?.[contractName] ?? {};
-  const [{ issuer: issuerIST, brand: brandIST }, timer, timerBrand] =
-    await Promise.all([
-      allValues({
-        brand: permittedPowers.brand.consume.IST,
-        issuer: permittedPowers.issuer.consume.IST,
-      }),
-      chainTimerService,
-      E(chainTimerService).getTimerBrand(),
-    ]);
+  const [{ issuer: issuerIST }, timer, timerBrand] = await Promise.all([
+    allValues({
+      brand: permittedPowers.brand.consume.IST,
+      issuer: permittedPowers.issuer.consume.IST,
+    }),
+    chainTimerService,
+    E(chainTimerService).getTimerBrand(),
+  ]);
 
   const { customTerms } = config.options;
 
