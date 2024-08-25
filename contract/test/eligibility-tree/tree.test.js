@@ -1,13 +1,10 @@
 /* eslint-disable import/order */
 // @ts-check
 import { test as anyTest } from '../prepare-test-env-ava.js';
-import { createRequire } from 'module';
 
-import { merkleTreeAPI, hashes } from '../../src/merkle-tree/index.js';
+import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
 import { agdTestKeys } from './tree.data.js';
 import { isHexString } from '../../src/verifyProof.js';
-import { hexToBytes } from '@noble/hashes/utils';
-import { sha256 } from '@noble/hashes/sha256';
 
 const {
   generateMerkleProof,

@@ -1,12 +1,5 @@
-import { uncurry } from './lenses.js';
-
-const getKey = map => key => map.get(key);
-const setKeyedValue = map => key => value => map.set(key, value);
-const flip = fn => a => b => fn(b, a);
-
 const STATE_MACHINE_STATUS_KEY = 'currentStatus';
 const EPOCH_TRACKER_KEY = 'epoch tracker';
-const getKeyAlt = flip(getKey);
 
 /**
  * @name makeStateMachine
@@ -28,8 +21,8 @@ const getKeyAlt = flip(getKey);
  *
  * Ex. `const allowedTransitions = [['open', ['closed']], ['closed', []], ];`
  *
- * @param {import("@agoric/ertp").Baggage} baggage
- * @returns {{canTransitionTo, transitionTo, getStatus}}
+ * @param {import("@agoric/store").mapStore} statusTracker
+ * @returns {{canTransitionTo: () => string, transitionTo:() => string, getStatus: () => string}}
  */
 const makeStateMachine = (
   initialState,
@@ -40,25 +33,15 @@ const makeStateMachine = (
   const allowedTransitions = new Map(allowedTransitionsArray);
 
   statusTracker.init(STATE_MACHINE_STATUS_KEY, initialState);
-  statusTracker.init(EPOCH_TRACKER_KEY, null);
   return harden({
     canTransitionTo: nextState =>
       allowedTransitions.get(state).includes(nextState),
     transitionTo: nextState => {
-      console.group('INSIDE makeStateMachine scope');
-      console.log(
-        'currentStatus ::::',
-        statusTracker.get(STATE_MACHINE_STATUS_KEY),
-      );
-      console.log('----------------------------------');
-      console.log('------- BEFORE setStatus -----------');
       assert(allowedTransitions.get(state).includes(nextState));
+      const previousState = state;
       state = nextState;
       statusTracker.set(STATE_MACHINE_STATUS_KEY, state);
-      console.log('currentState::', { state });
-      console.log('----------------------------------');
-      console.log('------- AFTER setStatus -----------');
-      console.groupEnd();
+      return `Successfully transitioned from state ${previousState.toUpperCase()} to state: ${state.toUpperCase()}`;
     },
     getStatus: () => statusTracker.get(STATE_MACHINE_STATUS_KEY),
   });

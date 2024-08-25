@@ -3,11 +3,11 @@ const Either = (() => {
     isLeft: false,
     chain: f => f(x),
     ap: other => other.map(x),
-    alt: other => Right(x),
+    alt: () => Right(x),
     extend: f => f(Right(x)),
     concat: other =>
       other.fold(
-        x => other,
+        _ => other,
         y => Right(x.concat(y)),
       ),
     traverse: (of, f) => f(x).map(Right),

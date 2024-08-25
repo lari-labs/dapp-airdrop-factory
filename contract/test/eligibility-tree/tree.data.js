@@ -1,5 +1,4 @@
-import { lensPath, lensProp, view } from '../../src/airdrop/helpers/lenses.js';
-import { compose } from '../../src/airdrop/helpers/objectTools.js';
+import { lensPath, view } from '../../src/airdrop/helpers/lenses.js';
 
 const localAccounts = [
   {

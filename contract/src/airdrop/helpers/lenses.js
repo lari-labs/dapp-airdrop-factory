@@ -90,7 +90,7 @@ const uncurry =
   (...args) =>
     args.reduce((fn, arg) => fn(arg), fn);
 
-const always = a => b => a;
+const always = a => _b => a;
 
 const compose =
   (...fns) =>
@@ -99,7 +99,7 @@ const compose =
 
 const getFunctor = x => ({
   value: x,
-  map: f => getFunctor(x),
+  map: _f => getFunctor(x),
 });
 
 const setFunctor = x => ({

@@ -1,29 +1,11 @@
 /* eslint-disable no-shadow */
 import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex } from '@noble/hashes/utils';
-import { accounts as accountData } from '../../test/data/agd-keys.js';
-import { lensProp, view } from '../airdrop/helpers/lenses.js';
 import { compose } from '../airdrop/helpers/objectTools.js';
-
-const accounts = accountData.map(x => x.pubkey.key);
+import './types.js';
 
 const LEFT = 'left';
 const RIGHT = 'right';
-
-const trace = label => value => {
-  console.log(label, ':::', value);
-  return value;
-};
-const hashes = accounts.slice(0, 40);
-
-/**
- * @typedef {string} PublicKeyHash - A SHA-256 hash of a public key, represented as a hexadecimal string.
- */
-
-/**
- * An array of SHA-256 hashes, each computed against a different cryptocurrency public key.
- * @typedef {PublicKeyHash[]} PubkeyHashArray
- */
 
 /**
  * Computes the SHA-256 hash of a Uint8Array and encodes it as a hexadecimal string.
@@ -37,12 +19,6 @@ export const computeHexEncodedSha256Hash = compose(
   // trace('after hashing'),
   sha256,
 );
-
-/**
- * @typedef {object} Node
- * @property {string} hash
- * @property {string} direction
- */
 
 /**
  * Finds the index of the hash in the leaf hash list of the Merkle tree
@@ -92,18 +68,20 @@ const generateMerkleRoot = hashes => {
   return generateMerkleRoot(combinedHashes);
 };
 
-const createHash = fn => (h1, h2) => ({ hash: fn(h2 + h1) });
-const createSha256HashObj = createHash(computeHexEncodedSha256Hash);
+const createHashObj = fn => (h1, h2) => ({ hash: fn(h2 + h1) });
+
+const createSha256HashObj = createHashObj(computeHexEncodedSha256Hash);
+
+const flip = (fn, x, y) => fn(y, x);
 
 const computeProofReducer = ({ hash: h1 }, { hash: h2, direction }) =>
   direction === RIGHT
-    ? createSha256HashObj(h2, h1)
+    ? flip(createSha256HashObj, h1, h2)
     : createSha256HashObj(h1, h2);
 
 const reducerFn = fn => array => array.reduce(fn);
-const hashLens = lensProp('hash');
-const getHash = compose(view(hashLens));
-
+const getProp = prop => object => object[prop];
+const getHash = getProp('hash');
 const handleComputeProof = compose(getHash, reducerFn(computeProofReducer));
 
 /**
@@ -113,7 +91,7 @@ const handleComputeProof = compose(getHash, reducerFn(computeProofReducer));
  * and returned.
  * The first hash needs to be in the first position of this array, with its
  * corresponding tree branch direction.
- * @param {Array<Node> | null} merkleProof
+ * @param {MerkleTreeNode[] | null} merkleProof
  * @returns {string} merkleRoot
  */
 const getMerkleRootFromMerkleProof = merkleProof =>
@@ -146,15 +124,13 @@ const generate = (hashes, tree) => {
  * In the last position (tree[tree.length - 1]) there is only one hash, which is the
  * root of the tree, or merkle root.
  * @param {PubkeyHashArray} hashes
- * @returns {Array<Array<string>>} merkleTree
+ * @returns {Array<PubkeyHashArray>} merkleTree
  */
 const generateMerkleTree = (hashes = []) => {
   if (!hashes || hashes.length === 0) {
     return [];
   }
   const tree = [hashes];
-
-  console.log('calling generate:::', { hashes, tree });
   generate(hashes, tree);
   return tree;
 };
@@ -179,7 +155,7 @@ const generateMerkleTree = (hashes = []) => {
  * Then we simply return this merkle proof.
  * @param {string} hash
  * @param {PubkeyHashArray} hashes
- * @returns {null | Array<Node>} merkleProof
+ * @returns {null | Array<MerkleTreeNode>} merkleProof
  */
 const generateMerkleProof = (hash, hashes) => {
   if (!hash || !hashes || hashes.length === 0) {
@@ -229,7 +205,6 @@ export const merkleTreeAPI = {
 
 harden(merkleTreeAPI);
 export {
-  hashes,
   getMerkleRootFromMerkleProof,
   generateMerkleProof,
   generateMerkleTree,

@@ -2,24 +2,37 @@
 import { E } from '@endo/far';
 import { allValues } from './objectTools.js';
 
-import { installContract, startContract } from './airdrop/airdrop.coreEval.js';
+import {
+  installContract,
+  startContract,
+} from './platform-goals/start-contract.js';
+import { AIRDROP_TIERS_STATIC } from '../test/data/account.utils.js';
+import { TimeIntervals } from './airdrop/helpers/time.js';
+import { merkleTreeAPI } from './merkle-tree/index.js';
+import { agoricPubkeys } from '../test/data/agd-keys.js';
+
 /** @import { StartArgs } from './platform-goals/start-contract.js'; */
-
-/*  */
-/**
- * @file core eval script* to start the postalService contract.
- *
- * * see rollup.config.mjs to make a script from this file.
- *
- * The `permit` export specifies the corresponding permit.
- */
-// @ts-check
-
-const { Fail } = assert;
 
 const relTimeMaker = (timerBrand, x = 0n) =>
   harden({ timerBrand, relValue: x });
 const contractName = 'tribblesAirdrop';
+
+export const defaultCustomTerms = {
+  initialPayoutValues: harden(AIRDROP_TIERS_STATIC),
+  targetNumberOfEpochs: 5,
+  targetEpochLength: TimeIntervals.SECONDS.ONE_DAY,
+  targetTokenSupply: 10_000_000n,
+  tokenName: 'Tribbles',
+  startTime: TimeIntervals.SECONDS.ONE_DAY,
+  merkleRoot: merkleTreeAPI.generateMerkleRoot(agoricPubkeys),
+};
+
+export const makeTerms = (terms = {}) => ({
+  ...defaultCustomTerms,
+  ...terms,
+});
+
+harden(makeTerms);
 
 /**
  * Core eval script to start contract
@@ -42,25 +55,27 @@ export const startTribblesAirdrop = async (permittedPowers, config) => {
     // must be supplied by caller or template-replaced
     bundleID = config.bundleID,
   } = config?.options?.[contractName] ?? {};
-  const [{ issuer: issuerIST }, timer, timerBrand] = await Promise.all([
-    allValues({
+  const ps = allValues({
+    ist: {
       brand: permittedPowers.brand.consume.IST,
       issuer: permittedPowers.issuer.consume.IST,
-    }),
-    chainTimerService,
-    E(chainTimerService).getTimerBrand(),
-  ]);
+    },
+    timer: chainTimerService,
+    timerBrand: E(chainTimerService).getTimerBrand(),
+  });
 
+  const { ist, timer, timerBrand } = await ps;
+  console.log('AFTER AWAITING :::', { ist, timer, timerBrand });
   const { customTerms } = config.options;
 
   console.log('TimerBrand:::', timerBrand);
 
   console.log('contract launch config object :::');
 
-  const terms = {
+  const terms = makeTerms({
     ...customTerms,
     startTime: relTimeMaker(timerBrand, customTerms.startTime),
-  };
+  });
   const installation = await installContract(permittedPowers, {
     name: contractName,
     bundleID,
@@ -72,6 +87,8 @@ export const startTribblesAirdrop = async (permittedPowers, config) => {
   console.log('------------------------');
   console.log(':: powers', permittedPowers);
   console.log('------------------------');
+  console.log('ps ::::', ps);
+  console.log('----------------------------------');
   console.groupEnd();
 
   console.log('TERMS:::', { terms });
@@ -81,7 +98,7 @@ export const startTribblesAirdrop = async (permittedPowers, config) => {
   const startArgs = {
     installation,
     issuerKeywordRecord: {
-      Fee: issuerIST,
+      Fee: ist.issuer,
     },
     terms,
     privateArgs: { timer },

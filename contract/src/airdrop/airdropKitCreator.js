@@ -53,23 +53,17 @@ export const customTermsShape = harden({
   merkleRoot: M.string(),
 });
 
-/**
- * @param {TimestampRecord} sourceTs Base timestamp used to as the starting time which a new Timestamp will be created against.
- * @param {RelativeTimeRecordShape} inputTs Relative timestamp spanning the interval of time between sourceTs and the newly created timestamp
- */
-
-const createFutureTs = (sourceTs, inputTs) =>
-  TimeMath.absValue(sourceTs) + TimeMath.relValue(inputTs);
+const { addAbsRel, relValue, absValue } = TimeMath;
 
 /**
  *
  * @typedef {object} ContractTerms
- * @property {object} tiers
- * @property {Amount} feePrice The fee associated with exercising one's right to claim a token.
+ * @property {Array[bigint]} initialPayoutValues Contains the initial number of tokens to be recieved by claimants as determined by their tier.
  * @property {bigint} targetTokenSupply Base supply of tokens to be distributed throughout an airdrop campaign.
  * @property {string} tokenName Name of the token to be created and then airdropped to eligible claimaints.
  * @property {number} targetNumberOfEpochs Total number of epochs the airdrop campaign will last for.
  * @property {bigint} targetEpochLength Length of time for each epoch, denominated in seconds.
+ * @property {string} merkleRoot Hexidecimal string representation of the merkle root computed for a particular airdrop
  * @property {RelativeTimeRecordShape} startTime Length of time (denoted in seconds) between the time in which the contract is started and the time at which users can begin claiming tokens.
  * @property {{ [keyword: string]: Brand }} brands
  * @property {{ [keyword: string]: Issuer }} issuers
@@ -100,7 +94,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const airdropStatusTracker = zone.mapStore('airdrop claim window status');
 
-  const accountStore = zone.setStore('claim accounts');
+  const accountStore = zone.setStore('claimed accounts tracker');
   const stateMachine = makeStateMachine(
     INITIALIZED,
     [
@@ -124,6 +118,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const tokenHolderSeat = tokenMint.mintGains({
     Tokens: AmountMath.make(tokenBrand, targetTokenSupply),
   });
+
   await objectToMap(
     {
       merkleRoot,
@@ -132,13 +127,10 @@ export const start = async (zcf, privateArgs, baggage) => {
       payouts: initialPayoutValues,
       epochLengthInSeconds: targetEpochLength,
       tokenIssuer,
-      startTime: createFutureTs(t0, startTime),
-      claimedAccountsStore: zone.setStore('claimed accounts'),
-      airdropStatusTracker: zone.mapStore('airdrop status'),
+      startTime: addAbsRel(t0, startTime),
     },
     baggage,
   );
-
   const interfaceGuard = {
     helper: M.interface('Helper', {
       cancelTimer: M.call().returns(M.promise()),
@@ -156,36 +148,15 @@ export const start = async (zcf, privateArgs, baggage) => {
     }),
   };
 
-  const initState =
-    /**
-     * @description initializes state for this exoClassKit.
-     *
-     * TODO
-     * Create issue for:
-     *  - My use of baggage values throughout code but specificially within exo context.
-     *  - What is the relation between durable values <-> state values.
-     * More specifically, state values such as that which exist in a durableZone.
-     * Reviewin
-     *
-     * @param {CopySet} store
-     * @param {CancelToken} currentCancelToken
-     */
-    (store, currentCancelToken) => {
-      console.log('this value::', this);
-      const state = {
-        /** @type { object } */
-        currentCancelToken,
-        claimCount: 0,
-        claimedAccounts: store,
-        payoutArray: baggage.get('payouts'),
-        currentEpoch: null,
-      };
-      return state;
-    };
   const prepareContract = zone.exoClassKit(
     'Tribble Token Distribution',
     interfaceGuard,
-    initState,
+    () => ({
+      /** @type { object } */
+      currentCancelToken: null,
+      payoutArray: baggage.get('payouts'),
+      currentEpoch: null,
+    }),
     {
       helper: {
         /**
@@ -201,17 +172,17 @@ export const start = async (zcf, privateArgs, baggage) => {
           );
 
           if (this.state.currentEpoch === targetNumberOfEpochs) {
-            zcf.shutdown('Airdrop complete');
             stateMachine.transitionTo(EXPIRED);
+            zcf.shutdown('Airdrop complete');
           }
           helper.updateDistributionMultiplier(
-            TimeMath.addAbsRel(absTime, targetEpochLength),
+            addAbsRel(absTime, targetEpochLength),
           );
         },
         async updateDistributionMultiplier(wakeTime) {
           const { facets } = this;
           // const epochDetails = newEpochDetails;
-
+          baggage.set('payouts', harden(this.state.payoutArray));
           this.state.currentCancelToken = cancelTokenMaker();
 
           void E(timer).setWakeup(
@@ -264,18 +235,12 @@ export const start = async (zcf, privateArgs, baggage) => {
               }),
             );
 
-            console.log('----------------------------------');
             const { proof, key: pubkey, address, tier } = offerArgs;
             assert(
               !accountStore.has(pubkey),
               `Allocation for address ${address} has already been claimed.`,
             );
 
-            console.log(
-              'comparing',
-              getMerkleRootFromMerkleProof(proof),
-              merkleRoot,
-            );
             assert.equal(
               getMerkleRootFromMerkleProof(proof),
               merkleRoot,
@@ -330,16 +295,18 @@ export const start = async (zcf, privateArgs, baggage) => {
     creator: creatorFacet,
     helper,
     public: publicFacet,
-  } = prepareContract(airdropStatusTracker, cancelToken);
+  } = prepareContract(cancelToken);
 
-  console.log('START TIME', baggage.get('startTime'));
   await E(timer).setWakeup(
     baggage.get('startTime'),
-    makeWaker('claimWindowOpenWaker', ({ absValue }) => {
-      airdropStatusTracker.init('currentEpoch', 0n);
-      helper.updateEpochDetails(absValue, 0n);
-      stateMachine.transitionTo(OPEN);
-    }),
+    makeWaker(
+      'claimWindowOpenWaker',
+      ({ absValue: airdropStartTimestampValue }) => {
+        airdropStatusTracker.init('currentEpoch', 0n);
+        helper.updateEpochDetails(airdropStartTimestampValue, 0n);
+        stateMachine.transitionTo(OPEN);
+      },
+    ),
   );
 
   stateMachine.transitionTo(PREPARED);
