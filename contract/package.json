@@ -1,8 +1,8 @@
 {
-  "name": "agoric-basics-contract",
+  "name": "ertp-airdrop-contract",
   "version": "0.1.0",
   "private": true,
-  "description": "Agoric Basics Contract",
+  "description": "Contracts for minting a fixed supply of tokens which are distributed via airdrop (to all eligible claimants who exercise their right to claim).",
   "type": "module",
   "scripts": {
     "start:docker": "docker compose up -d",
@@ -80,14 +80,14 @@
   "keywords": [],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Agoric/dapp-agoric-basics"
+    "url": "git+https://github.com/hindley-milner-systems/dapp-ertp-airdrop"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/dapp-agoric-basics/issues"
+    "url": "https://github.com/hindley-milner-systems/dapp-ertp-airdrop/issues"
   },
-  "homepage": "https://github.com/Agoric/dapp-agoric-basics#readme",
+  "homepage": "https://github.com/hindley-milner-systems/dapp-ertp-airdrop#readme",
   "eslintConfig": {
     "parserOptions": {
       "sourceType": "module",
