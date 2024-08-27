@@ -5,8 +5,8 @@ import { test as anyTest } from './airdropData/prepare-test-env-ava.js';
 import * as secp from '@noble/secp256k1';
 // 2. node.js 18 and older, requires polyfilling globalThis.crypto
 import { webcrypto } from 'node:crypto';
-import { hmac } from '@noble/hashes/hmac';
-import { sha256 } from '@noble/hashes/sha256';
+import { hmac } from '../vendor/@noble/hashes/esm/hmac.js';
+import { sha256 } from '../vendor/@noble/hashes/esm/sha256.js';
 // @ts-ignore
 // eslint-disable-next-line no-undef
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
