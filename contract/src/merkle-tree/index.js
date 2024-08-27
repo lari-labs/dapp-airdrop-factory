@@ -1,6 +1,6 @@
 /* eslint-disable no-shadow */
-import { sha256 } from '@noble/hashes/sha256';
-import { bytesToHex } from '@noble/hashes/utils';
+import { sha256 } from '../../vendor/@noble/hashes/esm/sha256.js';
+import { bytesToHex } from '../../vendor/@noble/hashes/esm/utils.js';
 import { accounts as accountData } from '../../test/data/agd-keys.js';
 import { lensProp, view } from '../airdrop/helpers/lenses.js';
 import { compose } from '../airdrop/helpers/objectTools.js';

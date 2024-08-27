@@ -98,7 +98,8 @@
       "prettier"
     ],
     "ignorePatterns": [
-      "./node_modules"
+      "./node_modules",
+      "vendor"
     ],
     "rules": {
       "no-void": "off",
