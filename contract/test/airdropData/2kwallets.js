@@ -1,5 +1,3 @@
-const getAddress = ({ address }) => address;
-
 const wallets = [
   {
     address: 'cosmos1ga5v9ntyqxvlqeewg6jjvv7vv6t56378v7kjzl',

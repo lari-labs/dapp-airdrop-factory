@@ -98,12 +98,11 @@
       "prettier"
     ],
     "ignorePatterns": [
-      "./node_modules",
-      "./bundles",
-      "./a3p"
+      "./node_modules"
     ],
     "rules": {
-      "no-void": "off"
+      "no-void": "off",
+      "jsdoc/check-tag-names": "off"
     }
   },
   "prettier": {

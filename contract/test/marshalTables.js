@@ -4,7 +4,7 @@ import { Far, makeMarshal } from '@endo/marshal';
  * @template Val
  * @param {(val: Val, size: number) => unknown} makeSlot
  * @param {(slot: unknown, iface: string | undefined) => Val} makeVal
- * @returns
+ * @returns {{convertValToSlot, convertSlotToVal}}
  */
 const makeTranslationTable = (makeSlot, makeVal) => {
   /** @type {Map<Val, unknown>} */
@@ -21,7 +21,7 @@ const makeTranslationTable = (makeSlot, makeVal) => {
     return slot;
   };
 
-  /** @type {(slot: unknown, iface: string | undefined) => Val} */
+  /** @type {(slot: unknown, iface: string | undefined) => Val | unknown} */
   const convertSlotToVal = (slot, iface) => {
     if (slot === null) return makeVal(slot, iface);
     if (slotToVal.has(slot)) return slotToVal.get(slot);

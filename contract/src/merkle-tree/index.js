@@ -10,10 +10,6 @@ const accounts = accountData.map(x => x.pubkey.key);
 const LEFT = 'left';
 const RIGHT = 'right';
 
-const trace = label => value => {
-  console.log(label, ':::', value);
-  return value;
-};
 const hashes = accounts.slice(0, 40);
 
 /**
@@ -71,7 +67,7 @@ const ensureEven = hashes =>
  * Recursively concatenates pair of hash hashes and calculates each sha256 hash of the
  * concatenated hashes until only one hash is left, which is the merkle root, and returns it.
  * @param {PubkeyHashArray} hashes
- * @returns merkleRoot
+ * @returns {string} merkleRoot
  */
 const generateMerkleRoot = hashes => {
   if (!hashes || hashes.length === 0) {

@@ -12,7 +12,11 @@ import { AmountMath } from '@agoric/ertp';
 import { makeStableFaucet } from '../mintStable.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { oneDay, TimeIntervals } from '../../src/airdrop/helpers/time.js';
-import { startTribblesAirdrop, permit } from '../../src/airdrop.proposal.js';
+import {
+  startTribblesAirdrop,
+  permit,
+  makeTerms,
+} from '../../src/airdrop.proposal.js';
 import {
   produceBoardAuxManager,
   permit as boardAuxPermit,
@@ -233,7 +237,7 @@ test('MN-2 Task: Add a deployment test that exercises the core-eval that will be
     produceBoardAuxManager(boardAuxPowers),
     startTribblesAirdrop(airdropPowers, {
       options: {
-        customTerms: defaultCustomTerms,
+        customTerms: makeTerms(),
         tribblesAirdrop: { bundleID },
       },
     }),

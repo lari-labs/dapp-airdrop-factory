@@ -62,7 +62,7 @@ export const payerPete = async (
     proposal: { give: toSend },
   };
   t.snapshot(sendOffer, 'client sends offer');
-  console.log('executing offfer:::', { sendOffer })
+  console.log('executing offfer:::', { sendOffer });
   const updates = await E(wallet.offers).executeOffer(sendOffer);
 
   const seat = seatLike(updates);
@@ -96,7 +96,7 @@ const trackDeposits = async (t, initial, purseUpdates, toSend) =>
  * and relies on `wellKnown.assetKind` to make an empty amount from a brand.
  *
  * @param {import('ava').ExecutionContext} t
- * @param {{ wallet: import('./wallet-tools.js').MockWallet, }} mine
+ * @param {{ wallet: import('../tools/wallet-tools.js').MockWallet, }} mine
  * @param {{ toSend: AmountKeywordRecord }} shared
  */
 export const receiverRose = async (t, { wallet }, { toSend }) => {
@@ -124,7 +124,7 @@ export const receiverRose = async (t, { wallet }, { toSend }) => {
  * Rex doesn't check his initial balances
  *
  * @param {import('ava').ExecutionContext} t
- * @param {{ wallet: import('./wallet-tools.js').MockWallet, }} mine
+ * @param {{ wallet: import('../tools/wallet-tools.js').MockWallet, }} mine
  * @param {{ toSend: AmountKeywordRecord }} shared
  */
 export const receiverRex = async (t, { wallet }, { toSend }) => {
@@ -134,12 +134,12 @@ export const receiverRex = async (t, { wallet }, { toSend }) => {
 
   const initial = await allValues(
     mapValues(purseUpdates, up => {
-      console.log('update::', { up })
-  return     E(up)
+      console.log('update::', { up });
+      return E(up)
         .next()
-        .then(u => u.value)
-})  
-);
+        .then(u => u.value);
+    }),
+  );
 
   const done = await trackDeposits(t, initial, purseUpdates, toSend);
 
