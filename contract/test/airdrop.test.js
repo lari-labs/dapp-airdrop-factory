@@ -19,7 +19,7 @@ import {
 import { makeMockTools } from '../tools/boot-tools.js';
 import {
   makeTerms,
-  startTribblesAirdrop as startAirdropCampaignContract,
+  startAirdrop as startAirdropCampaignContract,
 } from '../src/airdrop.proposal.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<setupTestContext>>>} */
@@ -74,7 +74,7 @@ const setupTestContext = async t => {
 
 test.before(async t => (t.context = await setupTestContext(t)));
 
-test.skip('well-known brand (ATOM) is available', async t => {
+test.serial('well-known brand (ATOM) is available', async t => {
   const { makeQueryTool } = t.context;
   const hub0 = makeAgoricNames(makeQueryTool());
   const agoricNames = makeNameProxy(hub0);
@@ -86,7 +86,7 @@ test.skip('well-known brand (ATOM) is available', async t => {
   t.is(passStyleOf(brand.ATOM), 'remotable');
 });
 
-test.skip('install bundle: airdrop / airdrop', async t => {
+test.serial('install bundle: airdrop / airdrop', async t => {
   const { installBundles } = t.context;
   console.time('installBundles');
   console.timeLog('installBundles', Object.keys(bundleRoots).length, 'todo');
@@ -109,7 +109,7 @@ test.skip('deploy contract with core eval: airdrop / airdrop', async t => {
   const { bundles } = t.context.shared;
   const bundleID = getBundleId(bundles.airdrop);
 
-  const name = 'send';
+  const name = 'airdrop';
   const result = await runCoreEval({
     name,
     behavior: startAirdropCampaignContract,

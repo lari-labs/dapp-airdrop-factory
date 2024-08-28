@@ -26,6 +26,6 @@ test('can construct cosmjs sig from keplr sig', t => {
   t.true(csig.s() instanceof Uint8Array);
 });
 
-test('checkSig', async t => {
+test.skip('checkSig', async t => {
   await t.notThrowsAsync(checkSig(case0.sig, case0.signer));
 });

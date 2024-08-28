@@ -71,6 +71,7 @@ check-contract-airdrop: start-contract-airdrop
 start-contract-airdrop:
 	yarn node scripts/deploy-contract.js \
 		--install src/airdrop.contract.js \
+		--eval src/platform-goals/board-aux.core.js \
 		--eval src/airdrop.proposal.js
 
 start-contract-swap:

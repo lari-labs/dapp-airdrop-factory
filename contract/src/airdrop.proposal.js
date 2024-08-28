@@ -11,7 +11,7 @@ import { agoricPubkeys } from '../test/data/agd-keys.js';
 
 const relTimeMaker = (timerBrand, x = 0n) =>
   harden({ timerBrand, relValue: x });
-const contractName = 'tribblesAirdrop';
+const contractName = 'airdrop';
 
 export const defaultCustomTerms = {
   initialPayoutValues: harden(AIRDROP_TIERS_STATIC),
@@ -41,7 +41,7 @@ harden(makeTerms);
  *   instance: PromiseSpaceOf<{ sellConcertTickets: Instance }>
  * }} StartAirdropCampaign
  */
-export const startTribblesAirdrop = async (permittedPowers, config) => {
+export const startAirdrop = async (permittedPowers, config) => {
   const {
     consume: { chainTimerService },
   } = permittedPowers;
@@ -124,4 +124,31 @@ export const permit = harden({
   instance: { produce: { [contractName]: true } },
 });
 
-export const main = startTribblesAirdrop;
+export const main = startAirdrop;
+
+/** @type { import("@agoric/vats/src/core/lib-boot").BootstrapManifest } */
+const airdropManifest = {
+  [startAirdrop.name]: {
+    consume: {
+      agoricNames: true,
+      board: true, // to publish boardAux info for NFT brand
+      chainStorage: true, // to publish boardAux info for NFT brand
+      startUpgradable: true, // to start contract and save adminFacet
+      zoe: true, // to get contract terms, including issuer/brand
+    },
+    installation: { consume: { airdrop: true } },
+    issuer: { consume: { IST: true }, produce: { Item: true } },
+    brand: { consume: { IST: true }, produce: { Item: true } },
+    instance: { produce: { airdrop: true } },
+  },
+};
+harden(airdropManifest);
+
+export const getManifestForAirdrop = ({ restoreRef }, { airdropRef }) => {
+  return harden({
+    manifest: airdropManifest,
+    installations: {
+      airdrop: restoreRef(airdropRef),
+    },
+  });
+};

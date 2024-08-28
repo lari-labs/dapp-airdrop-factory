@@ -15,7 +15,8 @@ import { makeStateMachine } from './helpers/stateMachine.js';
 import { createClaimSuccessMsg } from './helpers/messages.js';
 import { objectToMap } from './helpers/objectTools.js';
 import { getMerkleRootFromMerkleProof } from '../merkle-tree/index.js';
-import { AIRDROP_TIERS_STATIC } from '../../test/data/account.utils.js';
+
+const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n];
 
 const cancelTokenMaker = makeCancelTokenMaker('airdrop-campaign');
 

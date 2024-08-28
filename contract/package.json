@@ -65,9 +65,7 @@
     "@endo/patterns": "^0.2.5",
     "@endo/promise-kit": "0.2.56",
     "@noble/secp256k1": "^2.1.0",
-    "bech32": "^2.0.0",
-    "merkletreejs": "0.3.11",
-    "ramda": "0.30.1"
+    "bech32": "^2.0.0"
   },
   "ava": {
     "files": [

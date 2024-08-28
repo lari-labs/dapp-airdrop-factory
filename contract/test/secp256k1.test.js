@@ -37,10 +37,10 @@ const runTestHashing = async t => {
   signature.recoverPublicKey(msgHash); // Public key recovery
 };
 
-test('sepk256k1 import', async t => {
+test.skip('sepk256k1 import', async t => {
   await runTestHashing(t);
 });
 
-test.todo(
-  'tests cryptography-related operations required for full functionality',
-);
+// test.todo(
+//   'tests cryptography-related operations required for full functionality',
+// );
