@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // @ts-check
 import { test } from './prepare-test-env-ava.js';
 // import { decodeBase64 } from '@endo/base64';
