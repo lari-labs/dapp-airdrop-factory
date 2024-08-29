@@ -3,25 +3,6 @@ const generateTierValue = generateInt(4);
 const withTier = x => ({ ...x, tier: generateTierValue() });
 const stringifyProp = prop => obj => ({ ...obj, [prop]: obj[prop].toString() });
 
-const Id = x => ({
-  value: x,
-  map(fn) {
-    return Id(fn(x));
-  },
-  getValue() {
-    return this.value;
-  },
-});
-
-const trace = label => value => {
-  console.log(label, '::::', value);
-  return value;
-};
-const createLeafValue = accountObject => ({
-  ...accountObject,
-  leaf: accountObject.pubkey.concat(accountObject.tier),
-});
-
 const stringifyTier = stringifyProp('tier');
 const formatTestAccounts = array => array.map(withTier).map(stringifyTier);
 /**
@@ -45,7 +26,7 @@ const AIRDROP_TIERS = {
   5: [15, 13, 11, 9, 7],
 };
 
-const AIRDROP_TIERS_STATIC = [9000, 6500, 3500, 1500, 750];
+const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n];
 
 export {
   AIRDROP_TIERS,

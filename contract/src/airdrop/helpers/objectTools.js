@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax */
 // @ts-check
 // @jessie-check
 
@@ -15,6 +16,7 @@ export const allValues = async obj => {
   // await keyword below leads to "Nested`await`s are not permitted in Jessiees lint jessie.js/no-nested-await"
   // is this "fine" because allValue is used to start contract and is not present in "every day operations".
   const es = await Promise.all(
+    // eslint-disable-next-line @jessie.js/no-nested-await, @jessie.js/safe-await-separator
     entries(obj).map(async ([k, v]) => [k, await v]),
   );
   return fromEntries(es);
@@ -29,14 +31,13 @@ export const mapValues = (obj, f) =>
     }),
   );
 
-// What is this type?
 /** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
 export const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
 // What is <T> ?
 // head :: [x, ...xs] => x
 /** @type {<T>(x: T[]) => T} */
-export const head = ([x, ...xs]) => x;
+export const head = ([x, ..._xs]) => x;
 
 export const objectToMap = (obj, baggage) =>
   keys(obj).reduce((acc, val) => {

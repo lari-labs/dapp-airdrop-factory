@@ -1,9 +1,10 @@
-// @ts-check
+/* global setTimeout */
+// @ts-nocheck
 import '@endo/init';
 import * as fsAmbient from 'fs/promises';
-import * as child_processAmbient from 'child_process';
-import { makeAgd } from './a3p/agd-lib.js';
-import { makeWalletKit, seatLike } from './wallet-kit-agd.js';
+import * as process from 'child_process';
+import { makeAgd } from '../a3p/agd-lib.js';
+import { makeWalletKit, seatLike } from '../test/wallet-kit-agd.js';
 
 const launchConfig = {
   name: 'BRD',
@@ -24,7 +25,7 @@ const getBundleID = bundle => `b1-${bundle.endoZipBase64Sha512}`;
  */
 const main = async (args, env, io = {}) => {
   const {
-    execFileSync = child_processAmbient.execFileSync,
+    execFileSync = process.execFileSync,
     readFile = fsAmbient.readFile,
     now = Date.now,
     delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
@@ -74,6 +75,7 @@ const main = async (args, env, io = {}) => {
     return offer;
   };
 
+  // eslint-disable-next-line no-unused-vars
   const makeReserveAddOffer = async (brandName = 'IST', qty = 1n) => {
     const id = `reserve-add-${now()}`;
 
@@ -116,4 +118,6 @@ const main = async (args, env, io = {}) => {
   console.log(payouts?.Handles?.value[0]?.customDetails);
 };
 
-await main(process.argv, process.env).catch(err => console.error(err));
+async () => {
+  await main(process.argv, process.env).catch(err => console.error(err));
+};

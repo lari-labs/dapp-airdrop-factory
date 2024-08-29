@@ -1,3 +1,4 @@
+/* eslint-disable no-shadow */
 // @ts-check
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeClientMarshaller } from './marshalTables.js';
@@ -74,6 +75,7 @@ export const makeWalletKit = (addr, opts) => {
    * @param {OfferSpec} offer
    * @param {number | 'auto'} [fee]
    */
+  // eslint-disable-next-line no-unused-vars
   const sendOffer = async (offer, fee = 'auto') => {
     const actionj = formatAction(offer);
     const trx = await agd.tx(
@@ -94,13 +96,14 @@ export const makeWalletKit = (addr, opts) => {
     let cur;
     const json = x => JSON.stringify(x, bigIntReplacer);
     let seq = 0;
+    await null;
     do {
       await delay(blkdur * 1000);
       for await (const item of queryDataIter(`published.wallet.${addr}`)) {
         cur = item;
         seq += 1;
         if (json(cur) !== json(prev)) {
-          // console.log('update', offerId, seq, cur);
+          console.log('update', offerId, seq, cur);
           if (cur?.status?.id !== offerId) continue;
           // console.log('yield update', offerId, seq, cur);
           yield cur;
@@ -125,8 +128,6 @@ export const makeWalletKit = (addr, opts) => {
   });
 };
 
-const updateHandler = ({ status }) => {};
-
 /**
  * Seat-like API from updates
  * @param {*} updates
@@ -138,6 +139,7 @@ export const seatLike = updates => {
   };
   (async () => {
     const seq = 0;
+    await null;
     try {
       console.log('inside try...catch');
       console.log('current seq:::', { seq });

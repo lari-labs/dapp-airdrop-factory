@@ -20,10 +20,10 @@ export const makeAgd = ({ execFileSync }) => {
     const nodeArgs = [...(rpcAddrs ? [`--node`, rpcAddrs[0]] : [])];
 
     // TODO: verbose option
-    const l = a => {
-      console.log(a); // XXX unilateral logging by a library... iffy
-      return a;
-    };
+    // const l = a => {
+    //   console.log(a); // XXX unilateral logging by a library... iffy
+    //   return a;
+    // };
 
     /**
      * @param {string[]} args

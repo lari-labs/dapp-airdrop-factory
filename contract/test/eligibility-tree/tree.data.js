@@ -1,6 +1,3 @@
-import { lensPath, lensProp, view } from '../../src/airdrop/helpers/lenses.js';
-import { compose } from '../../src/airdrop/helpers/objectTools.js';
-
 const localAccounts = [
   {
     name: 'aug11-1',
@@ -445,9 +442,7 @@ const localAccounts = [
   },
 ];
 
-const pubkeyLens = lensPath(['pubkey', 'key']);
-
-const getPubkeyFromAccount = view(pubkeyLens);
+const getPubkeyFromAccount = ({ pubkey }) => pubkey.key;
 const agdTestKeys = localAccounts.map(getPubkeyFromAccount); // ?
 
 export { agdTestKeys };

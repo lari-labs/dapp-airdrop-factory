@@ -1,20 +1,10 @@
 /* eslint-disable no-shadow */
-import { sha256 } from '@noble/hashes/sha256';
-import { bytesToHex } from '@noble/hashes/utils';
-import { accounts as accountData } from '../../test/data/agd-keys.js';
-import { lensProp, view } from '../airdrop/helpers/lenses.js';
+import { sha256 } from '../../vendor/@noble/hashes/esm/sha256.js';
+import { bytesToHex } from '../../vendor/@noble/hashes/esm/utils.js';
 import { compose } from '../airdrop/helpers/objectTools.js';
-
-const accounts = accountData.map(x => x.pubkey.key);
 
 const LEFT = 'left';
 const RIGHT = 'right';
-
-const trace = label => value => {
-  console.log(label, ':::', value);
-  return value;
-};
-const hashes = accounts.slice(0, 40);
 
 /**
  * @typedef {string} PublicKeyHash - A SHA-256 hash of a public key, represented as a hexadecimal string.
@@ -71,7 +61,7 @@ const ensureEven = hashes =>
  * Recursively concatenates pair of hash hashes and calculates each sha256 hash of the
  * concatenated hashes until only one hash is left, which is the merkle root, and returns it.
  * @param {PubkeyHashArray} hashes
- * @returns merkleRoot
+ * @returns {string} merkleRoot
  */
 const generateMerkleRoot = hashes => {
   if (!hashes || hashes.length === 0) {
@@ -101,8 +91,9 @@ const computeProofReducer = ({ hash: h1 }, { hash: h2, direction }) =>
     : createSha256HashObj(h1, h2);
 
 const reducerFn = fn => array => array.reduce(fn);
-const hashLens = lensProp('hash');
-const getHash = compose(view(hashLens));
+const getProp = prop => object => object[prop];
+
+const getHash = getProp('hash');
 
 const handleComputeProof = compose(getHash, reducerFn(computeProofReducer));
 
@@ -153,8 +144,6 @@ const generateMerkleTree = (hashes = []) => {
     return [];
   }
   const tree = [hashes];
-
-  console.log('calling generate:::', { hashes, tree });
   generate(hashes, tree);
   return tree;
 };
@@ -210,7 +199,6 @@ const generateMerkleProof = (hash, hashes) => {
 
 export const merkleTreeAPI = {
   generateMerkleRoot(pks) {
-    console.log('pks::', { pks });
     return generateMerkleRoot(pks.map(computeHexEncodedSha256Hash));
   },
   generateMerkleTree(pks) {
@@ -229,7 +217,6 @@ export const merkleTreeAPI = {
 
 harden(merkleTreeAPI);
 export {
-  hashes,
   getMerkleRootFromMerkleProof,
   generateMerkleProof,
   generateMerkleTree,

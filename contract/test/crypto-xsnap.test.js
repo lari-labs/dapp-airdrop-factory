@@ -1,3 +1,5 @@
+/* global performance issueCommand */
+/* eslint-disable import/no-extraneous-dependencies */
 // @ts-check
 import '@endo/init/debug.js';
 import { xsnap } from '@agoric/xsnap';

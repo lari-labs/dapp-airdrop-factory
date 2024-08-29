@@ -1,7 +1,7 @@
 {
-  "name": "dapp-agoric-basics-agservers",
+  "name": "dapp-ertp-airdrop-agservers",
   "version": "0.0.1",
-  "description": "Agoric server instances for dapp-agoric-basics",
+  "description": "Agoric server instances for dapp-ertp-airdrop",
   "private": true,
   "type": "module",
   "scripts": {

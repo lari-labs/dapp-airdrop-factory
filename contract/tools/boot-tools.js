@@ -14,6 +14,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
 import { mockWalletFactory } from './wallet-tools.js';
+import { allValues } from '../src/airdrop/helpers/objectTools.js';
 // import { getBundleId } from '../tools/bundle-tools.js';
 export const getBundleId = b => `b1-${b.endoZipBase64Sha512}`;
 
@@ -21,10 +22,10 @@ const { entries } = Object;
 
 export const makeSmartWalletFactory = async powers => {
   const { zoe, namesByAddressAdmin } = powers.consume;
-  const smartWalletIssuers = {
+  const smartWalletIssuers = await allValues({
     Invitation: await E(zoe).getInvitationIssuer(),
     IST: await E(zoe).getFeeIssuer(),
-  };
+  });
 
   // TODO: use CapData across vats
   // const boardMarshaller = await E(board).getPublishingMarshaller();
@@ -225,7 +226,7 @@ export const makeMockTools = async (t, bundleCache) => {
     name: _todo,
   }) => {
     if (!behavior) throw Error('TODO: run core eval without live behavior');
-    console.log({behavior,powers, config})
+    console.log({ behavior, powers, config });
     await behavior(powers, config);
     pid += 1;
     return { ...proposalResultDefault, proposal_id: pid };

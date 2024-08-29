@@ -12,12 +12,12 @@ jobs:
       - name: Use Node.js 18
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18"
       - name: yarn install
         run: yarn
       # commenting the lint process out below for purpose of seeing test code run to completion
-      # - name: yarn lint
-      #   run: yarn lint
+      - name: yarn lint
+        run: yarn lint
       # - name: yarn build
       #   run: yarn build
       - name: yarn test
