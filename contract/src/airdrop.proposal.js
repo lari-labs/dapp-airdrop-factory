@@ -36,10 +36,10 @@ harden(makeTerms);
  * @param {*} config
  *
  * @typedef {{
- *   brand: PromiseSpaceOf<{ Ticket: import('@agoric/ertp/src/types.js').Brand }>;
- *   issuer: PromiseSpaceOf<{ Ticket: import('@agoric/ertp/src/types.js').Issuer }>;
- *   instance: PromiseSpaceOf<{ sellConcertTickets: Instance }>
- * }} StartAirdropCampaign
+ *   brand: PromiseSpaceOf<{ Tribbles: import('@agoric/ertp/src/types.js').Brand }>;
+ *   issuer: PromiseSpaceOf<{ Tribbles: import('@agoric/ertp/src/types.js').Issuer }>;
+ *   instance: PromiseSpaceOf<{ airdrop: Instance }>
+ * }} AirdropSpace
  */
 export const startAirdrop = async (permittedPowers, config) => {
   const {
@@ -102,6 +102,7 @@ export const startAirdrop = async (permittedPowers, config) => {
   });
 
   console.log(contractName, '(re)started');
+  console.log('permittedPowers::', permittedPowers);
 };
 /** @type { import("@agoric/vats/src/core/lib-boot").BootstrapManifestPermit } */
 export const permit = harden({
