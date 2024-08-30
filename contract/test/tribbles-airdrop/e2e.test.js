@@ -9,7 +9,7 @@ import { createRequire } from 'module';
 import { env as ambientEnv } from 'node:process';
 import * as ambientChildProcess from 'node:child_process';
 import * as ambientFsp from 'node:fs/promises';
-import { passStyleOf } from '@endo/far';
+import { E, passStyleOf } from '@endo/far';
 import { extract } from '@agoric/vats/src/core/utils.js';
 import {
   makeTerms,
@@ -26,7 +26,7 @@ import {
   makeAgoricNames,
 } from '../../tools/ui-kit-goals/name-service-client.js';
 import { makeMockTools, mockBootstrapPowers } from '../../tools/boot-tools.js';
-import { generateMerkleProof } from '../../src/merkle-tree/index.js';
+import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
 import {
   produceBoardAuxManager,
   permit as boardAuxPermit,
@@ -35,6 +35,13 @@ import {
 import { makeStableFaucet } from '../mintStable.js';
 import { simulateClaim } from './actors.js';
 import { accounts } from '../data/agd-keys.js';
+import {
+  messagesObject,
+  PREPARED,
+} from '../../src/airdrop/airdropKitCreator.js';
+import { oneDay } from '../../src/airdrop/helpers/time.js';
+
+const { generateMerkleProof } = merkleTreeAPI;
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
@@ -170,7 +177,7 @@ test('E2E test', async t => {
 
   const bundleID = getBundleId(tribblesAirdrop);
   const { powers, vatAdminState } = await mockBootstrapPowers(t.log);
-  const { feeMintAccess, zoe } = powers.consume;
+  const { feeMintAccess, zoe, chainTimerService } = powers.consume;
 
   vatAdminState.installBundle(bundleID, tribblesAirdrop);
   const airdropPowers = extract(permit, powers);
@@ -210,8 +217,22 @@ test('E2E test', async t => {
   await t.throwsAsync(
     claimAttempt,
     {
-      message: 'Claim attempt failed.',
+      message: messagesObject.makeIllegalActionString(PREPARED),
     },
     'makeClaimInvitation() should throw an error stemming from the contract not being ready to accept offers.',
+  );
+
+  await E(chainTimerService).advanceBy(oneDay * (oneDay / 2n));
+
+  await simulateClaim(t, zoe, instance, feePurse, claimArgs);
+
+  await simulateClaim(
+    t,
+    zoe,
+    instance,
+    await faucet(5n * 1_000_000n),
+    claimArgs,
+    true,
+    'Allocation for address agoric1aa9jh3am8l94kawqy8003999ekk8dksdmwdemy has already been claimed.',
   );
 });
