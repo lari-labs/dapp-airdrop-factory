@@ -24,7 +24,7 @@ import { head } from '../../src/airdrop/helpers/objectTools.js';
 import { accounts } from '../data/agd-keys.js';
 import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
 import { simulateClaim } from './actors.js';
-import { OPEN } from '../../src/airdrop/airdropKitCreator.js';
+import { messagesObject, OPEN } from '../../src/airdrop/airdropKitCreator.js';
 
 const generateInt = x => () => Math.floor(Math.random() * (x + 1));
 
@@ -205,6 +205,51 @@ test('Airdrop ::: happy paths', async t => {
     instance.instance,
     feePurse,
     makeOfferArgs(accounts[2]),
+  );
+
+  await E(timer).advanceBy(oneDay);
+
+  t.deepEqual(await E(publicFacet).getStatus(), 'claim-window-open');
+
+  await E(timer).advanceBy(oneDay);
+});
+
+test('pause method', async t => {
+  const { zoe: zoeRef, bundle, faucet } = await t.context;
+  console.log(t.context);
+  const { instance, publicFacet, timer } = await startLocalInstance(t, bundle, {
+    zoe: zoeRef,
+    issuers: { Fee: await E(zoeRef).getFeeIssuer() },
+    terms: defaultCustomTerms,
+  });
+
+  await E(timer).advanceBy(oneDay * (oneDay / 2n));
+
+  t.deepEqual(await E(publicFacet).getStatus(), OPEN);
+
+  t.log({ faucet });
+  await E(timer).advanceBy(oneDay);
+  const feePurse = await faucet(5n * UNIT6);
+
+  const offerArgs = makeOfferArgs(head(accounts));
+
+  await simulateClaim(t, zoeRef, instance.instance, feePurse, offerArgs);
+
+  await E(timer).advanceBy(oneDay);
+
+  await E(instance.creatorFacet).pauseContract();
+
+  await t.throwsAsync(
+    simulateClaim(
+      t,
+      zoeRef,
+      instance.instance,
+      feePurse,
+      makeOfferArgs(accounts[2]),
+    ),
+    {
+      message: `not accepting offer with description "${messagesObject.makeClaimInvitationDescription()}"`,
+    },
   );
 
   await E(timer).advanceBy(oneDay);

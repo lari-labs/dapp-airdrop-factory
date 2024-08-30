@@ -2,7 +2,7 @@
 import { M, mustMatch } from '@endo/patterns';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
-import { AmountMath, BrandShape } from '@agoric/ertp';
+import { AmountMath, BrandShape, PaymentShape } from '@agoric/ertp';
 import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
 import { TimerShape } from '@agoric/zoe/src/typeGuards.js';
 import { atomicRearrange } from '@agoric/zoe/src/contractSupport/index.js';
@@ -15,6 +15,12 @@ import { makeStateMachine } from './helpers/stateMachine.js';
 import { createClaimSuccessMsg } from './helpers/messages.js';
 import { objectToMap } from './helpers/objectTools.js';
 import { getMerkleRootFromMerkleProof } from '../merkle-tree/index.js';
+
+export const messagesObject = {
+  makeClaimInvitationDescription: () => 'claim airdrop',
+  makeIllegalActionString: status =>
+    `Airdrop can not be claimed when contract status is: ${status}.`,
+};
 
 const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n];
 
@@ -97,8 +103,21 @@ export const start = async (zcf, privateArgs, baggage) => {
     targetNumberOfEpochs = 5,
     merkleRoot,
     initialPayoutValues = AIRDROP_TIERS_STATIC,
+    issuers,
+    brands,
   } = zcf.getTerms();
 
+  const { Fee: feeIssuer } = issuers;
+
+  const FeeAmountShape = harden({
+    brand: feeIssuer.getBrand(),
+    value: 5n,
+  });
+
+  const feeBrand = feeIssuer.getBrand();
+
+  console.log('feeBrand ::::', feeBrand);
+  console.log('----------------------------------');
   const airdropStatusTracker = zone.mapStore('airdrop claim window status');
 
   const accountStore = zone.setStore('claim accounts');
@@ -157,50 +176,25 @@ export const start = async (zcf, privateArgs, baggage) => {
     }),
   };
 
-  const initState =
-    /**
-     * @description initializes state for this exoClassKit.
-     *
-     * TODO
-     * Create issue for:
-     *  - My use of baggage values throughout code but specificially within exo context.
-     *  - What is the relation between durable values <-> state values.
-     * More specifically, state values such as that which exist in a durableZone.
-     * Reviewin
-     *
-     * @param {CopySet} store
-     * @param {CancelToken} currentCancelToken
-     */
-    (store, currentCancelToken) => {
-      console.log('this value::', this);
-      const state = {
-        /** @type { object } */
-        currentCancelToken,
-        claimCount: 0,
-        claimedAccounts: store,
-        payoutArray: baggage.get('payouts'),
-        currentEpoch: null,
-      };
-      return state;
-    };
   const prepareContract = zone.exoClassKit(
     'Tribble Token Distribution',
     interfaceGuard,
-    initState,
+    (store, currentCancelToken) => ({
+      currentCancelToken,
+      claimCount: 0,
+      claimedAccounts: store,
+      payoutArray: baggage.get('payouts'),
+      currentEpoch: null,
+    }),
     {
       helper: {
         /**
          * @param {TimestampRecord} absTime
-         * @param {number} epochIdx
+         * @param {bigint} epochIdx
          */
         updateEpochDetails(absTime, epochIdx) {
           const { helper } = this.facets;
-          this.state.currentEpoch = BigInt(epochIdx);
-          console.log('current epoch', this.state.currentEpoch);
-          this.state.payoutArray = harden(
-            this.state.payoutArray.map(x => x / 2n),
-          );
-
+          this.state.currentEpoch = epochIdx;
           if (this.state.currentEpoch === targetNumberOfEpochs) {
             zcf.shutdown('Airdrop complete');
             stateMachine.transitionTo(EXPIRED);
@@ -211,8 +205,6 @@ export const start = async (zcf, privateArgs, baggage) => {
         },
         async updateDistributionMultiplier(wakeTime) {
           const { facets } = this;
-          // const epochDetails = newEpochDetails;
-
           this.state.currentCancelToken = cancelTokenMaker();
 
           void E(timer).setWakeup(
@@ -221,9 +213,12 @@ export const start = async (zcf, privateArgs, baggage) => {
               'updateDistributionEpochWaker',
               /** @param {TimestampRecord} latestTs */
               ({ absValue: latestTs }) => {
-                // TODO: Investigate whether this logic is still necessary. If it is not, then remove.
+                this.state.payoutArray = harden(
+                  this.state.payoutArray.map(x => x / 2n),
+                );
 
-                // console.log('LATEST SET:::', tiersStore.get('current'));
+                baggage.set('payouts', this.state.payoutArray);
+
                 facets.helper.updateEpochDetails(
                   latestTs,
                   this.state.currentEpoch + 1n,
@@ -243,7 +238,9 @@ export const start = async (zcf, privateArgs, baggage) => {
         makeClaimTokensInvitation() {
           assert(
             airdropStatusTracker.get('currentStatus') === AIRDROP_STATES.OPEN,
-            'Claim attempt failed.',
+            messagesObject.makeIllegalActionString(
+              airdropStatusTracker.get('currentStatus'),
+            ),
           );
           /**
            * @param {UserSeat} claimSeat
@@ -253,30 +250,18 @@ export const start = async (zcf, privateArgs, baggage) => {
             const {
               give: { Fee: claimTokensFee },
             } = claimSeat.getProposal();
-            mustMatch(
-              claimSeat.getProposal(),
-              M.splitRecord({
-                give: {
-                  Fee: M.splitRecord({
-                    brand: BrandShape,
-                    value: 5n,
-                  }),
-                },
-              }),
-            );
 
-            console.log('----------------------------------');
             const { proof, key: pubkey, address, tier } = offerArgs;
-            assert(
-              !accountStore.has(pubkey),
-              `Allocation for address ${address} has already been claimed.`,
-            );
 
-            console.log(
-              'comparing',
-              getMerkleRootFromMerkleProof(proof),
-              merkleRoot,
-            );
+            // This line was added because of issues when testing
+            // Is there a way to gracefully test assertion failures????
+            if (accountStore.has(pubkey)) {
+              claimSeat.exit();
+              throw new Error(
+                `Allocation for address ${address} has already been claimed.`,
+              );
+            }
+
             assert.equal(
               getMerkleRootFromMerkleProof(proof),
               merkleRoot,
@@ -307,7 +292,16 @@ export const start = async (zcf, privateArgs, baggage) => {
 
             return createClaimSuccessMsg(paymentAmount);
           };
-          return zcf.makeInvitation(claimHandler, 'airdrop claim handler');
+          return zcf.makeInvitation(
+            claimHandler,
+            messagesObject.makeClaimInvitationDescription(),
+            {
+              currentEpoch: this.state.currentEpoch,
+            },
+            M.splitRecord({
+              give: { Fee: FeeAmountShape },
+            }),
+          );
         },
         getStatus() {
           return stateMachine.getStatus();
@@ -321,7 +315,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       },
       creator: {
         pauseContract() {
-          // TODO setOfferFilter
+          zcf.setOfferFilter([messagesObject.makeClaimInvitationDescription()]);
         },
       },
     },
