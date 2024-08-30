@@ -237,9 +237,7 @@ test('pause method', async t => {
 
   await E(timer).advanceBy(oneDay);
 
-  await E(instance.creatorFacet).pauseContract([
-    messagesObject.makeClaimInvitationDescription(),
-  ]);
+  await E(instance.creatorFacet).pauseContract();
 
   await t.throwsAsync(
     simulateClaim(

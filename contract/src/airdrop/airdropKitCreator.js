@@ -205,8 +205,6 @@ export const start = async (zcf, privateArgs, baggage) => {
         },
         async updateDistributionMultiplier(wakeTime) {
           const { facets } = this;
-          // const epochDetails = newEpochDetails;
-
           this.state.currentCancelToken = cancelTokenMaker();
 
           void E(timer).setWakeup(
@@ -215,14 +213,12 @@ export const start = async (zcf, privateArgs, baggage) => {
               'updateDistributionEpochWaker',
               /** @param {TimestampRecord} latestTs */
               ({ absValue: latestTs }) => {
-                // TODO: Investigate whether this logic is still necessary. If it is not, then remove.
                 this.state.payoutArray = harden(
                   this.state.payoutArray.map(x => x / 2n),
                 );
 
                 baggage.set('payouts', this.state.payoutArray);
 
-                // console.log('LATEST SET:::', tiersStore.get('current'));
                 facets.helper.updateEpochDetails(
                   latestTs,
                   this.state.currentEpoch + 1n,
@@ -254,20 +250,11 @@ export const start = async (zcf, privateArgs, baggage) => {
             const {
               give: { Fee: claimTokensFee },
             } = claimSeat.getProposal();
-            mustMatch(
-              claimSeat.getProposal(),
-              M.splitRecord({
-                give: {
-                  Fee: M.splitRecord({
-                    brand: BrandShape,
-                    value: 5n,
-                  }),
-                },
-              }),
-            );
 
-            console.log('----------------------------------');
             const { proof, key: pubkey, address, tier } = offerArgs;
+
+            // This line was added because of issues when testing
+            // Is there a way to gracefully test assertion failures????
             if (accountStore.has(pubkey)) {
               claimSeat.exit();
               throw new Error(
@@ -328,7 +315,6 @@ export const start = async (zcf, privateArgs, baggage) => {
       },
       creator: {
         pauseContract() {
-          // TODO setOfferFilter
           zcf.setOfferFilter([messagesObject.makeClaimInvitationDescription()]);
         },
       },
