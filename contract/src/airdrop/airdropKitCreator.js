@@ -1,11 +1,15 @@
 // @ts-nocheck
-import { M, mustMatch } from '@endo/patterns';
+import { M } from '@endo/patterns';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
-import { AmountMath, BrandShape, PaymentShape } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
 import { TimerShape } from '@agoric/zoe/src/typeGuards.js';
-import { atomicRearrange } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  atomicRearrange,
+  makeRatio,
+} from '@agoric/zoe/src/contractSupport/index.js';
+import { divideBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeWaker, oneDay } from './helpers/time.js';
 import {
   handleFirstIncarnation,
@@ -60,6 +64,9 @@ export const customTermsShape = harden({
   merkleRoot: M.string(),
 });
 
+export const divideAmountByTwo = brand => amount =>
+  divideBy(amount, makeRatio(200n, brand), 0n);
+
 /**
  * @param {TimestampRecord} sourceTs Base timestamp used to as the starting time which a new Timestamp will be created against.
  * @param {RelativeTimeRecordShape} inputTs Relative timestamp spanning the interval of time between sourceTs and the newly created timestamp
@@ -104,7 +111,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     merkleRoot,
     initialPayoutValues = AIRDROP_TIERS_STATIC,
     issuers,
-    brands,
+    _brands,
   } = zcf.getTerms();
 
   const { Fee: feeIssuer } = issuers;
@@ -114,10 +121,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     value: 5n,
   });
 
-  const feeBrand = feeIssuer.getBrand();
-
-  console.log('feeBrand ::::', feeBrand);
-  console.log('----------------------------------');
   const airdropStatusTracker = zone.mapStore('airdrop claim window status');
 
   const accountStore = zone.setStore('claim accounts');
@@ -144,17 +147,21 @@ export const start = async (zcf, privateArgs, baggage) => {
   const tokenHolderSeat = tokenMint.mintGains({
     Tokens: AmountMath.make(tokenBrand, targetTokenSupply),
   });
+
+  const divideAmount = divideAmountByTwo(tokenBrand);
+
   await objectToMap(
     {
       merkleRoot,
       targetNumberOfEpochs,
       // exchange this for a purse created from ZCFMint
-      payouts: initialPayoutValues,
+      payouts: harden(
+        initialPayoutValues.map(x => AmountMath.make(tokenBrand, x)),
+      ),
       epochLengthInSeconds: targetEpochLength,
       tokenIssuer,
       startTime: createFutureTs(t0, startTime),
       claimedAccountsStore: zone.setStore('claimed accounts'),
-      airdropStatusTracker: zone.mapStore('airdrop status'),
     },
     baggage,
   );
@@ -214,7 +221,7 @@ export const start = async (zcf, privateArgs, baggage) => {
               /** @param {TimestampRecord} latestTs */
               ({ absValue: latestTs }) => {
                 this.state.payoutArray = harden(
-                  this.state.payoutArray.map(x => x / 2n),
+                  this.state.payoutArray.map(x => divideAmount(x)),
                 );
 
                 baggage.set('payouts', this.state.payoutArray);
@@ -268,10 +275,7 @@ export const start = async (zcf, privateArgs, baggage) => {
               'Computed proof does not equal the correct root hash. ',
             );
 
-            const paymentAmount = AmountMath.make(
-              tokenBrand,
-              this.state.payoutArray[tier],
-            );
+            const paymentAmount = this.state.payoutArray[tier];
 
             rearrange(
               harden([

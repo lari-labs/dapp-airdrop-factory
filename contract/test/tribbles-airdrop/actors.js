@@ -55,10 +55,7 @@ const simulateClaim = async (
     const actual = await E(issuers.Tribbles).getAmountOf(airdropPayout);
     t.log('Alice payout brand', actual.brand);
     t.log('Alice payout value', actual.value);
-    t.deepEqual(
-      actual,
-      AmountMath.make(brands.Tribbles, payoutValues[claimOfferArgs.tier]),
-    );
+    t.deepEqual(actual, payoutValues[claimOfferArgs.tier]);
   } else {
     const badSeat = E(zoe).offer(
       invitation,
