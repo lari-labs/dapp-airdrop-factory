@@ -1,10 +1,8 @@
-import { test as anyTest } from '../prepare-test-env-ava.js';
+import { test } from '../prepare-test-env-ava.js';
+// eslint-disable-next-line import/order
 import { makeIssuerKit } from '@agoric/ertp';
 import { AmountMath } from '../../src/airdrop/airdrop.coreEval.js';
 import { divideAmountByTwo } from '../../src/airdrop/airdropKitCreator.js';
-
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
-const test = anyTest;
 
 const testKit = makeIssuerKit('Testcoinz');
 
