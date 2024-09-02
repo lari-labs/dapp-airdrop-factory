@@ -19,6 +19,7 @@ import { makeStateMachine } from './helpers/stateMachine.js';
 import { createClaimSuccessMsg } from './helpers/messages.js';
 import { objectToMap } from './helpers/objectTools.js';
 import { getMerkleRootFromMerkleProof } from '../merkle-tree/index.js';
+import './types.js';
 
 export const messagesObject = {
   makeClaimInvitationDescription: () => 'claim airdrop',
@@ -74,20 +75,6 @@ export const divideAmountByTwo = brand => amount =>
 
 const createFutureTs = (sourceTs, inputTs) =>
   TimeMath.absValue(sourceTs) + TimeMath.relValue(inputTs);
-
-/**
- *
- * @typedef {object} ContractTerms
- * @property {object} tiers
- * @property {Amount} feePrice The fee associated with exercising one's right to claim a token.
- * @property {bigint} targetTokenSupply Base supply of tokens to be distributed throughout an airdrop campaign.
- * @property {string} tokenName Name of the token to be created and then airdropped to eligible claimaints.
- * @property {number} targetNumberOfEpochs Total number of epochs the airdrop campaign will last for.
- * @property {bigint} targetEpochLength Length of time for each epoch, denominated in seconds.
- * @property {RelativeTimeRecordShape} startTime Length of time (denoted in seconds) between the time in which the contract is started and the time at which users can begin claiming tokens.
- * @property {{ [keyword: string]: Brand }} brands
- * @property {{ [keyword: string]: Issuer }} issuers
- */
 
 /**
  * @param {ZCF<ContractTerms>} zcf

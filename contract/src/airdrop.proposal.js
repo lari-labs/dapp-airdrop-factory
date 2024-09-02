@@ -3,9 +3,8 @@ import { E } from '@endo/far';
 import { allValues } from './objectTools.js';
 import { installContract, startContract } from './airdrop/airdrop.coreEval.js';
 import { TimeIntervals } from './airdrop/helpers/time.js';
-import { merkleTreeAPI } from './merkle-tree/index.js';
 import { AIRDROP_TIERS_STATIC } from '../test/data/account.utils.js';
-import { agoricPubkeys } from '../test/data/agd-keys.js';
+import './airdrop/types.js';
 
 /** @import { StartArgs } from './platform-goals/start-contract.js'; */
 
@@ -19,7 +18,6 @@ export const defaultCustomTerms = {
   targetEpochLength: TimeIntervals.SECONDS.ONE_DAY,
   targetTokenSupply: 10_000_000n,
   tokenName: 'Tribbles',
-  merkleRoot: merkleTreeAPI.generateMerkleRoot(agoricPubkeys),
 };
 
 export const makeTerms = (terms = {}) => ({
@@ -61,10 +59,7 @@ export const startAirdrop = async (permittedPowers, config) => {
 
   const { customTerms } = config.options;
 
-  console.log('TimerBrand:::', timerBrand);
-
-  console.log('contract launch config object :::');
-
+  /** @type {CustomContractTerms} */
   const terms = {
     ...customTerms,
     startTime: relTimeMaker(timerBrand, TimeIntervals.SECONDS.ONE_DAY),
@@ -73,16 +68,6 @@ export const startAirdrop = async (permittedPowers, config) => {
     name: contractName,
     bundleID,
   });
-
-  console.group('---------- inside startAirdropCampaignContract----------');
-  console.log('------------------------');
-  console.log('installation::', installation);
-  console.log('------------------------');
-  console.log(':: powers', permittedPowers);
-  console.log('------------------------');
-  console.groupEnd();
-
-  console.log('TERMS:::', { terms });
 
   /** @type {StartArgs} */
 

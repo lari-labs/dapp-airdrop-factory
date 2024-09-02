@@ -21,7 +21,7 @@ import { extract } from '@agoric/vats/src/core/utils.js';
 import { mockBootstrapPowers } from '../../tools/boot-tools.js';
 import { getBundleId } from '../../tools/bundle-tools.js';
 import { head } from '../../src/airdrop/helpers/objectTools.js';
-import { accounts } from '../data/agd-keys.js';
+import { accounts, agoricPubkeys } from '../data/agd-keys.js';
 import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
 import { simulateClaim } from './actors.js';
 import { messagesObject, OPEN } from '../../src/airdrop/airdropKitCreator.js';
@@ -249,7 +249,10 @@ test.skip('MN-2 Task: Add a deployment test that exercises the core-eval that wi
     produceBoardAuxManager(boardAuxPowers),
     startAirdrop(airdropPowers, {
       options: {
-        customTerms: makeTerms(),
+        customTerms: {
+          ...makeTerms(),
+          merkleRoot: merkleTreeAPI.generateMerkleRoot(agoricPubkeys),
+        },
         airdrop: { bundleID },
       },
     }),

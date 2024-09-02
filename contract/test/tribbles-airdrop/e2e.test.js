@@ -34,7 +34,7 @@ import {
 
 import { makeStableFaucet } from '../mintStable.js';
 import { simulateClaim } from './actors.js';
-import { accounts } from '../data/agd-keys.js';
+import { accounts, agoricPubkeys } from '../data/agd-keys.js';
 import {
   messagesObject,
   PREPARED,
@@ -143,7 +143,10 @@ test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
     entryFile: scriptRoots.tribblesAirdrop,
     config: {
       options: {
-        customTerms: makeTerms(),
+        customTerms: {
+          ...makeTerms(),
+          merkleRoot: merkleTreeAPI.generateMerkleRoot(agoricPubkeys),
+        },
         airdrop: { bundleID },
       },
     },
