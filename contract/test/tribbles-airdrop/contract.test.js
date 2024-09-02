@@ -26,10 +26,6 @@ import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
 import { simulateClaim } from './actors.js';
 import { messagesObject, OPEN } from '../../src/airdrop/airdropKitCreator.js';
 
-const generateInt = x => () => Math.floor(Math.random() * (x + 1));
-
-const createTestTier = generateInt(4); // ?
-
 /** @typedef {typeof import('../../src/airdrop/airdropKitCreator.js').start} AssetContractFn */
 
 const myRequire = createRequire(import.meta.url);
@@ -164,12 +160,6 @@ test.serial('Start the contract', async t => {
   t.log(contractInstance.instance);
   t.is(typeof contractInstance.instance, 'object');
 });
-const makeOfferArgs = ({ pubkey: { key }, address }) => ({
-  key,
-  proof: merkleTreeAPI.generateMerkleProof(key, publicKeys),
-  address,
-  tier: createTestTier(),
-});
 
 test('Airdrop ::: happy paths', async t => {
   const { zoe: zoeRef, bundle, faucet } = await t.context;
@@ -192,20 +182,12 @@ test('Airdrop ::: happy paths', async t => {
     feePurse.getCurrentAmount(),
     AmountMath.make(t.context.testFeeBrand, 5_000_000n),
   );
-  const offerArgs = makeOfferArgs(head(accounts));
 
-  console.log({ offerArgs });
-  await simulateClaim(t, zoeRef, instance.instance, feePurse, offerArgs);
+  await simulateClaim(t, zoeRef, instance.instance, feePurse, head(accounts));
 
   await E(timer).advanceBy(oneDay);
 
-  await simulateClaim(
-    t,
-    zoeRef,
-    instance.instance,
-    feePurse,
-    makeOfferArgs(accounts[2]),
-  );
+  await simulateClaim(t, zoeRef, instance.instance, feePurse, accounts[2]);
 
   await E(timer).advanceBy(oneDay);
 
@@ -227,26 +209,17 @@ test('pause method', async t => {
 
   t.deepEqual(await E(publicFacet).getStatus(), OPEN);
 
-  t.log({ faucet });
   await E(timer).advanceBy(oneDay);
   const feePurse = await faucet(5n * UNIT6);
 
-  const offerArgs = makeOfferArgs(head(accounts));
-
-  await simulateClaim(t, zoeRef, instance.instance, feePurse, offerArgs);
+  await simulateClaim(t, zoeRef, instance.instance, feePurse, accounts[2]);
 
   await E(timer).advanceBy(oneDay);
 
   await E(instance.creatorFacet).pauseContract();
 
   await t.throwsAsync(
-    simulateClaim(
-      t,
-      zoeRef,
-      instance.instance,
-      feePurse,
-      makeOfferArgs(accounts[2]),
-    ),
+    simulateClaim(t, zoeRef, instance.instance, feePurse, accounts[3]),
     {
       message: `not accepting offer with description "${messagesObject.makeClaimInvitationDescription()}"`,
     },
@@ -288,13 +261,7 @@ test.skip('MN-2 Task: Add a deployment test that exercises the core-eval that wi
   const { bundleCache } = t.context;
   const { faucet } = makeStableFaucet({ bundleCache, feeMintAccess, zoe });
   await t.throwsAsync(
-    simulateClaim(
-      t,
-      zoe,
-      instance,
-      await faucet(5n * UNIT6),
-      makeOfferArgs(accounts[3]),
-    ),
+    simulateClaim(t, zoe, instance, await faucet(5n * UNIT6), accounts[3]),
     {
       message: 'Claim attempt failed.',
     },

@@ -41,8 +41,6 @@ import {
 } from '../../src/airdrop/airdropKitCreator.js';
 import { oneDay } from '../../src/airdrop/helpers/time.js';
 
-const { generateMerkleProof } = merkleTreeAPI;
-
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
@@ -186,7 +184,12 @@ test('E2E test', async t => {
     produceBoardAuxManager(boardAuxPowers),
     startTribblesAirdrop(airdropPowers, {
       options: {
-        customTerms: makeTerms(),
+        customTerms: {
+          ...makeTerms(),
+          merkleRoot: merkleTreeAPI.generateMerkleRoot(
+            accounts.map(x => x.pubkey.key),
+          ),
+        },
         airdrop: { bundleID },
       },
     }),
@@ -202,18 +205,9 @@ test('E2E test', async t => {
 
   // TODO: update simulateClaim to construct claimArgs object.
   // see makeOfferArgs function for reference.
-  const claimArgs = {
-    ...accounts[0],
-    pubkey: accounts[0].pubkey.key,
-    proof: generateMerkleProof(
-      accounts[0].pubkey.key,
-      accounts.map(x => x.pubkey.key),
-    ),
-    tier: 1,
-  };
 
   const feePurse = await faucet(5n * 1_000_000n);
-  const claimAttempt = simulateClaim(t, zoe, instance, feePurse, claimArgs);
+  const claimAttempt = simulateClaim(t, zoe, instance, feePurse, accounts[4]);
   await t.throwsAsync(
     claimAttempt,
     {
@@ -224,15 +218,15 @@ test('E2E test', async t => {
 
   await E(chainTimerService).advanceBy(oneDay * (oneDay / 2n));
 
-  await simulateClaim(t, zoe, instance, feePurse, claimArgs);
+  await simulateClaim(t, zoe, instance, feePurse, accounts[4]);
 
   await simulateClaim(
     t,
     zoe,
     instance,
     await faucet(5n * 1_000_000n),
-    claimArgs,
+    accounts[4],
     true,
-    'Allocation for address agoric1aa9jh3am8l94kawqy8003999ekk8dksdmwdemy has already been claimed.',
+    `Allocation for address ${accounts[4].address} has already been claimed.`,
   );
 });
