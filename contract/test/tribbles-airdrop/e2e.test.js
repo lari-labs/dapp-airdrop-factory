@@ -11,6 +11,7 @@ import * as ambientChildProcess from 'node:child_process';
 import * as ambientFsp from 'node:fs/promises';
 import { E, passStyleOf } from '@endo/far';
 import { extract } from '@agoric/vats/src/core/utils.js';
+import { checkBundle } from '@endo/check-bundle/lite.js';
 import {
   makeTerms,
   permit,
@@ -31,7 +32,6 @@ import {
   produceBoardAuxManager,
   permit as boardAuxPermit,
 } from '../../src/platform-goals/board-aux.core.js';
-
 import { makeStableFaucet } from '../mintStable.js';
 import { simulateClaim } from './actors.js';
 import { accounts, agoricPubkeys } from '../data/agd-keys.js';
@@ -40,6 +40,7 @@ import {
   PREPARED,
 } from '../../src/airdrop/airdropKitCreator.js';
 import { oneDay } from '../../src/airdrop/helpers/time.js';
+// import { makeAgdTools } from '../agd-tools.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
@@ -92,8 +93,12 @@ const makeTestContext = async t => {
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
+const consoleCounter = (label = 'default') => {
+  console.count(`${label} counter ###`);
+};
+//  console.log('after makeAgdTools:::', { context: t.context });
 
-test.serial('well-known brand (ATOM) is available', async t => {
+test.serial('we1ll-known brand (ATOM) is available', async t => {
   const { makeQueryTool } = t.context;
   const hub0 = makeAgoricNames(makeQueryTool());
   const agoricNames = makeNameProxy(hub0);
@@ -135,6 +140,14 @@ test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
     containsSubstring(bundles.tribblesAirdrop.endoZipBase64Sha512, bundleID),
     true,
   );
+  const merkleRoot = merkleTreeAPI.generateMerkleRoot(
+    accounts.map(x => x.pubkey.key),
+  );
+
+  const { powers, vatAdminState } = await mockBootstrapPowers(t.log);
+  const { feeMintAccess, zoe, chainTimerService } = powers.consume;
+
+  vatAdminState.installBundle(bundleID, bundles.tribblesAirdrop);
   // this runCoreEval does not work
   const name = 'airdrop';
   const result = await runCoreEval({
@@ -145,9 +158,9 @@ test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
       options: {
         customTerms: {
           ...makeTerms(),
-          merkleRoot: merkleTreeAPI.generateMerkleRoot(agoricPubkeys),
         },
         airdrop: { bundleID },
+        merkleRoot: merkleTreeAPI.generateMerkleRoot(agoricPubkeys),
       },
     },
   });
@@ -171,7 +184,17 @@ test.serial('agoricNames.instances has contract: airdrop', async t => {
   t.is(passStyleOf(instance), 'remotable');
 });
 
-test('E2E test', async t => {
+// test.serial('checkBundle()', async t => {
+//   const { tribblesAirdrop } = t.context.shared.bundles;
+//   t.deepEqual(await checkBundle(tribblesAirdrop), '');
+// });
+
+test.serial('E2E test', async t => {
+  const merkleRoot = merkleTreeAPI.generateMerkleRoot(
+    accounts.map(x => x.pubkey.key),
+  );
+
+  t.log('starting contract with merkleRoot:', merkleRoot);
   // Is there a better way to obtain a reference to this bundle???
   // or is this just fine??
   const { tribblesAirdrop } = t.context.shared.bundles;
@@ -189,14 +212,14 @@ test('E2E test', async t => {
       options: {
         customTerms: {
           ...makeTerms(),
-          merkleRoot: merkleTreeAPI.generateMerkleRoot(
-            accounts.map(x => x.pubkey.key),
-          ),
+          merkleRoot,
         },
         airdrop: { bundleID },
+        merkleRoot,
       },
     }),
   ]);
+  consoleCounter();
   /** @type {import('../../src/airdrop.proposal.js').AirdropSpace} */
   // @ts-expect-error cast
   const airdropSpace = powers;

@@ -74,6 +74,10 @@ const config = [
   config1({
     name: 'airdrop',
     permit: airdropPermit,
+    coreScriptOptions: {
+      merkleRoot:
+        '9a5e4cc906ea7511c776b9ef1d6c59ddb7c64c34848f6c58e982b168cc34849b',
+    },
   }),
 ];
 export default config;

@@ -40,14 +40,20 @@ harden(makeTerms);
  * }} AirdropSpace
  */
 export const startAirdrop = async (permittedPowers, config) => {
-  const {
-    consume: { chainTimerService },
-  } = permittedPowers;
+  console.log('######## inside startAirdrop ###########');
+  console.log('config ::::', config);
+  console.log('----------------------------------');
 
   const {
-    // must be supplied by caller or template-replaced
-    bundleID = config.bundleID,
-  } = config?.options?.[contractName] ?? {};
+    consume: { chainTimerService, startUpgradable },
+    installation: {
+      consume: { airdrop: airdropInstallationP },
+    },
+    instance: {
+      produce: { airdrop: airdropInstance },
+    },
+  } = permittedPowers;
+
   const [{ issuer: issuerIST }, timer, timerBrand] = await Promise.all([
     allValues({
       brand: permittedPowers.brand.consume.IST,
@@ -57,78 +63,69 @@ export const startAirdrop = async (permittedPowers, config) => {
     E(chainTimerService).getTimerBrand(),
   ]);
 
-  const { customTerms } = config.options;
+  assert(
+    config.options.merkleRoot,
+    'can not start contract without merkleRoot???',
+  );
 
   /** @type {CustomContractTerms} */
   const terms = {
-    ...customTerms,
+    ...config.customTerms,
     startTime: relTimeMaker(timerBrand, TimeIntervals.SECONDS.ONE_DAY),
+    merkleRoot: config.options.merkleRoot,
   };
-  const installation = await installContract(permittedPowers, {
-    name: contractName,
-    bundleID,
+
+  const privateArgs = harden({
+    timer,
   });
 
-  /** @type {StartArgs} */
+  const installation = await airdropInstallationP;
 
-  const startArgs = {
+  const { instance } = await E(startUpgradable)({
     installation,
     issuerKeywordRecord: {
       Fee: issuerIST,
     },
     terms,
-    privateArgs: { timer },
-  };
-
-  await startContract(permittedPowers, {
-    name: contractName,
-    startArgs,
-    issuerNames: ['Tribbles'],
+    privateArgs,
+    label: 'Airdrop Contract',
   });
 
-  console.log(contractName, '(re)started');
-  console.log('permittedPowers::', permittedPowers);
-};
-/** @type { import("@agoric/vats/src/core/lib-boot").BootstrapManifestPermit } */
-export const permit = harden({
-  consume: {
-    bankManager: true,
-    chainTimerService: true,
-    agoricNames: true,
-    namesByAddress: true,
-    namesByAddressAdmin: true,
-    brandAuxPublisher: true,
-    startUpgradable: true, // to start contract and save adminFacet
-    zoe: true, // to get contract terms, including issuer/brand,
-  },
-  installation: {
-    consume: { [contractName]: true },
-    produce: { [contractName]: true },
-  },
-  issuer: { consume: { IST: true }, produce: { Tribbles: true } },
-  brand: { consume: { IST: true }, produce: { Tribbles: true } },
-  instance: { produce: { [contractName]: true } },
-});
+  console.log('CoreEval script: started contract', instance);
 
-export const main = startAirdrop;
+  airdropInstance.reset();
+  airdropInstance.resolve(instance);
+
+  console.log('airdrop (re)started');
+};
 
 /** @type { import("@agoric/vats/src/core/lib-boot").BootstrapManifest } */
 const airdropManifest = {
   [startAirdrop.name]: {
     consume: {
+      bankManager: true,
+      chainTimerService: true,
       agoricNames: true,
-      board: true, // to publish boardAux info for NFT brand
-      chainStorage: true, // to publish boardAux info for NFT brand
+      namesByAddress: true,
+      namesByAddressAdmin: true,
+      brandAuxPublisher: true,
       startUpgradable: true, // to start contract and save adminFacet
-      zoe: true, // to get contract terms, including issuer/brand
+      zoe: true, // to get contract terms, including issuer/brand,
     },
-    installation: { consume: { airdrop: true } },
-    issuer: { consume: { IST: true }, produce: { Item: true } },
-    brand: { consume: { IST: true }, produce: { Item: true } },
-    instance: { produce: { airdrop: true } },
+    installation: {
+      consume: { [contractName]: true },
+      produce: { [contractName]: true },
+    },
+    issuer: { consume: { IST: true }, produce: { Tribbles: true } },
+    brand: { consume: { IST: true }, produce: { Tribbles: true } },
+    instance: { produce: { [contractName]: true } },
   },
 };
 harden(airdropManifest);
+
+export const permit = airdropManifest[startAirdrop.name];
+
+export const main = startAirdrop;
 
 export const getManifestForAirdrop = ({ restoreRef }, { airdropRef }) => {
   return harden({
