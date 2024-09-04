@@ -10,7 +10,6 @@ import './airdrop/types.js';
 
 const relTimeMaker = (timerBrand, x = 0n) =>
   harden({ timerBrand, relValue: x });
-const contractName = 'airdrop';
 
 export const defaultCustomTerms = {
   initialPayoutValues: harden(AIRDROP_TIERS_STATIC),
@@ -27,6 +26,8 @@ export const makeTerms = (terms = {}) => ({
 
 harden(makeTerms);
 
+const contractName = 'tribblesAirdrop';
+
 /**
  * Core eval script to start contract
  *
@@ -36,7 +37,7 @@ harden(makeTerms);
  * @typedef {{
  *   brand: PromiseSpaceOf<{ Tribbles: import('@agoric/ertp/src/types.js').Brand }>;
  *   issuer: PromiseSpaceOf<{ Tribbles: import('@agoric/ertp/src/types.js').Issuer }>;
- *   instance: PromiseSpaceOf<{ airdrop: Instance }>
+ *   instance: PromiseSpaceOf<{ [contractName]: Instance }>
  * }} AirdropSpace
  */
 export const startAirdrop = async (permittedPowers, config) => {
@@ -47,56 +48,61 @@ export const startAirdrop = async (permittedPowers, config) => {
   const {
     consume: { chainTimerService, startUpgradable },
     installation: {
-      consume: { airdrop: airdropInstallationP },
+      consume: { [contractName]: airdropInstallationP },
     },
     instance: {
-      produce: { airdrop: airdropInstance },
+      produce: { [contractName]: airdropInstance },
     },
   } = permittedPowers;
+  console.log('permitted Powers:::', permittedPowers);
 
-  const [{ issuer: issuerIST }, timer, timerBrand] = await Promise.all([
-    allValues({
-      brand: permittedPowers.brand.consume.IST,
-      issuer: permittedPowers.issuer.consume.IST,
-    }),
-    chainTimerService,
-    E(chainTimerService).getTimerBrand(),
-  ]);
+  const [_installation, instance, { issuer: issuerIST }, timer, timerBrand] =
+    await Promise.all([
+      airdropInstallationP,
+      airdropInstance,
+      allValues({
+        brand: permittedPowers.brand.consume.IST,
+        issuer: permittedPowers.issuer.consume.IST,
+      }),
+      chainTimerService,
+      E(chainTimerService).getTimerBrand(),
+    ]);
 
+  const { customTerms } = config.options;
+
+  /** @type {CustomContractTerms} */
+  const terms = {
+    ...customTerms,
+    startTime: relTimeMaker(timerBrand, TimeIntervals.SECONDS.ONE_DAY),
+    merkleRoot: config.options.merkleRoot,
+  };
+  console.log('BEFORE assert(config?.options?.merkleRoot');
   assert(
     config?.options?.merkleRoot,
     'can not start contract without merkleRoot???',
   );
-
-  /** @type {CustomContractTerms} */
-  const terms = {
-    ...config.customTerms,
-    startTime: relTimeMaker(timerBrand, TimeIntervals.SECONDS.ONE_DAY),
-    merkleRoot: config.options.merkleRoot,
-  };
+  console.log('AFTER assert(config?.options?.merkleRoot');
 
   const privateArgs = harden({
     timer,
   });
 
-  const installation = await airdropInstallationP;
-
-  const { instance } = await E(startUpgradable)({
-    installation,
+  const startArgs = {
+    installation: _installation,
+    name: contractName,
+    terms,
     issuerKeywordRecord: {
       Fee: issuerIST,
     },
-    terms,
+    issuerNames: ['Tribbles'],
     privateArgs,
-    label: 'Airdrop Contract',
-  });
+    merkleRoot: config.options.merkleRoot,
+  };
+  console.log('BEFORE astartContract(permittedPowers, startArgs);');
 
-  console.log('CoreEval script: started contract', instance);
+  await startContract(permittedPowers, startArgs);
 
-  airdropInstance.reset();
-  airdropInstance.resolve(instance);
-
-  console.log('airdrop (re)started');
+  console.log('AFTER astartContract(permittedPowers, startArgs);');
 };
 
 /** @type { import("@agoric/vats/src/core/lib-boot").BootstrapManifest } */
