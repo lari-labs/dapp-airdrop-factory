@@ -64,7 +64,7 @@ export const startAirdrop = async (permittedPowers, config) => {
   ]);
 
   assert(
-    config.options.merkleRoot,
+    config?.options?.merkleRoot,
     'can not start contract without merkleRoot???',
   );
 
@@ -125,7 +125,16 @@ harden(airdropManifest);
 
 export const permit = airdropManifest[startAirdrop.name];
 
-export const main = startAirdrop;
+const { Fail } = assert;
+export const main = (
+  permittedPowers,
+
+  config = {
+    options: Fail`missing options config`,
+  },
+) => {
+  startAirdrop(permittedPowers, config);
+};
 
 export const getManifestForAirdrop = ({ restoreRef }, { airdropRef }) => {
   return harden({
