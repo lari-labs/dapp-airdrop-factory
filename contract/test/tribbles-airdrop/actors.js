@@ -1,5 +1,4 @@
 import { E } from '@endo/far';
-import { checkBundle } from '@endo/check-bundle/lite.js';
 import { AmountMath } from '@agoric/ertp';
 import { accounts } from '../data/agd-keys.js';
 import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
