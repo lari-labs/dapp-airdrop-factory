@@ -75,8 +75,8 @@ export const divideAmountByTwo = brand => amount =>
  * @async
  * @param {ZCF} zcf
  * @param {string} tokenName
- * @param {AssetKind} [assetKind=AssetKind.NAT]
- * @param {{ decimalPlaces: number; }} [displayInfo={ decimalPlaces: 6 }]
+ * @param {AssetKind} assetKind
+ * @param {{ decimalPlaces: number; }} displayInfo
  * @returns {{mint: ZCFMint, brand: Brand, issuer: Issuer}}
  */
 const tokenMintFactory = async (

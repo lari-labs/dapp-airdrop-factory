@@ -11,13 +11,7 @@ import * as ambientChildProcess from 'node:child_process';
 import * as ambientFsp from 'node:fs/promises';
 import { E, passStyleOf } from '@endo/far';
 import { extract } from '@agoric/vats/src/core/utils.js';
-import { checkBundle } from '@endo/check-bundle/lite.js';
-import {
-  makeTerms,
-  permit,
-  startAirdrop,
-  main,
-} from '../../src/airdrop.proposal.js';
+import { makeTerms, permit, main } from '../../src/airdrop.proposal.js';
 import {
   makeBundleCacheContext,
   getBundleId,
@@ -35,7 +29,7 @@ import {
 } from '../../src/platform-goals/board-aux.core.js';
 import { makeStableFaucet } from '../mintStable.js';
 import { simulateClaim } from './actors.js';
-import { accounts, agoricPubkeys } from '../data/agd-keys.js';
+import { accounts } from '../data/agd-keys.js';
 import {
   messagesObject,
   PREPARED,
@@ -149,8 +143,7 @@ test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
     accounts.map(x => x.pubkey.key),
   );
 
-  const { powers, vatAdminState } = await mockBootstrapPowers(t.log);
-  const { feeMintAccess, zoe, chainTimerService } = powers.consume;
+  const { vatAdminState } = await mockBootstrapPowers(t.log);
 
   vatAdminState.installBundle(bundleID, bundles.tribblesAirdrop);
 

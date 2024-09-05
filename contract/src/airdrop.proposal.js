@@ -1,7 +1,7 @@
 // @ts-check
 import { E } from '@endo/far';
 import { allValues } from './objectTools.js';
-import { installContract, startContract } from './airdrop/airdrop.coreEval.js';
+import { startContract } from './airdrop/airdrop.coreEval.js';
 import { TimeIntervals } from './airdrop/helpers/time.js';
 import { AIRDROP_TIERS_STATIC } from '../test/data/account.utils.js';
 import './airdrop/types.js';
@@ -46,7 +46,7 @@ export const startAirdrop = async (permittedPowers, config) => {
   console.log('----------------------------------');
 
   const {
-    consume: { chainTimerService, startUpgradable },
+    consume: { chainTimerService },
     installation: {
       consume: { [contractName]: airdropInstallationP },
     },
@@ -56,7 +56,7 @@ export const startAirdrop = async (permittedPowers, config) => {
   } = permittedPowers;
   console.log('permitted Powers:::', permittedPowers);
 
-  const [_installation, instance, { issuer: issuerIST }, timer, timerBrand] =
+  const [_installation, _instance, { issuer: issuerIST }, timer, timerBrand] =
     await Promise.all([
       airdropInstallationP,
       airdropInstance,
