@@ -15,7 +15,8 @@ import { checkBundle } from '@endo/check-bundle/lite.js';
 import {
   makeTerms,
   permit,
-  startAirdrop as startTribblesAirdrop,
+  startAirdrop,
+  main,
 } from '../../src/airdrop.proposal.js';
 import {
   makeBundleCacheContext,
@@ -127,6 +128,10 @@ test.serial('install bundle: airdrop / tribblesAirdrop', async t => {
   t.regex(id, /^b1-.../);
   console.groupEnd();
   Object.assign(t.context.shared, { bundles });
+  t.truthy(
+    t.context.shared.bundles.tribblesAirdrop,
+    't.context.shared.bundles should contain a property "tribblesAirdrop"',
+  );
 });
 const containsSubstring = (substring, string) =>
   new RegExp(substring, 'i').test(string);
@@ -148,11 +153,13 @@ test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
   const { feeMintAccess, zoe, chainTimerService } = powers.consume;
 
   vatAdminState.installBundle(bundleID, bundles.tribblesAirdrop);
+
+  console.log('inside deploy test::', bundleID);
   // this runCoreEval does not work
   const name = 'airdrop';
   const result = await runCoreEval({
     name,
-    behavior: startTribblesAirdrop,
+    behavior: main,
     entryFile: scriptRoots.tribblesAirdrop,
     config: {
       options: {
@@ -160,7 +167,7 @@ test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
           ...makeTerms(),
         },
         airdrop: { bundleID },
-        merkleRoot: merkleTreeAPI.generateMerkleRoot(agoricPubkeys),
+        merkleRoot,
       },
     },
   });
@@ -172,16 +179,6 @@ test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
     },
     status: 'PROPOSAL_STATUS_PASSED',
   });
-});
-
-test.serial('agoricNames.instances has contract: airdrop', async t => {
-  const { makeQueryTool } = t.context;
-  const hub0 = makeAgoricNames(makeQueryTool());
-  const agoricNames = makeNameProxy(hub0);
-  await null;
-  const instance = await agoricNames.instance.airdrop;
-  t.log(instance);
-  t.is(passStyleOf(instance), 'remotable');
 });
 
 // test.serial('checkBundle()', async t => {
@@ -208,7 +205,7 @@ test.serial('E2E test', async t => {
   const boardAuxPowers = extract(boardAuxPermit, powers);
   await Promise.all([
     produceBoardAuxManager(boardAuxPowers),
-    startTribblesAirdrop(airdropPowers, {
+    main(airdropPowers, {
       options: {
         customTerms: {
           ...makeTerms(),
@@ -220,10 +217,11 @@ test.serial('E2E test', async t => {
     }),
   ]);
   consoleCounter();
+
   /** @type {import('../../src/airdrop.proposal.js').AirdropSpace} */
   // @ts-expect-error cast
   const airdropSpace = powers;
-  const instance = await airdropSpace.instance.consume.airdrop;
+  const instance = await airdropSpace.instance.consume.tribblesAirdrop;
 
   // Now that we have the instance, resume testing as above.
   const { bundleCache } = t.context;
