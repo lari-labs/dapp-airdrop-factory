@@ -2,7 +2,7 @@
 import { M } from '@endo/patterns';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind } from '@agoric/ertp';
 import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
 import { TimerShape } from '@agoric/zoe/src/typeGuards.js';
 import {
@@ -43,7 +43,7 @@ export const { OPEN, EXPIRED, PREPARED, INITIALIZED, RESTARTING } =
   AIRDROP_STATES;
 
 /** @import { CopySet } from '@endo/patterns'; */
-/** @import { Brand, Issuer, NatValue, Purse } from '@agoric/ertp/src/types.js'; */
+/** @import { AssetKind, Brand, Issuer, NatValue, Purse } from '@agoric/ertp/src/types.js'; */
 /** @import { CancelToken, TimerService, TimestampRecord } from '@agoric/time/src/types.js'; */
 /** @import { Baggage } from '@agoric/vat-data'; */
 /** @import { Zone } from '@agoric/base-zone'; */
@@ -67,6 +67,35 @@ export const customTermsShape = harden({
 
 export const divideAmountByTwo = brand => amount =>
   divideBy(amount, makeRatio(200n, brand), 0n);
+
+/**
+ * Utility function that encapsulates the process of
+ * creates a token mint, and gathers its associated rand and issuer.
+ *
+ * @async
+ * @param {ZCF} zcf
+ * @param {string} tokenName
+ * @param {AssetKind} [assetKind=AssetKind.NAT]
+ * @param {{ decimalPlaces: number; }} [displayInfo={ decimalPlaces: 6 }]
+ * @returns {{mint: ZCFMint, brand: Brand, issuer: Issuer}}
+ */
+const tokenMintFactory = async (
+  zcf,
+  tokenName,
+  assetKind = AssetKind.NAT,
+  displayInfo = { decimalPlaces: 6 },
+) => {
+  const mint = await zcf.makeZCFMint(tokenName, assetKind, {
+    ...displayInfo,
+    assetKind,
+  });
+  const { brand, issuer } = await mint.getIssuerRecord();
+  return {
+    mint,
+    brand,
+    issuer,
+  };
+};
 
 /**
  * @param {TimestampRecord} sourceTs Base timestamp used to as the starting time which a new Timestamp will be created against.
@@ -97,11 +126,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     targetNumberOfEpochs = 5,
     merkleRoot,
     initialPayoutValues = AIRDROP_TIERS_STATIC,
-    issuers,
+    issuers: { Fee: feeIssuer },
     _brands,
   } = zcf.getTerms();
-
-  const { Fee: feeIssuer } = issuers;
 
   const FeeAmountShape = harden({
     brand: feeIssuer.getBrand(),
@@ -123,13 +150,13 @@ export const start = async (zcf, privateArgs, baggage) => {
     airdropStatusTracker,
   );
 
+  const [t0, { mint: tokenMint, brand: tokenBrand, issuer: tokenIssuer }] =
+    await Promise.all([
+      E(timer).getCurrentTimestamp(),
+      tokenMintFactory(zcf, tokenName),
+    ]);
+
   const rearrange = transfers => atomicRearrange(zcf, transfers);
-
-  const t0 = await E(timer).getCurrentTimestamp();
-  const tokenMint = await zcf.makeZCFMint(tokenName);
-
-  const { brand: tokenBrand, issuer: tokenIssuer } =
-    await tokenMint.getIssuerRecord();
 
   const tokenHolderSeat = tokenMint.mintGains({
     Tokens: AmountMath.make(tokenBrand, targetTokenSupply),
@@ -141,14 +168,14 @@ export const start = async (zcf, privateArgs, baggage) => {
     {
       merkleRoot,
       targetNumberOfEpochs,
-      // exchange this for a purse created from ZCFMint
       payouts: harden(
         initialPayoutValues.map(x => AmountMath.make(tokenBrand, x)),
       ),
       epochLengthInSeconds: targetEpochLength,
+      // Do I need to store tokenIssuer and tokenBrand in baggage?
       tokenIssuer,
+      tokenBrand,
       startTime: createFutureTs(t0, startTime),
-      claimedAccountsStore: zone.setStore('claimed accounts'),
     },
     baggage,
   );
