@@ -111,7 +111,7 @@ const airdropManifest = {
     consume: {
       chainTimerService: true,
       agoricNames: true,
-      namesByAddressAdmin: true,
+      namesByAddress: true,
       brandAuxPublisher: true,
       startUpgradable: true, // to start contract and save adminFacet
       zoe: true, // to get contract terms, including issuer/brand,
