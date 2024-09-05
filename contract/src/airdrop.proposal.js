@@ -109,10 +109,8 @@ export const startAirdrop = async (permittedPowers, config) => {
 const airdropManifest = {
   [startAirdrop.name]: {
     consume: {
-      bankManager: true,
       chainTimerService: true,
       agoricNames: true,
-      namesByAddress: true,
       namesByAddressAdmin: true,
       brandAuxPublisher: true,
       startUpgradable: true, // to start contract and save adminFacet
