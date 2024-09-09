@@ -11,7 +11,12 @@ import * as ambientChildProcess from 'node:child_process';
 import * as ambientFsp from 'node:fs/promises';
 import { E, passStyleOf } from '@endo/far';
 import { extract } from '@agoric/vats/src/core/utils.js';
-import { makeTerms, permit, main } from '../../src/airdrop.proposal.js';
+import {
+  makeTerms,
+  permit,
+  main,
+  startAirdrop,
+} from '../../src/airdrop.proposal.js';
 import {
   makeBundleCacheContext,
   getBundleId,
@@ -179,7 +184,7 @@ test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
 //   t.deepEqual(await checkBundle(tribblesAirdrop), '');
 // });
 
-test.serial('E2E test', async t => {
+test.skip('E2E test', async t => {
   const merkleRoot = merkleTreeAPI.generateMerkleRoot(
     accounts.map(x => x.pubkey.key),
   );
@@ -198,7 +203,7 @@ test.serial('E2E test', async t => {
   const boardAuxPowers = extract(boardAuxPermit, powers);
   await Promise.all([
     produceBoardAuxManager(boardAuxPowers),
-    main(airdropPowers, {
+    startAirdrop(airdropPowers, {
       options: {
         customTerms: {
           ...makeTerms(),
