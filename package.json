@@ -33,7 +33,8 @@
     "@endo/netstring": "0.3.26",
     "@endo/stream-node": "0.2.26",
     "@babel/code-frame": "7.18.6",
-    "@babel/highlight": "7.22.5"
+    "@babel/highlight": "7.22.5",
+    "@noble/hashes": "1.5.0"
   },
   "scripts": {
     "start:docker": "cd contract && docker compose up -d",
