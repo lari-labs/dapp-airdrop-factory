@@ -28,3 +28,4 @@ dist-ssr
 *.sw?
 
 contract/ADTs.md
+contract/,tx.json

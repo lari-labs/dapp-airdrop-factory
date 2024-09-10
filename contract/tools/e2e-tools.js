@@ -9,6 +9,9 @@ import { dedup, makeQueryKit, poll } from './ui-kit-goals/queryKit.js';
 import { getBundleId } from './bundle-tools.js';
 import { makeVStorage } from './ui-kit-goals/batchQuery.js';
 
+const consoleCounter = (label = 'default') => {
+  console.count(`${label} counter ###`);
+};
 const BLD = '000000ubld';
 
 const makeRunner = execFile => {
@@ -103,6 +106,7 @@ const installBundle = async (fullPath, opts) => {
   const { chainId = 'agoriclocal', installer = 'user1' } = opts;
   const from = await agd.lookup(installer);
 
+  consoleCounter('install bundles');
   const explainDelay = (ms, info) => {
     progress('follow', { ...info, delay: ms / 1000 }, '...');
     return delay(ms);
@@ -377,6 +381,12 @@ const runCoreEval = async (
     deposit = `10${BLD}`,
   },
 ) => {
+  console.log('{evals, title, description} ::::', {
+    evals,
+    title,
+    description,
+  });
+  console.log('----------------------------------');
   const from = await agd.lookup(proposer);
   const info = { title, description };
   t.log('submit proposal', title);
@@ -511,6 +521,8 @@ export const makeE2ETools = (
         installed: confirm.installed,
       });
 
+      console.log('fullPath ::::', fullPath);
+      console.log('----------------------------------');
       await writeFile(
         `${fullPath}.installed`,
         JSON.stringify(
@@ -545,6 +557,11 @@ export const makeE2ETools = (
     if ('builderPath' in info) {
       throw Error('@@TODO: agoric run style');
     }
+
+    console.log('inside buildAndRunCoreEval ::::');
+    console.log('----------------------------------');
+    console.log('info ::::', info);
+    console.log('----------------------------------');
     const { name, title = name, description = title, entryFile } = info;
     const eval0 = {
       code: `bundles/deploy-${name}.js`,

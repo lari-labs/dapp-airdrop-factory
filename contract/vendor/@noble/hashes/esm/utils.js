@@ -113,10 +113,11 @@ export function utf8ToBytes(str) {
  * Keep in mind for future mutable operations.
  */
 export function toBytes(data) {
-  if (typeof data === 'string') data = utf8ToBytes(data);
+  if (typeof data === 'string') data = new Uint8Array(new TextEncoder().encode(data));
   abytes(data);
   return data;
 }
+
 /**
  * Copies several Uint8Arrays into one.
  */
@@ -150,16 +151,30 @@ export function checkOpts(defaults, opts) {
   return merged;
 }
 export function wrapConstructor(hashCons) {
-  const hashC = (msg) => hashCons().update(toBytes(msg)).digest();
+  const hashC = (msg) =>
+    hashCons()
+      // logic inside update()
+      .update(new Uint8Array(new TextEncoder().encode(msg)))
+      .digest();
   const tmp = hashCons();
+  console.log('hashC ::::', {
+    hashC,
+    hashCConstructor: hashC.constructor,
+    constructorName: hashC.constructor.name,
+  });
+  console.log('----------------------------------');
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
   hashC.create = () => hashCons();
+  console.log('hashC.propertyNames:::`', Object.getOwnPropertyNames(hashC));
   return hashC;
 }
 export function wrapConstructorWithOpts(hashCons) {
   const hashC = (msg, opts) => hashCons(opts).update(toBytes(msg)).digest();
   const tmp = hashCons({});
+  console.log('hashC ::::', hashC);
+  console.log('----------------------------------');
+  debugger;
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
   hashC.create = (opts) => hashCons(opts);

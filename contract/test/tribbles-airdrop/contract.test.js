@@ -21,14 +21,10 @@ import { extract } from '@agoric/vats/src/core/utils.js';
 import { mockBootstrapPowers } from '../../tools/boot-tools.js';
 import { getBundleId } from '../../tools/bundle-tools.js';
 import { head } from '../../src/airdrop/helpers/objectTools.js';
-import { accounts } from '../data/agd-keys.js';
+import { accounts, agoricPubkeys } from '../data/agd-keys.js';
 import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
 import { simulateClaim } from './actors.js';
-import { OPEN } from '../../src/airdrop/airdropKitCreator.js';
-
-const generateInt = x => () => Math.floor(Math.random() * (x + 1));
-
-const createTestTier = generateInt(4); // ?
+import { messagesObject, OPEN } from '../../src/airdrop/airdropKitCreator.js';
 
 /** @typedef {typeof import('../../src/airdrop/airdropKitCreator.js').start} AssetContractFn */
 
@@ -164,12 +160,6 @@ test.serial('Start the contract', async t => {
   t.log(contractInstance.instance);
   t.is(typeof contractInstance.instance, 'object');
 });
-const makeOfferArgs = ({ pubkey: { key }, address }) => ({
-  key,
-  proof: merkleTreeAPI.generateMerkleProof(key, publicKeys),
-  address,
-  tier: createTestTier(),
-});
 
 test('Airdrop ::: happy paths', async t => {
   const { zoe: zoeRef, bundle, faucet } = await t.context;
@@ -192,19 +182,47 @@ test('Airdrop ::: happy paths', async t => {
     feePurse.getCurrentAmount(),
     AmountMath.make(t.context.testFeeBrand, 5_000_000n),
   );
-  const offerArgs = makeOfferArgs(head(accounts));
 
-  console.log({ offerArgs });
-  await simulateClaim(t, zoeRef, instance.instance, feePurse, offerArgs);
+  await simulateClaim(t, zoeRef, instance.instance, feePurse, head(accounts));
 
   await E(timer).advanceBy(oneDay);
 
-  await simulateClaim(
-    t,
-    zoeRef,
-    instance.instance,
-    feePurse,
-    makeOfferArgs(accounts[2]),
+  await simulateClaim(t, zoeRef, instance.instance, feePurse, accounts[2]);
+
+  await E(timer).advanceBy(oneDay);
+
+  t.deepEqual(await E(publicFacet).getStatus(), 'claim-window-open');
+
+  await E(timer).advanceBy(oneDay);
+});
+
+test('pause method', async t => {
+  const { zoe: zoeRef, bundle, faucet } = await t.context;
+  console.log(t.context);
+  const { instance, publicFacet, timer } = await startLocalInstance(t, bundle, {
+    zoe: zoeRef,
+    issuers: { Fee: await E(zoeRef).getFeeIssuer() },
+    terms: defaultCustomTerms,
+  });
+
+  await E(timer).advanceBy(oneDay * (oneDay / 2n));
+
+  t.deepEqual(await E(publicFacet).getStatus(), OPEN);
+
+  await E(timer).advanceBy(oneDay);
+  const feePurse = await faucet(5n * UNIT6);
+
+  await simulateClaim(t, zoeRef, instance.instance, feePurse, accounts[2]);
+
+  await E(timer).advanceBy(oneDay);
+
+  await E(instance.creatorFacet).pauseContract();
+
+  await t.throwsAsync(
+    simulateClaim(t, zoeRef, instance.instance, feePurse, accounts[3]),
+    {
+      message: `not accepting offer with description "${messagesObject.makeClaimInvitationDescription()}"`,
+    },
   );
 
   await E(timer).advanceBy(oneDay);
@@ -231,7 +249,10 @@ test.skip('MN-2 Task: Add a deployment test that exercises the core-eval that wi
     produceBoardAuxManager(boardAuxPowers),
     startAirdrop(airdropPowers, {
       options: {
-        customTerms: makeTerms(),
+        customTerms: {
+          ...makeTerms(),
+          merkleRoot: merkleTreeAPI.generateMerkleRoot(agoricPubkeys),
+        },
         airdrop: { bundleID },
       },
     }),
@@ -243,89 +264,9 @@ test.skip('MN-2 Task: Add a deployment test that exercises the core-eval that wi
   const { bundleCache } = t.context;
   const { faucet } = makeStableFaucet({ bundleCache, feeMintAccess, zoe });
   await t.throwsAsync(
-    simulateClaim(
-      t,
-      zoe,
-      instance,
-      await faucet(5n * UNIT6),
-      makeOfferArgs(accounts[3]),
-    ),
+    simulateClaim(t, zoe, instance, await faucet(5n * UNIT6), accounts[3]),
     {
       message: 'Claim attempt failed.',
     },
   );
 });
-
-// test('use the code that will go on chain to start the contract', async t => {
-//   const noop = harden(() => {});
-
-//   // Starting the contract consumes an installation
-//   // and produces an instance, brand, and issuer.
-//   // We coordinate these with promises.
-//   const makeProducer = () => ({ ...makePromiseKit(), reset: noop });
-//   const sync = {
-//     installation: makeProducer(),
-//     instance: makeProducer(),
-//     brand: makeProducer(),
-//     issuer: makeProducer(),
-//   };
-
-//   /**
-//    * Chain bootstrap makes a number of powers available
-//    * to code approved by BLD staker governance.
-//    *
-//    * Here we simulate the ones needed for starting this contract.
-//    */
-//   const mockBootstrap = async () => {
-//     const board = { getId: noop };
-//     const chainStorage = Far('chainStorage', {
-//       makeChildNode: async () => chainStorage,
-//       setValue: async () => {},
-//     });
-
-//     const { zoe } = t.context;
-//     const startUpgradable = async ({
-//       installation,
-//       issuerKeywordRecord,
-//       label,
-//       terms,
-//     }) =>
-//       E(zoe).startInstance(installation, issuerKeywordRecord, terms, {}, label);
-//     const feeIssuer = await E(zoe).getFeeIssuer();
-//     const feeBrand = await E(feeIssuer).getBrand();
-
-//     const pFor = x => Promise.resolve(x);
-//     const powers = {
-//       consume: { zoe, chainStorage, startUpgradable, board },
-//       brand: {
-//         consume: { IST: pFor(feeBrand) },
-//         produce: { Item: sync.brand },
-//       },
-//       issuer: {
-//         consume: { IST: pFor(feeIssuer) },
-//         produce: { Item: sync.issuer },
-//       },
-//       installation: { consume: { airdrop: sync.installation.promise } },
-//       instance: { produce: { airdrop: sync.instance } },
-//     };
-//     return powers;
-//   };
-
-//   const powers = await mockBootstrap();
-
-//   // Code to install the contract is automatically
-//   // generated by `agoric run`. No need to test that part.
-//   const { zoe, bundle } = t.context;
-//   const installation = E(zoe).install(bundle);
-//   sync.installation.resolve(installation);
-
-//   // When the BLD staker governance proposal passes,
-//   // the startup function gets called.
-//   await startairdropContract(powers);
-//   const instance = await sync.instance.promise;
-
-//   // Now that we have the instance, resume testing as above.
-//   const { feeMintAccess, bundleCache } = t.context;
-//   const { faucet } = makeStableFaucet({ bundleCache, feeMintAccess, zoe });
-//   await alice(t, zoe, instance, await faucet(5n * UNIT6));
-// });

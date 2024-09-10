@@ -33,20 +33,9 @@ const makeStateMachine = (
     canTransitionTo: nextState =>
       allowedTransitions.get(state).includes(nextState),
     transitionTo: nextState => {
-      console.group('INSIDE makeStateMachine scope');
-      console.log(
-        'currentStatus ::::',
-        statusTracker.get(STATE_MACHINE_STATUS_KEY),
-      );
-      console.log('----------------------------------');
-      console.log('------- BEFORE setStatus -----------');
       assert(allowedTransitions.get(state).includes(nextState));
       state = nextState;
       statusTracker.set(STATE_MACHINE_STATUS_KEY, state);
-      console.log('currentState::', { state });
-      console.log('----------------------------------');
-      console.log('------- AFTER setStatus -----------');
-      console.groupEnd();
     },
     getStatus: () => statusTracker.get(STATE_MACHINE_STATUS_KEY),
   });

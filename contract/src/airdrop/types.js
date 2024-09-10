@@ -43,3 +43,26 @@
  * Represents a testable account with cosmos account information and expected value.
  * @typedef {cosmosAccountInformation & {tier: string}} EligibleAccountObject
  */
+
+/**
+ * @typedef {object} CustomContractTerms
+ * @property {bigint[]} initialPayoutValues Values to be used when constructing each amount that will be paid to claimants according to their tier.
+ * @property {import('@agoric/ertp/src/types.js').Amount} feePrice The fee associated with exercising one's right to claim a token.
+ * @property {bigint} targetTokenSupply Base supply of tokens to be distributed throughout an airdrop campaign.
+ * @property {string} tokenName Name of the token to be created and then airdropped to eligible claimaints.
+ * @property {number} targetNumberOfEpochs Total number of epochs the airdrop campaign will last for.
+ * @property {bigint} targetEpochLength Length of time for each epoch, denominated in seconds.
+ * @property {import('@agoric/time/src/types').RelativeTimeRecord} startTime Length of time (denoted in seconds) between the time in which the contract is started and the time at which users can begin claiming tokens.
+ * @property {string} merkleRoot Root hash of merkle tree containing all eligible claimans, represented as a hex string.
+ */
+
+/**
+ * @typedef {object} DefaultZCFTerms
+ * @property {import('@agoric/ertp/src/types.js').Brand[]} brands
+ * @property {import('@agoric/ertp/src/types.js').Issuer[]} issuers
+ */
+
+/**
+ * Represents a testable account with cosmos account information and expected value.
+ * @typedef {CustomContractTerms & DefaultZCFTerms} ContractTerms
+ */
