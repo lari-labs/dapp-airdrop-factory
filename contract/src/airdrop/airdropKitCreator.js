@@ -1,11 +1,15 @@
 // @ts-nocheck
-import { M, mustMatch } from '@endo/patterns';
+import { M } from '@endo/patterns';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
-import { AmountMath, BrandShape } from '@agoric/ertp';
+import { AmountMath, AssetKind } from '@agoric/ertp';
 import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
 import { TimerShape } from '@agoric/zoe/src/typeGuards.js';
-import { atomicRearrange } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  atomicRearrange,
+  makeRatio,
+} from '@agoric/zoe/src/contractSupport/index.js';
+import { divideBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeWaker, oneDay } from './helpers/time.js';
 import {
   handleFirstIncarnation,
@@ -15,6 +19,13 @@ import { makeStateMachine } from './helpers/stateMachine.js';
 import { createClaimSuccessMsg } from './helpers/messages.js';
 import { objectToMap } from './helpers/objectTools.js';
 import { getMerkleRootFromMerkleProof } from '../merkle-tree/index.js';
+import './types.js';
+
+export const messagesObject = {
+  makeClaimInvitationDescription: () => 'claim airdrop',
+  makeIllegalActionString: status =>
+    `Airdrop can not be claimed when contract status is: ${status}.`,
+};
 
 const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n];
 
@@ -32,7 +43,7 @@ export const { OPEN, EXPIRED, PREPARED, INITIALIZED, RESTARTING } =
   AIRDROP_STATES;
 
 /** @import { CopySet } from '@endo/patterns'; */
-/** @import { Brand, Issuer, NatValue, Purse } from '@agoric/ertp/src/types.js'; */
+/** @import { AssetKind, Brand, Issuer, NatValue, Purse } from '@agoric/ertp/src/types.js'; */
 /** @import { CancelToken, TimerService, TimestampRecord } from '@agoric/time/src/types.js'; */
 /** @import { Baggage } from '@agoric/vat-data'; */
 /** @import { Zone } from '@agoric/base-zone'; */
@@ -54,6 +65,38 @@ export const customTermsShape = harden({
   merkleRoot: M.string(),
 });
 
+export const divideAmountByTwo = brand => amount =>
+  divideBy(amount, makeRatio(200n, brand), 0n);
+
+/**
+ * Utility function that encapsulates the process of
+ * creates a token mint, and gathers its associated rand and issuer.
+ *
+ * @async
+ * @param {ZCF} zcf
+ * @param {string} tokenName
+ * @param {AssetKind} assetKind
+ * @param {{ decimalPlaces: number; }} displayInfo
+ * @returns {{mint: ZCFMint, brand: Brand, issuer: Issuer}}
+ */
+const tokenMintFactory = async (
+  zcf,
+  tokenName,
+  assetKind = AssetKind.NAT,
+  displayInfo = { decimalPlaces: 6 },
+) => {
+  const mint = await zcf.makeZCFMint(tokenName, assetKind, {
+    ...displayInfo,
+    assetKind,
+  });
+  const { brand, issuer } = await mint.getIssuerRecord();
+  return {
+    mint,
+    brand,
+    issuer,
+  };
+};
+
 /**
  * @param {TimestampRecord} sourceTs Base timestamp used to as the starting time which a new Timestamp will be created against.
  * @param {RelativeTimeRecordShape} inputTs Relative timestamp spanning the interval of time between sourceTs and the newly created timestamp
@@ -61,20 +104,6 @@ export const customTermsShape = harden({
 
 const createFutureTs = (sourceTs, inputTs) =>
   TimeMath.absValue(sourceTs) + TimeMath.relValue(inputTs);
-
-/**
- *
- * @typedef {object} ContractTerms
- * @property {object} tiers
- * @property {Amount} feePrice The fee associated with exercising one's right to claim a token.
- * @property {bigint} targetTokenSupply Base supply of tokens to be distributed throughout an airdrop campaign.
- * @property {string} tokenName Name of the token to be created and then airdropped to eligible claimaints.
- * @property {number} targetNumberOfEpochs Total number of epochs the airdrop campaign will last for.
- * @property {bigint} targetEpochLength Length of time for each epoch, denominated in seconds.
- * @property {RelativeTimeRecordShape} startTime Length of time (denoted in seconds) between the time in which the contract is started and the time at which users can begin claiming tokens.
- * @property {{ [keyword: string]: Brand }} brands
- * @property {{ [keyword: string]: Issuer }} issuers
- */
 
 /**
  * @param {ZCF<ContractTerms>} zcf
@@ -97,7 +126,14 @@ export const start = async (zcf, privateArgs, baggage) => {
     targetNumberOfEpochs = 5,
     merkleRoot,
     initialPayoutValues = AIRDROP_TIERS_STATIC,
+    issuers: { Fee: feeIssuer },
+    _brands,
   } = zcf.getTerms();
+
+  const FeeAmountShape = harden({
+    brand: feeIssuer.getBrand(),
+    value: 5n,
+  });
 
   const airdropStatusTracker = zone.mapStore('airdrop claim window status');
 
@@ -114,28 +150,32 @@ export const start = async (zcf, privateArgs, baggage) => {
     airdropStatusTracker,
   );
 
+  const [t0, { mint: tokenMint, brand: tokenBrand, issuer: tokenIssuer }] =
+    await Promise.all([
+      E(timer).getCurrentTimestamp(),
+      tokenMintFactory(zcf, tokenName),
+    ]);
+
   const rearrange = transfers => atomicRearrange(zcf, transfers);
-
-  const t0 = await E(timer).getCurrentTimestamp();
-  const tokenMint = await zcf.makeZCFMint(tokenName);
-
-  const { brand: tokenBrand, issuer: tokenIssuer } =
-    await tokenMint.getIssuerRecord();
 
   const tokenHolderSeat = tokenMint.mintGains({
     Tokens: AmountMath.make(tokenBrand, targetTokenSupply),
   });
+
+  const divideAmount = divideAmountByTwo(tokenBrand);
+
   await objectToMap(
     {
       merkleRoot,
       targetNumberOfEpochs,
-      // exchange this for a purse created from ZCFMint
-      payouts: initialPayoutValues,
+      payouts: harden(
+        initialPayoutValues.map(x => AmountMath.make(tokenBrand, x)),
+      ),
       epochLengthInSeconds: targetEpochLength,
+      // Do I need to store tokenIssuer and tokenBrand in baggage?
       tokenIssuer,
+      tokenBrand,
       startTime: createFutureTs(t0, startTime),
-      claimedAccountsStore: zone.setStore('claimed accounts'),
-      airdropStatusTracker: zone.mapStore('airdrop status'),
     },
     baggage,
   );
@@ -157,50 +197,25 @@ export const start = async (zcf, privateArgs, baggage) => {
     }),
   };
 
-  const initState =
-    /**
-     * @description initializes state for this exoClassKit.
-     *
-     * TODO
-     * Create issue for:
-     *  - My use of baggage values throughout code but specificially within exo context.
-     *  - What is the relation between durable values <-> state values.
-     * More specifically, state values such as that which exist in a durableZone.
-     * Reviewin
-     *
-     * @param {CopySet} store
-     * @param {CancelToken} currentCancelToken
-     */
-    (store, currentCancelToken) => {
-      console.log('this value::', this);
-      const state = {
-        /** @type { object } */
-        currentCancelToken,
-        claimCount: 0,
-        claimedAccounts: store,
-        payoutArray: baggage.get('payouts'),
-        currentEpoch: null,
-      };
-      return state;
-    };
   const prepareContract = zone.exoClassKit(
     'Tribble Token Distribution',
     interfaceGuard,
-    initState,
+    (store, currentCancelToken) => ({
+      currentCancelToken,
+      claimCount: 0,
+      claimedAccounts: store,
+      payoutArray: baggage.get('payouts'),
+      currentEpoch: null,
+    }),
     {
       helper: {
         /**
          * @param {TimestampRecord} absTime
-         * @param {number} epochIdx
+         * @param {bigint} epochIdx
          */
         updateEpochDetails(absTime, epochIdx) {
           const { helper } = this.facets;
-          this.state.currentEpoch = BigInt(epochIdx);
-          console.log('current epoch', this.state.currentEpoch);
-          this.state.payoutArray = harden(
-            this.state.payoutArray.map(x => x / 2n),
-          );
-
+          this.state.currentEpoch = epochIdx;
           if (this.state.currentEpoch === targetNumberOfEpochs) {
             zcf.shutdown('Airdrop complete');
             stateMachine.transitionTo(EXPIRED);
@@ -211,8 +226,6 @@ export const start = async (zcf, privateArgs, baggage) => {
         },
         async updateDistributionMultiplier(wakeTime) {
           const { facets } = this;
-          // const epochDetails = newEpochDetails;
-
           this.state.currentCancelToken = cancelTokenMaker();
 
           void E(timer).setWakeup(
@@ -221,9 +234,12 @@ export const start = async (zcf, privateArgs, baggage) => {
               'updateDistributionEpochWaker',
               /** @param {TimestampRecord} latestTs */
               ({ absValue: latestTs }) => {
-                // TODO: Investigate whether this logic is still necessary. If it is not, then remove.
+                this.state.payoutArray = harden(
+                  this.state.payoutArray.map(x => divideAmount(x)),
+                );
 
-                // console.log('LATEST SET:::', tiersStore.get('current'));
+                baggage.set('payouts', this.state.payoutArray);
+
                 facets.helper.updateEpochDetails(
                   latestTs,
                   this.state.currentEpoch + 1n,
@@ -243,7 +259,9 @@ export const start = async (zcf, privateArgs, baggage) => {
         makeClaimTokensInvitation() {
           assert(
             airdropStatusTracker.get('currentStatus') === AIRDROP_STATES.OPEN,
-            'Claim attempt failed.',
+            messagesObject.makeIllegalActionString(
+              airdropStatusTracker.get('currentStatus'),
+            ),
           );
           /**
            * @param {UserSeat} claimSeat
@@ -253,40 +271,25 @@ export const start = async (zcf, privateArgs, baggage) => {
             const {
               give: { Fee: claimTokensFee },
             } = claimSeat.getProposal();
-            mustMatch(
-              claimSeat.getProposal(),
-              M.splitRecord({
-                give: {
-                  Fee: M.splitRecord({
-                    brand: BrandShape,
-                    value: 5n,
-                  }),
-                },
-              }),
-            );
 
-            console.log('----------------------------------');
             const { proof, key: pubkey, address, tier } = offerArgs;
-            assert(
-              !accountStore.has(pubkey),
-              `Allocation for address ${address} has already been claimed.`,
-            );
 
-            console.log(
-              'comparing',
-              getMerkleRootFromMerkleProof(proof),
-              merkleRoot,
-            );
+            // This line was added because of issues when testing
+            // Is there a way to gracefully test assertion failures????
+            if (accountStore.has(pubkey)) {
+              claimSeat.exit();
+              throw new Error(
+                `Allocation for address ${address} has already been claimed.`,
+              );
+            }
+
             assert.equal(
               getMerkleRootFromMerkleProof(proof),
               merkleRoot,
               'Computed proof does not equal the correct root hash. ',
             );
 
-            const paymentAmount = AmountMath.make(
-              tokenBrand,
-              this.state.payoutArray[tier],
-            );
+            const paymentAmount = this.state.payoutArray[tier];
 
             rearrange(
               harden([
@@ -307,7 +310,16 @@ export const start = async (zcf, privateArgs, baggage) => {
 
             return createClaimSuccessMsg(paymentAmount);
           };
-          return zcf.makeInvitation(claimHandler, 'airdrop claim handler');
+          return zcf.makeInvitation(
+            claimHandler,
+            messagesObject.makeClaimInvitationDescription(),
+            {
+              currentEpoch: this.state.currentEpoch,
+            },
+            M.splitRecord({
+              give: { Fee: FeeAmountShape },
+            }),
+          );
         },
         getStatus() {
           return stateMachine.getStatus();
@@ -321,7 +333,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       },
       creator: {
         pauseContract() {
-          // TODO setOfferFilter
+          zcf.setOfferFilter([messagesObject.makeClaimInvitationDescription()]);
         },
       },
     },

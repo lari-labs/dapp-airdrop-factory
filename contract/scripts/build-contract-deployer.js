@@ -14,10 +14,10 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForAirdrop } from '../src/airdrop.proposal.js';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('./types.js').ProposalBuilder} */
 export const airdropProposalBuilder = async ({ publishRef, install }) => {
   return harden({
-    sourceSpec: '../src/airdrop-proposal.js',
+    sourceSpec: '../src/airdrop.proposal.js',
     getManifestCall: [
       getManifestForAirdrop.name,
       {
@@ -35,7 +35,7 @@ export const airdropProposalBuilder = async ({ publishRef, install }) => {
   });
 };
 
-/** @type {DeployScriptFunction} */
+/** @type {import('./types.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreProposal } = await makeHelpers(homeP, endowments);
   await writeCoreProposal('start-airdrop', airdropProposalBuilder);

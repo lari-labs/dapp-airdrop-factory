@@ -1683,7 +1683,7 @@
     "@endo/nat" "^4.1.27"
     "@endo/promise-kit" "^0.2.56"
 
-"@endo/check-bundle@0.2.18", "@endo/check-bundle@^0.2.18":
+"@endo/check-bundle@0.2.18", "@endo/check-bundle@^0.2.18", "@endo/check-bundle@^1.0.9":
   version "0.2.18"
   resolved "https://registry.yarnpkg.com/@endo/check-bundle/-/check-bundle-0.2.18.tgz#0880f4237dbc1c72c292aab3eccd7b1c20506a97"
   integrity sha512-PQB8ACM6ukv8dihzvqyfnHaKNr/+pKdJKmtZSxBvPmyBR4VnmLRSeTWMgMKnnmd27AyYN7vxdvKrL+qZDMA4RQ==

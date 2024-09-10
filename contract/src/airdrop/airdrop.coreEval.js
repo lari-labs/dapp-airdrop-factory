@@ -47,13 +47,14 @@ export const installContract = async (
  *   name: string;
  *   startArgs?: StartArgs;
  *   issuerNames?: string[];
- * }} opts
+ *   merkleRoot: string;
+ * }} config
  *
  * @typedef {Partial<Parameters<Awaited<BootstrapPowers['consume']['startUpgradable']>>[0]>} StartArgs
  */
 export const startContract = async (
   powers,
-  { name, startArgs, issuerNames },
+  config = { name: '', startArgs: {}, issuerNames: [], merkleRoot: '' },
 ) => {
   const {
     consume: { startUpgradable },
@@ -61,11 +62,21 @@ export const startContract = async (
     instance: { produce: produceInstance },
   } = powers;
 
+  const { name, startArgs, issuerNames, merkleRoot } = config;
+
   const installation = await consumeInstallation[name];
+  assert(
+    merkleRoot !== '',
+    `merkleRoot with length ${merkleRoot.length} is not valid.`,
+  );
+  assert(merkleRoot, 'no merkle root???');
 
   console.log(name, 'start args:', startArgs);
   const started = await E(startUpgradable)({
-    ...startArgs,
+    ...{
+      ...startArgs,
+      merkleRoot,
+    },
     installation,
     label: name,
   });
