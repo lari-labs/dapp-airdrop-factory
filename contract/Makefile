@@ -1,5 +1,5 @@
 CHAINID=agoriclocal
-USER1ADDR=$(shell agd keys show user1 -a --keyring-backend="test")
+USER1ADDR=$(kagd keys show user1 -a --keyring-backend="test")
 ACCT_ADDR=$(USER1ADDR)
 BLD=000000ubld
 
@@ -13,8 +13,8 @@ list:
 		awk -v RS= -F: '$$1 ~ /^[^#%]+$$/ { print $$1 }'
 
 balance-q:
-	agd keys show user1 -a --keyring-backend="test"
-	agd query bank balances $(ACCT_ADDR)
+	kagd keys show user1 -a --keyring-backend="test"
+	kagd query bank balances $(ACCT_ADDR)
 
 GAS_ADJUSTMENT=1.2
 SIGN_BROADCAST_OPTS=--keyring-backend=test --chain-id=$(CHAINID) \
@@ -36,29 +36,29 @@ mint4k:
 
 FUNDS=321$(BLD)
 fund-acct:
-	agd tx bank send validator $(ACCT_ADDR) $(FUNDS) \
+	kagd tx bank send validator $(ACCT_ADDR) $(FUNDS) \
 	  $(SIGN_BROADCAST_OPTS) \
 	  -o json >,tx.json
 	jq '{code: .code, height: .height}' ,tx.json
 
 gov-q:
-	agd query gov proposals --output json | \
+	kagd query gov proposals --output json | \
 		jq -c '.proposals[] | [.proposal_id,.voting_end_time,.status]'
 
 gov-voting-q:
-	agd query gov proposals --status=voting_period --output json | \
+	kagd query gov proposals --status=voting_period --output json | \
 		jq -c '.proposals[].proposal_id'
 
 PROPOSAL=1
 VOTE_OPTION=yes
 vote:
-	agd tx gov vote $(PROPOSAL) $(VOTE_OPTION) --from=validator \
+	kagd tx gov vote $(PROPOSAL) $(VOTE_OPTION) --from=validator \
 	  $(SIGN_BROADCAST_OPTS) \
 	  -o json >,tx.json
 	jq '{code: .code, height: .height}' ,tx.json
 
 instance-q:
-	agd query vstorage data published.agoricNames.instance -o json
+	kagd query vstorage data published.agoricNames.instance -o json
 
 start-contract: check-contract-airdrop
 
@@ -67,6 +67,8 @@ check-contract-airdrop: start-contract-airdrop
 	@ curl -s $(API)/agoric/vstorage/data/published.agoricNames.instance \
 	  | jq -c '.value | fromjson | .values[-1] | fromjson | .body[1:] | fromjson | .[]' \
 	  | grep airdrop
+
+start: make start-contract-airdrop start-contract
 
 start-contract-airdrop:
 	yarn node scripts/deploy-contract.js \

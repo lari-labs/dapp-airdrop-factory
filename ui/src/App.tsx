@@ -1,157 +1,45 @@
-import { useEffect } from 'react';
+import { ContractProvider } from './providers/Contract';
+import { AgoricProvider } from '@agoric/react-components';
+import { Navbar } from './components/Navbar';
+import { Tabs } from './components/Tabs';
+import { wallets } from 'cosmos-kit';
+import { ThemeProvider, useTheme } from '@interchain-ui/react';
+import '@agoric/react-components/dist/style.css';
+// import { Button, Modal } from 'react-daisyui';
 
-import './App.css';
-import {
-  makeAgoricChainStorageWatcher,
-  AgoricChainStoragePathKind as Kind,
-} from '@agoric/rpc';
-import { create } from 'zustand';
-import {
-  makeAgoricWalletConnection,
-  suggestChain,
-} from '@agoric/web-components';
-import { subscribeLatest } from '@agoric/notifier';
-import { makeCopyBag } from '@agoric/store';
-import { Logos } from './components/Logos';
-import { Inventory } from './components/Inventory';
-import { Trade } from './components/Trade';
-
-const { entries, fromEntries } = Object;
-
-type Wallet = Awaited<ReturnType<typeof makeAgoricWalletConnection>>;
-
-const ENDPOINTS = {
-  RPC: 'http://localhost:26657',
-  API: 'http://localhost:1317',
-};
-
-const watcher = makeAgoricChainStorageWatcher(ENDPOINTS.API, 'agoriclocal');
-
-interface AppState {
-  wallet?: Wallet;
-  agoricBasicsInstance?: unknown;
-  brands?: Record<string, unknown>;
-  purses?: Array<Purse>;
-}
-
-const useAppStore = create<AppState>(() => ({}));
-
-const setup = async () => {
-  watcher.watchLatest<Array<[string, unknown]>>(
-    [Kind.Data, 'published.agoricNames.instance'],
-    instances => {
-      console.log('got instances', instances);
-      useAppStore.setState({
-        agoricBasicsInstance: instances
-          .find(([name]) => name === 'agoricBasics')!
-          .at(1),
-      });
-    },
-  );
-
-  watcher.watchLatest<Array<[string, unknown]>>(
-    [Kind.Data, 'published.agoricNames.brand'],
-    brands => {
-      console.log('Got brands', brands);
-      useAppStore.setState({
-        brands: fromEntries(brands),
-      });
-    },
-  );
-};
-
-const connectWallet = async () => {
-  await suggestChain('https://local.agoric.net/network-config');
-  const wallet = await makeAgoricWalletConnection(watcher, ENDPOINTS.RPC);
-  useAppStore.setState({ wallet });
-  const { pursesNotifier } = wallet;
-  for await (const purses of subscribeLatest(pursesNotifier)) {
-    console.log('got purses', purses);
-    useAppStore.setState({ purses });
-  }
-};
-
-const makeOffer = (giveValue: bigint, wantChoices: Record<string, bigint>) => {
-  const { wallet, agoricBasicsInstance, brands } = useAppStore.getState();
-  if (!agoricBasicsInstance) throw Error('no contract instance');
-  if (!(brands && brands.IST && brands.Item))
-    throw Error('brands not available');
-
-  const value = makeCopyBag(entries(wantChoices));
-  const want = { Items: { brand: brands.Item, value } };
-  const give = { Price: { brand: brands.IST, value: giveValue } };
-
-  wallet?.makeOffer(
-    {
-      source: 'contract',
-      instance: agoricBasicsInstance,
-      publicInvitationMaker: 'makeTradeInvitation',
-    },
-    { give, want },
-    undefined,
-    (update: { status: string; data?: unknown }) => {
-      if (update.status === 'error') {
-        alert(`Offer error: ${update.data}`);
-      }
-      if (update.status === 'accepted') {
-        alert('Offer accepted');
-      }
-      if (update.status === 'refunded') {
-        alert('Offer rejected');
-      }
-    },
-  );
-};
 
 function App() {
-  useEffect(() => {
-    setup();
-  }, []);
+  const { themeClass } = useTheme();
 
-  const { wallet, purses } = useAppStore(({ wallet, purses }) => ({
-    wallet,
-    purses,
-  }));
-  const istPurse = purses?.find(p => p.brandPetname === 'IST');
-  const itemsPurse = purses?.find(p => p.brandPetname === 'Item');
-
-  const tryConnectWallet = () => {
-    connectWallet().catch(err => {
-      switch (err.message) {
-        case 'KEPLR_CONNECTION_ERROR_NO_SMART_WALLET':
-          alert(
-            'no smart wallet at that address; try: yarn docker:make print-key',
-          );
-          break;
-        default:
-          alert(err.message);
-      }
-    });
-  };
-
+  console.log({themeClass})
   return (
-    <>
-      <Logos />
-      <h1>Items Listed on Agoric Basics</h1>
-
-      <div className="card">
-        <Trade
-          makeOffer={makeOffer}
-          istPurse={istPurse as Purse}
-          walletConnected={!!wallet}
-        />
-        <hr />
-        {wallet && istPurse ? (
-          <Inventory
-            address={wallet.address}
-            istPurse={istPurse}
-            itemsPurse={itemsPurse as Purse}
-          />
-        ) : (
-          <button onClick={tryConnectWallet}>Connect Wallet</button>
-        )}
+    <ThemeProvider>
+      <div className={themeClass}>
+        <AgoricProvider
+          // @ts-expect-error XXX _chainWalletMap' is protected but type 'MainWalletBase' is not a class derived from 'MainWalletBase
+          wallets={wallets.extension}
+          agoricNetworkConfigs={[
+            {
+              testChain: {
+                chainId: 'agoriclocal',
+                chainName: 'agoric-local',
+                iconUrl: 'agoric.svg', // Optional icon for dropdown display
+              },
+              apis: {
+                rest: ['http://localhost:1317'],
+                rpc: ['http://localhost:26657'],
+              },
+            },
+          ]}
+          defaultChainName="agoric-local"
+        >
+          <ContractProvider>
+            <Navbar />
+            <Tabs />
+          </ContractProvider>
+        </AgoricProvider>
       </div>
-    </>
+    </ThemeProvider>
   );
 }
 

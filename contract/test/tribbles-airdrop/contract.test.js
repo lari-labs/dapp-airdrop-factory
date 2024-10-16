@@ -22,11 +22,12 @@ import { mockBootstrapPowers } from '../../tools/boot-tools.js';
 import { getBundleId } from '../../tools/bundle-tools.js';
 import { head } from '../../src/airdrop/helpers/objectTools.js';
 import { accounts, agoricPubkeys } from '../data/agd-keys.js';
-import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
-import { simulateClaim } from './actors.js';
-import { messagesObject, OPEN } from '../../src/airdrop/airdropKitCreator.js';
 
-/** @typedef {typeof import('../../src/airdrop/airdropKitCreator.js').start} AssetContractFn */
+import { simulateClaim } from './actors.js';
+import { messagesObject, OPEN } from '../../src/airdrop/airdrop.contract.js';
+import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
+
+/** @typedef {typeof import('../../src/airdrop/airdrop.contract.js').start} AssetContractFn */
 
 const myRequire = createRequire(import.meta.url);
 const contractPath = myRequire.resolve(`../../src/airdrop.contract.js`);
@@ -114,20 +115,18 @@ test('Install the contract', async t => {
 const startLocalInstance = async (
   t,
   bundle,
-  { issuers: { Fee }, zoe, terms: customTerms },
+  { issuers: { Fee: feeIssuer }, zoe, terms: customTerms },
 ) => {
   const timer = buildManualTimer();
 
-  const timerBrand = await E(timer).getTimerBrand();
   /** @type {ERef<Installation<AssetContractFn>>} */
   const installation = await E(zoe).install(bundle);
 
   const instance = await E(zoe).startInstance(
     installation,
-    { Fee },
+    { Fee: feeIssuer },
     {
       ...customTerms,
-      startTime: harden({ timerBrand, relValue: customTerms.startTime }),
     },
     { timer },
   );
@@ -139,7 +138,13 @@ const startLocalInstance = async (
 };
 
 test.serial('Start the contract', async t => {
-  const { zoe: zoeRef, bundle, bundleCache, feeMintAccess } = t.context;
+  const {
+    zoe: zoeRef,
+    bundle,
+    bundleCache,
+    feeMintAccess,
+    testFeeBrand,
+  } = t.context;
 
   const testFeeIssuer = await E(zoeRef).getFeeIssuer();
 
@@ -153,7 +158,10 @@ test.serial('Start the contract', async t => {
   const localTestConfig = {
     zoe: zoeRef,
     issuers: { Fee: testFeeIssuer },
-    terms: defaultCustomTerms,
+    terms: {
+      ...defaultCustomTerms,
+      feeAmount: AmountMath.make(testFeeBrand, 5n),
+    },
   };
 
   const contractInstance = await startLocalInstance(t, bundle, localTestConfig);
@@ -162,12 +170,15 @@ test.serial('Start the contract', async t => {
 });
 
 test('Airdrop ::: happy paths', async t => {
-  const { zoe: zoeRef, bundle, faucet } = await t.context;
+  const { zoe: zoeRef, bundle, faucet, testFeeBrand } = await t.context;
   console.log(t.context);
   const { instance, publicFacet, timer } = await startLocalInstance(t, bundle, {
     zoe: zoeRef,
     issuers: { Fee: await E(zoeRef).getFeeIssuer() },
-    terms: defaultCustomTerms,
+    terms: {
+      ...defaultCustomTerms,
+      feeAmount: AmountMath.make(testFeeBrand, 5n),
+    },
   });
 
   await E(timer).advanceBy(oneDay * (oneDay / 2n));
@@ -197,12 +208,15 @@ test('Airdrop ::: happy paths', async t => {
 });
 
 test('pause method', async t => {
-  const { zoe: zoeRef, bundle, faucet } = await t.context;
+  const { zoe: zoeRef, bundle, faucet, testFeeBrand } = await t.context;
   console.log(t.context);
   const { instance, publicFacet, timer } = await startLocalInstance(t, bundle, {
     zoe: zoeRef,
     issuers: { Fee: await E(zoeRef).getFeeIssuer() },
-    terms: defaultCustomTerms,
+    terms: {
+      ...defaultCustomTerms,
+      feeAmount: AmountMath.make(testFeeBrand, 5n),
+    },
   });
 
   await E(timer).advanceBy(oneDay * (oneDay / 2n));
@@ -233,7 +247,7 @@ test('pause method', async t => {
 });
 
 test.skip('MN-2 Task: Add a deployment test that exercises the core-eval that will be used to install & start the contract on chain.', async t => {
-  const { bundle } = t.context;
+  const { bundle, testFeeBrand } = t.context;
 
   console.groupEnd();
   const bundleID = getBundleId(bundle);
@@ -252,6 +266,7 @@ test.skip('MN-2 Task: Add a deployment test that exercises the core-eval that wi
         customTerms: {
           ...makeTerms(),
           merkleRoot: merkleTreeAPI.generateMerkleRoot(agoricPubkeys),
+          feeAmount: harden({ brand: testFeeBrand, value: 5n }),
         },
         airdrop: { bundleID },
       },

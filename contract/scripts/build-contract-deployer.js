@@ -12,23 +12,27 @@
  */
 
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getManifestForAirdrop } from '../src/airdrop.proposal.js';
+import { getManifestForAirdrop, makeTerms } from '../src/airdrop.proposal.js';
 
 /** @type {import('./types.js').ProposalBuilder} */
-export const airdropProposalBuilder = async ({ publishRef, install }) => {
+export const airdropProposalBuilder = async ({ publishRef, install }, opts) => {
+  console.group(
+    '------------- NESTED LOGGER OPEN:: inside airdropPrposalBuilder -------------',
+  );
+  console.log('=====================================================');
+
+  console.log('=====================================================');
+  console.log(
+    '---------- NESTED LOGGER CLOSED:: inside airdropPrposalBuilder----------',
+  );
+  console.groupEnd();
   return harden({
     sourceSpec: '../src/airdrop.proposal.js',
     getManifestCall: [
       getManifestForAirdrop.name,
       {
         airdropRef: publishRef(
-          install(
-            '../src/airdrop.contract.js',
-            '../bundles/bundle-airdrop.js',
-            {
-              persist: true,
-            },
-          ),
+          install('../src/airdrop.contract.js', '../bundle-airdrop.js'),
         ),
       },
     ],

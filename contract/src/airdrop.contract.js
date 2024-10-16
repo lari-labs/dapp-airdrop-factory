@@ -1,1 +1,1 @@
-export { start } from './airdrop/airdropKitCreator.js';
+export { start } from './airdrop/airdrop.contract.js';

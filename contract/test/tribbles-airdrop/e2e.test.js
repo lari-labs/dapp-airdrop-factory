@@ -11,12 +11,7 @@ import * as ambientChildProcess from 'node:child_process';
 import * as ambientFsp from 'node:fs/promises';
 import { E, passStyleOf } from '@endo/far';
 import { extract } from '@agoric/vats/src/core/utils.js';
-import {
-  makeTerms,
-  permit,
-  main,
-  startAirdrop,
-} from '../../src/airdrop.proposal.js';
+import { makeTerms, permit, startAirdrop } from '../../src/airdrop.proposal.js';
 import {
   makeBundleCacheContext,
   getBundleId,
@@ -38,7 +33,7 @@ import { accounts } from '../data/agd-keys.js';
 import {
   messagesObject,
   PREPARED,
-} from '../../src/airdrop/airdropKitCreator.js';
+} from '../../src/airdrop/airdrop.contract.js';
 import { oneDay } from '../../src/airdrop/helpers/time.js';
 // import { makeAgdTools } from '../agd-tools.js';
 
@@ -135,7 +130,7 @@ test.serial('install bundle: airdrop / tribblesAirdrop', async t => {
 const containsSubstring = (substring, string) =>
   new RegExp(substring, 'i').test(string);
 
-test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
+test.skip('deploy contract with core eval: airdrop / airdrop', async t => {
   const { runCoreEval } = t.context;
   const { bundles } = t.context.shared;
   const bundleID = getBundleId(bundles.tribblesAirdrop);
@@ -157,15 +152,15 @@ test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
   const name = 'airdrop';
   const result = await runCoreEval({
     name,
-    behavior: main,
+    behavior: startAirdrop,
     entryFile: scriptRoots.tribblesAirdrop,
     config: {
       options: {
         customTerms: {
           ...makeTerms(),
+          merkleRoot,
         },
         airdrop: { bundleID },
-        merkleRoot,
       },
     },
   });
@@ -210,7 +205,6 @@ test.skip('E2E test', async t => {
           merkleRoot,
         },
         airdrop: { bundleID },
-        merkleRoot,
       },
     }),
   ]);

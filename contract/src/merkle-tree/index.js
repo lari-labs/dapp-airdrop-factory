@@ -1,10 +1,19 @@
 /* eslint-disable no-shadow */
-import { sha256 } from '../../vendor/@noble/hashes/esm/sha256.js';
-import { bytesToHex } from '../../vendor/@noble/hashes/esm/utils.js';
-import { compose } from '../airdrop/helpers/objectTools.js';
+import { sha256 } from '@noble/hashes/sha256';
+import { bytesToHex } from '@noble/hashes/utils';
+
+const compose =
+  (...fns) =>
+  initialValue =>
+    fns.reduceRight((acc, val) => val(acc), initialValue);
 
 const LEFT = 'left';
 const RIGHT = 'right';
+
+const trace = label => value => {
+  console.log(label, '::::', value);
+  return value;
+};
 
 /**
  * @typedef {string} PublicKeyHash - A SHA-256 hash of a public key, represented as a hexadecimal string.
@@ -22,7 +31,7 @@ const RIGHT = 'right';
  * @returns {string} The hexadecimal representation of the SHA-256 hash of the input data.
  */
 export const computeHexEncodedSha256Hash = compose(
-  // trace('after bytesToHex'),
+  trace('after bytesToHex'),
   bytesToHex,
   // trace('after hashing'),
   sha256,

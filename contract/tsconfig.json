@@ -1,24 +1,24 @@
 {
-    "compilerOptions": {
-      "target": "esnext",
-      "module": "esnext",
-      "moduleResolution": "node",
-      "skipLibCheck": true,
-      "allowJs": true,
-      "checkJs": true,
-      "allowSyntheticDefaultImports": true,
-      "strict": false,
-      "downlevelIteration": true,
-      "strictNullChecks": true,
-      "noImplicitThis": true,
-      "noEmit": true
-    },
-      "include": [
-        "*.js",
-        "scripts/**/*.js",
-        "src/**/*.js",
-        "test/**/*.js",
-        "tools/**/*.js",
-      ],
-  }
-  
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "checkJs": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": false,
+    "downlevelIteration": true,
+    "strictNullChecks": true,
+    "noImplicitThis": true,
+    "noEmit": true
+  },
+  "include": [
+    "*.js",
+    "scripts/**/*.js",
+    "src/**/*.js",
+    "test/**/*.js",
+    "tools/**/*.js"
+  ]
+}
