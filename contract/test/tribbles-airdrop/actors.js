@@ -1,15 +1,15 @@
 import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
-import { accounts } from '../data/agd-keys.js';
-import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
+
+import { merkleTreeAPI } from '../airdrop-data/merkle-tree/index.js';
+import { accounts, agoricPubkeys as pubkeys } from '../data/agd-keys.js';
 
 const generateInt = x => () => Math.floor(Math.random() * (x + 1));
 
 const createTestTier = generateInt(4); // ?
-const publicKeys = accounts.map(x => x.pubkey.key);
 
 const makeMakeOfferArgs =
-  (keys = publicKeys) =>
+  (keys = []) =>
   ({ pubkey: { key = '' }, address = 'agoric12d3fault' }) => ({
     key,
     proof: merkleTreeAPI.generateMerkleProof(key, keys),
@@ -17,6 +17,7 @@ const makeMakeOfferArgs =
     tier: createTestTier(),
   });
 
+const makeOfferArgs = makeMakeOfferArgs(pubkeys);
 /**
  * Eligible claimant exercises their right to claim tokens.
  *
@@ -27,8 +28,6 @@ const makeMakeOfferArgs =
  * @param {{pubkey: {key: string, type: string}, address: string, tier?: number, name?: string, type?:string}} accountObject
  * @param {boolean} shouldThrow boolean flag indicating whether or not the contract is expected to throw an error.
  * @param {string} errorMessage Error message produced by contract resulting from some error arising during the claiming process.
- * @param {Array} pubkeys Array of all public keys used when constructing the contract's merkle tree
- *
  */
 const simulateClaim = async (
   t,
@@ -38,21 +37,18 @@ const simulateClaim = async (
   accountObject,
   shouldThrow = false,
   errorMessage = '',
-  pubkeys = publicKeys,
 ) => {
   const [pfFromZoe, terms] = await Promise.all([
     E(zoe).getPublicFacet(instance),
     E(zoe).getTerms(instance),
   ]);
 
-  const makeOfferArgs = makeMakeOfferArgs(pubkeys);
-
   const { brands, issuers } = terms;
 
   const claimOfferArgs = makeOfferArgs(accountObject);
 
   console.log('TERMS:::', { terms, claimOfferArgs });
-  console.log(instance.instance);
+  console.log(instance);
 
   const proposal = {
     give: { Fee: AmountMath.make(brands.Fee, 5n) },

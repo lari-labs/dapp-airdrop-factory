@@ -2,19 +2,10 @@ import { dirname, join } from 'path';
 import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'child_process';
-import { makeGetFile, makeSetupRegistry } from '../../tools/registry.js';
-import { generateMnemonic } from '../../tools/wallet.js';
-import { makeRetryUntilCondition } from '../../tools/sleep.js';
-import { makeDeployBuilder } from '../../tools/deploy.js';
-import { makeAgdTools } from '../../tools/agd-tools.js';
-
-const setupRegistry = makeSetupRegistry(makeGetFile());
-
-const chainConfig = {
-  cosmoshub: { expectedAddressPrefix: 'cosmos' },
-  osmosis: { expectedAddressPrefix: 'osmo' },
-  agoric: { expectedAddressPrefix: 'agoric' },
-};
+import { generateMnemonic } from './tools/wallet.js';
+import { makeRetryUntilCondition } from './tools/sleep.js';
+import { makeDeployBuilder } from './tools/deploy.js';
+import { makeAgdTools } from './tools/agd-tools.js';
 
 const makeKeyring = async e2eTools => {
   //   let _keys = ['user1'];
@@ -42,16 +33,36 @@ const makeKeyring = async e2eTools => {
 };
 
 const commonSetup = async t => {
-  const { useChain } = await setupRegistry();
-  const tools = await makeAgdTools(t.log, childProcess);
+  const tools = await makeAgdTools(t.log, {
+    execFileSyncFn: childProcess.execFileSync,
+    execFileFn: childProcess.execFile,
+  });
   const keyring = await makeKeyring(tools);
   const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
-  const retryUntilCondition = makeRetryUntilCondition({
-    log: t.log,
-    setTimeout: globalThis.setTimeout,
-  });
-
-  return { useChain, ...tools, ...keyring, retryUntilCondition, deployBuilder };
+  const retryUntilCondition = makeRetryUntilCondition({ log: t.log });
+  const startContract = async (contractName = '', contractBuilder = '') => {
+    const { vstorageClient } = tools;
+    const instances = Object.fromEntries(
+      await vstorageClient.queryData(`published.agoricNames.instance`),
+    );
+    // if (contractName in instances) {
+    //   return t.log('Contract found. Skipping installation...');
+    // }
+    t.log('bundle and install contract', contractName);
+    await deployBuilder(contractBuilder);
+    await retryUntilCondition(
+      () => vstorageClient.queryData(`published.agoricNames.instance`),
+      res => Object.fromEntries(res).filter(x => x === contractName).length > 0,
+      `${contractName} instance is available`,
+    );
+  };
+  return {
+    ...tools,
+    ...keyring,
+    retryUntilCondition,
+    deployBuilder,
+    startContract,
+  };
 };
-∑
-export { chainConfig, commonSetup };
+
+export { commonSetup };

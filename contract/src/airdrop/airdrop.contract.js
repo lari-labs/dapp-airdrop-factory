@@ -2,14 +2,16 @@
 import { M } from '@endo/patterns';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
-import { AmountMath, AssetKind } from '@agoric/ertp';
-import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
+import { AmountMath, AmountShape, AssetKind, MintShape } from '@agoric/ertp';
+import { TimeMath } from '@agoric/time';
 import { TimerShape } from '@agoric/zoe/src/typeGuards.js';
 import {
   atomicRearrange,
   makeRatio,
+  withdrawFromSeat,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { divideBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeTracer } from '@agoric/internal';
 import { makeWaker, oneDay } from './helpers/time.js';
 import {
   handleFirstIncarnation,
@@ -21,11 +23,14 @@ import { objectToMap } from './helpers/objectTools.js';
 import { getMerkleRootFromMerkleProof } from '../merkle-tree/index.js';
 import './types.js';
 
+const TT = makeTracer('ContractStartFn');
+
 export const messagesObject = {
   makeClaimInvitationDescription: () => 'claim airdrop',
   makeIllegalActionString: status =>
     `Airdrop can not be claimed when contract status is: ${status}.`,
 };
+harden(messagesObject);
 
 const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n];
 
@@ -41,19 +46,26 @@ const AIRDROP_STATES = {
 };
 export const { OPEN, EXPIRED, PREPARED, INITIALIZED, RESTARTING } =
   AIRDROP_STATES;
+harden(OPEN);
+harden(EXPIRED);
+harden(PREPARED);
+harden(INITIALIZED);
+harden(RESTARTING);
 
-/** @import { CopySet } from '@endo/patterns'; */
-/** @import { AssetKind, Brand, Issuer, NatValue, Purse } from '@agoric/ertp/src/types.js'; */
-/** @import { CancelToken, TimerService, TimestampRecord } from '@agoric/time/src/types.js'; */
-/** @import { Baggage } from '@agoric/vat-data'; */
-/** @import { Zone } from '@agoric/base-zone'; */
-/** @import { ContractMeta } from './@types/zoe-contract-facet.js'; */
-/** @import { Remotable } from '@endo/marshal' */
+/** @import {CopySet} from '@endo/patterns'; */
+/** @import {AssetKind, Brand, Issuer, NatValue, Purse} from '@agoric/ertp/src/types.js'; */
+/** @import {CancelToken, TimerService, TimestampRecord} from '@agoric/time/src/types.js'; */
+/** @import {Baggage} from '@agoric/vat-data'; */
+/** @import {Zone} from '@agoric/base-zone'; */
+/** @import {ContractMeta} from './@types/zoe-contract-facet.js'; */
+/** @import {Remotable} from '@endo/marshal' */
 
 export const privateArgsShape = harden({
-  // marshaller: M.remotable('marshaller'),
+  marshaller: M.remotable('marshaller'),
+  storageNode: M.remotable('chainStorageNode'),
   timer: TimerShape,
 });
+harden(privateArgsShape);
 
 export const customTermsShape = harden({
   targetEpochLength: M.bigint(),
@@ -61,23 +73,33 @@ export const customTermsShape = harden({
   tokenName: M.string(),
   targetTokenSupply: M.bigint(),
   targetNumberOfEpochs: M.number(),
-  startTime: RelativeTimeRecordShape,
+  startTime: M.bigint(),
+  feeAmount: AmountShape,
   merkleRoot: M.string(),
 });
+harden(customTermsShape);
 
 export const divideAmountByTwo = brand => amount =>
   divideBy(amount, makeRatio(200n, brand), 0n);
+harden(divideAmountByTwo);
+
+const handleUpdateCancelToken = (makeCancelTokenFn = cancelTokenMaker) => {
+  const cancelToken = makeCancelTokenFn();
+  TT('created new cancel token');
+  return cancelToken;
+};
+harden(handleUpdateCancelToken);
 
 /**
- * Utility function that encapsulates the process of
- * creates a token mint, and gathers its associated rand and issuer.
+ * Utility function that encapsulates the process of creates a token mint, and
+ * gathers its associated rand and issuer.
  *
  * @async
  * @param {ZCF} zcf
  * @param {string} tokenName
  * @param {AssetKind} assetKind
- * @param {{ decimalPlaces: number; }} displayInfo
- * @returns {{mint: ZCFMint, brand: Brand, issuer: Issuer}}
+ * @param {{ decimalPlaces: number }} displayInfo
+ * @returns {{ mint: ZCFMint; brand: Brand; issuer: Issuer }}
  */
 const tokenMintFactory = async (
   zcf,
@@ -97,43 +119,52 @@ const tokenMintFactory = async (
   };
 };
 
+const withdrawAndBurn = async (zcf, seat, keyword, issuer, brand) => {
+  const remainingPayment = await withdrawFromSeat(zcf, seat, {
+    [keyword]: seat.getAmountAllocated(keyword, brand),
+  });
+  issuer.burn(remainingPayment);
+  return 'Successfully burned remaining tokens.';
+};
+
 /**
- * @param {TimestampRecord} sourceTs Base timestamp used to as the starting time which a new Timestamp will be created against.
- * @param {RelativeTimeRecordShape} inputTs Relative timestamp spanning the interval of time between sourceTs and the newly created timestamp
+ * @param {TimestampRecord} sourceTs Base timestamp used to as the starting time
+ *   which a new Timestamp will be created against.
+ * @param {RelativeTimeRecordShape} inputTs Relative timestamp spanning the
+ *   interval of time between sourceTs and the newly created timestamp
  */
 
 const createFutureTs = (sourceTs, inputTs) =>
   TimeMath.absValue(sourceTs) + TimeMath.relValue(inputTs);
 
+const SIX_DIGITS = 1_000_000n;
 /**
  * @param {ZCF<ContractTerms>} zcf
- * @param {{ marshaller: Remotable, timer: TimerService }} privateArgs
+ * @param {{ marshaller: Remotable; timer: TimerService }} privateArgs
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
+  TT('launching contract');
+  TT('privateArgs', privateArgs);
+  TT('baggage', baggage);
   handleFirstIncarnation(baggage, 'LifecycleIteration');
   // XXX why is type not inferred from makeDurableZone???
-  /** @type { Zone } */
+  /** @type {Zone} */
   const zone = makeDurableZone(baggage, 'rootZone');
 
   const { timer } = privateArgs;
   /** @type {ContractTerms} */
   const {
-    startTime,
+    startTime = 120n,
     targetEpochLength = oneDay,
-    targetTokenSupply = 10_000_000n,
+    targetTokenSupply = 10_000_000n * SIX_DIGITS,
     tokenName = 'Tribbles',
     targetNumberOfEpochs = 5,
     merkleRoot,
-    initialPayoutValues = AIRDROP_TIERS_STATIC,
-    issuers: { Fee: feeIssuer },
+    initialPayoutValues = AIRDROP_TIERS_STATIC.map(x => x * 1_000_000n),
+    feeAmount,
     _brands,
   } = zcf.getTerms();
-
-  const FeeAmountShape = harden({
-    brand: feeIssuer.getBrand(),
-    value: 5n,
-  });
 
   const airdropStatusTracker = zone.mapStore('airdrop claim window status');
 
@@ -150,11 +181,22 @@ export const start = async (zcf, privateArgs, baggage) => {
     airdropStatusTracker,
   );
 
-  const [t0, { mint: tokenMint, brand: tokenBrand, issuer: tokenIssuer }] =
-    await Promise.all([
-      E(timer).getCurrentTimestamp(),
-      tokenMintFactory(zcf, tokenName),
-    ]);
+  const [
+    timerBrand,
+    t0,
+    { mint: tokenMint, brand: tokenBrand, issuer: tokenIssuer },
+  ] = await Promise.all([
+    E(timer).getTimerBrand(),
+    E(timer).getCurrentTimestamp(),
+    tokenMintFactory(zcf, tokenName),
+  ]);
+  let cancelToken = null;
+  const makeNewCancelToken = () => {
+    cancelToken = handleUpdateCancelToken(cancelTokenMaker);
+    TT('Reassigned cancelToken', cancelToken);
+  };
+
+  TT('t0', t0);
 
   const rearrange = transfers => atomicRearrange(zcf, transfers);
 
@@ -175,7 +217,10 @@ export const start = async (zcf, privateArgs, baggage) => {
       // Do I need to store tokenIssuer and tokenBrand in baggage?
       tokenIssuer,
       tokenBrand,
-      startTime: createFutureTs(t0, startTime),
+      startTime: createFutureTs(
+        t0,
+        harden({ relValue: startTime, timerBrand }),
+      ),
     },
     baggage,
   );
@@ -194,15 +239,16 @@ export const start = async (zcf, privateArgs, baggage) => {
     }),
     creator: M.interface('creator', {
       pauseContract: M.call().returns(M.any()),
+      getBankAssetMint: M.call().returns(MintShape),
     }),
   };
 
   const prepareContract = zone.exoClassKit(
     'Tribble Token Distribution',
     interfaceGuard,
-    (store, currentCancelToken) => ({
-      currentCancelToken,
+    store => ({
       claimCount: 0,
+      lastRecordedTimestamp: null,
       claimedAccounts: store,
       payoutArray: baggage.get('payouts'),
       currentEpoch: null,
@@ -217,17 +263,29 @@ export const start = async (zcf, privateArgs, baggage) => {
           const { helper } = this.facets;
           this.state.currentEpoch = epochIdx;
           if (this.state.currentEpoch === targetNumberOfEpochs) {
+            void withdrawAndBurn(
+              zcf,
+              tokenHolderSeat,
+              'Tokens',
+              tokenIssuer,
+              tokenBrand,
+            );
             zcf.shutdown('Airdrop complete');
             stateMachine.transitionTo(EXPIRED);
           }
-          helper.updateDistributionMultiplier(
+          void helper.updateDistributionMultiplier(
             TimeMath.addAbsRel(absTime, targetEpochLength),
           );
         },
         async updateDistributionMultiplier(wakeTime) {
           const { facets } = this;
-          this.state.currentCancelToken = cancelTokenMaker();
+          makeNewCancelToken();
+          TT('previous timestamp:', this.state.lastRecordedTimestamp);
+          const currentTimestamp = await E(timer).getCurrentTimestamp();
+          this.state.lastRecordedTimestamp = currentTimestamp;
+          TT('new timestamp:', this.state.lastRecordedTimestamp);
 
+          TT('baggage.keys', [...baggage.keys()]);
           void E(timer).setWakeup(
             wakeTime,
             makeWaker(
@@ -246,13 +304,13 @@ export const start = async (zcf, privateArgs, baggage) => {
                 );
               },
             ),
-            this.state.currentCancelToken,
+            cancelToken,
           );
 
           return 'wake up successfully set.';
         },
         async cancelTimer() {
-          await E(timer).cancel(this.state.currentCancelToken);
+          await E(timer).cancel(cancelToken);
         },
       },
       public: {
@@ -265,7 +323,12 @@ export const start = async (zcf, privateArgs, baggage) => {
           );
           /**
            * @param {UserSeat} claimSeat
-           * @param {{proof: Array, address: string, key: string, tier: number}} offerArgs
+           * @param {{
+           *   proof: Array;
+           *   address: string;
+           *   key: string;
+           *   tier: number;
+           * }} offerArgs
            */
           const claimHandler = (claimSeat, offerArgs) => {
             const {
@@ -317,7 +380,7 @@ export const start = async (zcf, privateArgs, baggage) => {
               currentEpoch: this.state.currentEpoch,
             },
             M.splitRecord({
-              give: { Fee: FeeAmountShape },
+              give: { Fee: feeAmount },
             }),
           );
         },
@@ -332,21 +395,25 @@ export const start = async (zcf, privateArgs, baggage) => {
         },
       },
       creator: {
+        getBankAssetMint() {
+          return tokenMint;
+        },
         pauseContract() {
-          zcf.setOfferFilter([messagesObject.makeClaimInvitationDescription()]);
+          void zcf.setOfferFilter([
+            messagesObject.makeClaimInvitationDescription(),
+          ]);
         },
       },
     },
   );
-  const cancelToken = cancelTokenMaker();
   const {
     creator: creatorFacet,
     helper,
     public: publicFacet,
-  } = prepareContract(airdropStatusTracker, cancelToken);
+  } = prepareContract(airdropStatusTracker);
 
   console.log('START TIME', baggage.get('startTime'));
-  await E(timer).setWakeup(
+  void E(timer).setWakeup(
     baggage.get('startTime'),
     makeWaker('claimWindowOpenWaker', ({ absValue }) => {
       airdropStatusTracker.init('currentEpoch', 0n);
@@ -362,3 +429,4 @@ export const start = async (zcf, privateArgs, baggage) => {
     publicFacet,
   });
 };
+harden(start);

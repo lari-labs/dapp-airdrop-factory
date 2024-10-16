@@ -48,7 +48,7 @@
     "typescript": "^5.5.0-dev.20240327"
   },
   "dependencies": {
-    "@agoric/deploy-script-support": "^0.10.4-u12.0",
+    "@agoric/deploy-script-support": "^0.10.4-u17.1",
     "@agoric/ertp": "^0.16.3-u14.0",
     "@agoric/internal": "0.4.0-u14.0",
     "@agoric/notifier": "0.6.3-u14.0",
@@ -56,13 +56,15 @@
     "@agoric/swingset-vat": "latest",
     "@agoric/time": "0.3.3-u14.0",
     "@agoric/vat-data": "0.5.3-u14.0",
-    "@agoric/vats": "0.15.2-u14.1",
+    "@agoric/vats": "^0.16.0-u17.1",
     "@agoric/zoe": "0.26.3-u14.0",
     "@agoric/zone": "0.2.3-u14.0",
     "@cosmjs/amino": "0.32.3",
     "@cosmjs/crypto": "0.32.3",
+    "@cosmjs/proto-signing": "^0.32.4",
     "@endo/base64": "^1.0.4",
     "@endo/check-bundle": "^1.0.9",
+    "@endo/errors": "^1.2.6",
     "@endo/far": "^0.2.22",
     "@endo/marshal": "^0.8.9",
     "@endo/nat": "5.0.6",
@@ -72,7 +74,12 @@
     "bech32": "^2.0.0"
   },
   "ava": {
+    "extensions": [
+      "ts",
+      "js"
+    ],
     "files": [
+      "test/**/*.test.js",
       "test/**/*.test.js",
       "!test/xs/*.test.js",
       "!test/crypto-xsnap.test.js"
