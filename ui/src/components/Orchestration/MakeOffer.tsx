@@ -1,20 +1,35 @@
 import { AgoricWalletConnection } from '@agoric/react-components';
 import { DynamicToastChild } from '../Tabs';
 import { useContractStore } from '../../store/contract';
-import { merkleTreeAPI, pubkeys } from '../../airdrop-data/merkle-tree';
+import {pubkeys, agoricGenesisAccounts, getProof, merkleTreeAPI } from '../../airdrop-data/genesis.keys.js'
+import {getInclusionProof} from '../../airdrop-data/kagdkeys.js'
+const generateInt = x => () => Math.floor(Math.random() * (x + 1));
 
-const { generateMerkleProof } = merkleTreeAPI;
+const createTestTier = generateInt(4); // ?
+const currentAccount = ({address}) => agoricGenesisAccounts.filter(x => x.address === address);
+
+
+const makeMakeOfferArgs =
+  (keys = []) =>
+  ({ pubkey: { key = '' }, address = 'agoric12d3fault' }) => ({
+    key,
+    proof: merkleTreeAPI.generateMerkleProof(key, keys),
+    address,
+    tier: createTestTier(),
+
+  });
+
+const makeOfferArgs = makeMakeOfferArgs(pubkeys);
+
 export const makeOffer = async (
   wallet: AgoricWalletConnection,
   addNotification: (arg0: DynamicToastChild) => void,
-  selectedChain: string,
-  publicInvitationMaker: string,
-  offerArgs: Record<string, unknown>,
   setLoading: React.Dispatch<React.SetStateAction<boolean>>,
   handleToggle: () => void,
   setStatusText: React.Dispatch<React.SetStateAction<string>>,
 ) => {
  
+
   const { instances, brands } = useContractStore.getState();
   const instance = instances?.['tribblesAirdrop'];
 
@@ -23,74 +38,91 @@ export const makeOffer = async (
     handleToggle();
     throw Error('No contract instance or brands found.');
   }
-
+const proof =  [
+    {
+      hash: '149c44ac60f5c1da0029e1a4cb0a9c7a6a92ef49046a55d948992f46ba8c017f',
+      direction: 'right'
+    },
+    {
+      hash: '71d8de5c3dfbe37a00a512058cfb3a2d5ad17fca96156ec26bba7233cddb54f1',
+      direction: 'left'
+    },
+    {
+      hash: '1d572b148312772778d7c118bdc17770352d10c271b6c069f84b9796ff3ce514',
+      direction: 'left'
+    },
+    {
+      hash: 'aa9d927f3ecc8b316270a2901cc6a062fd47e863d8667af33ddd83d491b63e03',
+      direction: 'right'
+    },
+    {
+      hash: '6339fcd7509730b081b2e11eb382d88fe0c583eaec9a4d924e13e38553e9a5fa',
+      direction: 'left'
+    }
+  ]
   // fetch the BLD brand
-  const bldBrand = brands.BLD;
-  if (!bldBrand) {
+  const istBrand = brands.IST;
+  if (!istBrand) {
     setLoading(false);
     handleToggle();
     throw Error('BLD brand not found.');
   }
 
+  const want = {};
+  const give = { Fee: { brand: istBrand, value: 5n} };
 
-  const give = {
-    Fee: { 
-      value: 5n,
-      brand: brands?.IST 
-    }
-  };
-  const accountData =   {
-    address: 'agoric1jng25adrtpl53eh50q7fch34e0vn4g72j6zcml',
-    pubkey: 'Axn3Bies1P2bVzvRc23udrmny6YAXxH1o8NYpf3tDnR5',
-  };
-  const offerArgsInput = {
-    ...accountData,
-    proof: generateMerkleProof(accountData.pubkey, pubkeys),
-    tier: 1
-  }
-  // const makeAccountofferId = `makeAccount-${Date.now()}`;
-  const makeAccountofferId = Date.now();
+  const offerId = Date.now();
 
-  // // Make the initial offer
-  // await wallet?.makeOffer(
-  //   {
-    
-  //     instance,
-  //     source: 'agoricContract',
-  //     instancePath: ['tribblesAirdrop'],
-  //     callPipe: [['makeClaimTokensInvitation']],
-  //   },
-  //   { give },
-  //   { offerArgsInput },
-  //   // {},
-  //   (update: { status: string; data?: unknown }) => {
-  //     if (update.status === 'error') {
-  //       console.log(update);
-  //     }
-  //     if (update.status === 'accepted') {
-  //       console.log(update);
-  //     }
-  //     if (update.status === 'refunded') {
-  //       console.log(update);
-  //     }
-  //   },
-  //   makeAccountofferId,
-  // );
+  /**
+   *   invitationSpec: {
+        source: 'agoricContract',
+        instancePath: [contractName],
+        callPipe: [['makeClaimTokensInvitation']],
+      },
+      offerArgs: {
+        ...makeOfferArgs(currentAcct),
+        proof: merkleTreeAPI.generateMerkleProof(
+          currentAcct.pubkey.key,
+          agoricAccounts.map(x => x.pubkey.key),
+        ),
+        tier: 3,
+      },
 
-/**
- * 
- * 
- */
 
-  await  wallet?.makeOffer(
+   */
+
+      const offerArgsValue = makeOfferArgs({
+        address: wallet.address,
+        tier: createTestTier(),
+       ...getProof(wallet.address)
+      });
+
+      const STRING_CONSTANTS = {
+        OFFER_TYPES: {
+          AGORIC_CONTRACT: 'agoricContract'
+        },
+        OFFER_NAME: 'makeClaimTokensInvitation',
+        INSTANCE: {
+          PATH: 'tribblesAirdrop'
+        },
+        ISSUERS: {
+          TRIBBLES: 'Tribbles',
+          IST: 'IST',
+          BLD: 'BLD'
+        }
+      };
+
+
+      console.log({offerArgsValue}, proof === offerArgsValue.proof, {current: currentAccount(wallet) })
+
+      await wallet?.makeOffer(
     {
-    
-      source: 'agoricContract',
-      instancePath: ['tribblesAirdrop'],
-      callPipe: [['makeClaimTokensInvitation']],
+      source: STRING_CONSTANTS.OFFER_TYPES.AGORIC_CONTRACT,
+      instancePath: [STRING_CONSTANTS.INSTANCE.PATH],
+      callPipe: [[STRING_CONSTANTS.OFFER_NAME]],
     },
     { give },
-    { offerArgsInput },
+    { ...offerArgsValue },
     (update: { status: string; data?: unknown }) => {
       if (update.status === 'error') {
         addNotification({
@@ -129,6 +161,6 @@ export const makeOffer = async (
         }, 1000);
       }
     },
-    makeAccountofferId,
+    offerId,
   );
 };

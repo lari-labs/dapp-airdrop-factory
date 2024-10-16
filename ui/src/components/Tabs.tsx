@@ -41,18 +41,10 @@ const Tabs = () => {
       <NotificationContext.Provider
         value={{ addNotification: addNotification }}
       >
-        <div
-          role="tablist"
-          className="daisyui-tabs-boxed daisyui-tabs daisyui-tabs-lg"
-        >
-          <TabWrapper
-            tab="Interchain Accounts"
-            activeTab={activeTab}
-            handleTabClick={handleTabClick}
-          >
+ 
+    
             {/* <MakeAccount /> */}
             <Orchestration />
-          </TabWrapper>
           {/* <TabWrapper
             tab="IBC Send"
             activeTab={activeTab}
@@ -74,7 +66,6 @@ const Tabs = () => {
           >
             <div>TBD</div>
           </TabWrapper> */}
-        </div>
       </NotificationContext.Provider>
     </div>
   );

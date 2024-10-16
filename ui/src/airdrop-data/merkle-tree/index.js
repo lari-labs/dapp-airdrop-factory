@@ -385,10 +385,7 @@ export const merkleTreeAPI = {
 };
 
 harden(merkleTreeAPI);
-
-const pubkeys = agoricGenesisAccounts.map(x => x.pubkey.key);
 export {
-  pubkeys,
   getMerkleRootFromMerkleProof,
   generateMerkleProof,
   generateMerkleTree,

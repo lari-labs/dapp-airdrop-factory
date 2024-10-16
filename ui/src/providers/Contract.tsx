@@ -28,16 +28,6 @@ const watchContract = (watcher: ChainStorageWatcher) => {
       });
     },
   );
-
-  watcher.watchLatest<Array<string>>(
-    [Kind.Children, 'published.orca'],
-    icas => {
-      console.log('Got ICAs', icas);
-      useContractStore.setState({
-        icas: icas,
-      });
-    },
-  );
 };
 
 export const ContractProvider = ({ children }: PropsWithChildren) => {

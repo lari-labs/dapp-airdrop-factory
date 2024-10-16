@@ -21,7 +21,7 @@ const TabWrapper = (props: {
       />
       <div
         role="tabpanel"
-        className="daisyui-tab-content rounded-box border-base-300 bg-base-100 p-6"
+        className="daisyui-tab-content rounded-box p-6"
       >
         {props.children}
       </div>

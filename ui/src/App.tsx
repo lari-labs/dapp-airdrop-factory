@@ -7,9 +7,11 @@ import { ThemeProvider, useTheme } from '@interchain-ui/react';
 import '@agoric/react-components/dist/style.css';
 // import { Button, Modal } from 'react-daisyui';
 
+
 function App() {
   const { themeClass } = useTheme();
 
+  console.log({themeClass})
   return (
     <ThemeProvider>
       <div className={themeClass}>
