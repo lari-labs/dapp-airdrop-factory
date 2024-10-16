@@ -12,12 +12,11 @@
     "build:deployer": "rollup -c rollup.config.mjs",
     "make:help": "make list",
     "start": "yarn docker:make clean start-contract",
-    "build": "agoric run scripts/build-contract-deployer.js",
     "test": "ava --verbose",
     "test:tap": "yarn run test -t | tap-color",
     "test:isolated": "watch 'clear && npx ava ./test/airdropZone/test-*.js -t | tap-color' ./src",
-    "lint": "eslint '**/*.js'",
-    "lint:fix": "eslint --fix '**/*.js'"
+    "lint": "eslint 'src/*.js'",
+    "lint:fix": "eslint --fix 'src/*.js'"
   },
   "devDependencies": {
     "@agoric/eslint-config": "dev",

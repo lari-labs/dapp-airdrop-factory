@@ -1,4 +1,3 @@
-import { dirname, join } from 'path';
 import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'child_process';
@@ -12,6 +11,7 @@ const makeKeyring = async e2eTools => {
   let _keys = ['user1'];
   //   const setupTestKeys = async (keys = ['user1']) => {
   const setupTestKeys = async (keys = ['alice']) => {
+    await null;
     _keys = keys;
     const wallets = {};
     for (const name of keys) {
@@ -42,9 +42,9 @@ const commonSetup = async t => {
   const retryUntilCondition = makeRetryUntilCondition({ log: t.log });
   const startContract = async (contractName = '', contractBuilder = '') => {
     const { vstorageClient } = tools;
-    const instances = Object.fromEntries(
-      await vstorageClient.queryData(`published.agoricNames.instance`),
-    );
+    // const instances = Object.fromEntries(
+    //   await vstorageClient.queryData(`published.agoricNames.instance`),
+    // );
     // if (contractName in instances) {
     //   return t.log('Contract found. Skipping installation...');
     // }

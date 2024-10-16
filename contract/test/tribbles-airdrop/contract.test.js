@@ -119,7 +119,6 @@ const startLocalInstance = async (
 ) => {
   const timer = buildManualTimer();
 
-  const timerBrand = await E(timer).getTimerBrand();
   /** @type {ERef<Installation<AssetContractFn>>} */
   const installation = await E(zoe).install(bundle);
 

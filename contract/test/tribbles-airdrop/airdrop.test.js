@@ -14,8 +14,6 @@ const test = anyTest;
 const contractName = 'tribblesAirdrop';
 const contractBuilder = 'test/builder/start-tribbles-airdrop.js';
 
-const getPubkeyKey = ({ pubkey }) => `${pubkey.key}`;
-const agoricPubkeys = agoricAccounts.map(getPubkeyKey);
 const generateInt = x => () => Math.floor(Math.random() * (x + 1));
 
 const createTestTier = generateInt(4); // ?
@@ -63,26 +61,12 @@ const simulatreClaim = test.macro({
     `Simulate claim for account ${agoricAccount.name} with address ${agoricAccount.address}`,
   exec: async (t, agoricAccount) => {
     console.log(t.context);
-    const { address, pubkey } = agoricAccount;
+    const { pubkey } = agoricAccount;
     console.log(
       `testing makeCreateAndFundScenario for account ${agoricAccount.name}, and pubkey ${pubkey}`,
     );
-    const {
-      wallets,
-      provisionSmartWallet,
-      vstorageClient,
-      retryUntilCondition,
-    } = t.context;
+    const { wallets, provisionSmartWallet, vstorageClient } = t.context;
 
-    // const [pfFromZoe, terms] = await Promise.all([
-    //   E(zoe).getPublicFacet(instance),
-    //   E(zoe).getTerms(instance),
-    // ]);
-
-    const makeTestBalances = ({ IST = 50n, BLD = 100n }) => ({
-      IST,
-      BLD,
-    });
     t.log(
       wallets[accounts[0]],
       Object.values(wallets).map(x => x),
@@ -125,7 +109,6 @@ const simulatreClaim = test.macro({
     //     return newWallet;
     //   }),
     // );
-    const eligibleAccounts = agoricAccounts.map(x => x.address);
 
     const currentAcct = agoricAccount;
 
@@ -135,7 +118,6 @@ const simulatreClaim = test.macro({
     });
 
     const doOffer = makeDoOffer(alicesWallet);
-    const id = 0;
     const offerId = `offer-${Date.now()}`;
     await doOffer({
       id: offerId,
