@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { M } from '@endo/patterns';
+import { M } from '@agoric/store';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import { AmountMath, AmountShape, AssetKind, MintShape } from '@agoric/ertp';
@@ -20,7 +20,7 @@ import {
 import { makeStateMachine } from './helpers/stateMachine.js';
 import { createClaimSuccessMsg } from './helpers/messages.js';
 import { objectToMap } from './helpers/objectTools.js';
-import { getMerkleRootFromMerkleProof } from '../merkle-tree/index.js';
+import { getMerkleRootFromMerkleProof } from './merkle-tree/index.js';
 import './types.js';
 
 const TT = makeTracer('ContractStartFn');
@@ -237,7 +237,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       getPayoutValues: M.call().returns(M.array()),
     }),
     creator: M.interface('creator', {
-      pauseContract: M.call().returns(M.any()),
+      makePauseContractInvitation: M.call(M.any()).returns(M.any()),
       getBankAssetMint: M.call().returns(MintShape),
     }),
   };
@@ -397,10 +397,30 @@ export const start = async (zcf, privateArgs, baggage) => {
         getBankAssetMint() {
           return tokenMint;
         },
-        pauseContract() {
-          void zcf.setOfferFilter([
-            messagesObject.makeClaimInvitationDescription(),
-          ]);
+
+        makePauseContractInvitation(adminDepositFacet) {
+          console.log('------------------------');
+          console.log(':: inside makePauseContrractInvittion ::');
+          const depositInvitation = async depositFacet => {
+            const pauseInvitation = await zcf.makeInvitation(
+              _seat =>
+                zcf.setOfferFilter([
+                  messagesObject.makeClaimInvitationDescription(),
+                ]),
+              'pause contract',
+            );
+            console.log('------------------------');
+            console.log(
+              'pauseInvitation:: ### Before .receive',
+              pauseInvitation,
+            );
+            E(depositFacet).receive(pauseInvitation);
+          };
+
+          const recievedPause = depositInvitation(adminDepositFacet);
+          console.log('------------------------');
+          console.log('recievedPause::', recievedPause);
+          return recievedPause;
         },
       },
     },

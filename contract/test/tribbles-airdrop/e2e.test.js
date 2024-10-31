@@ -11,7 +11,6 @@ import * as ambientChildProcess from 'node:child_process';
 import * as ambientFsp from 'node:fs/promises';
 import { E, passStyleOf } from '@endo/far';
 import { extract } from '@agoric/vats/src/core/utils.js';
-import { makeTerms, permit, startAirdrop } from '../../src/airdrop.proposal.js';
 import {
   makeBundleCacheContext,
   getBundleId,
@@ -33,8 +32,13 @@ import { accounts } from '../data/agd-keys.js';
 import {
   messagesObject,
   PREPARED,
-} from '../../src/airdrop/airdrop.contract.js';
+} from '../../src/tribbles/airdrop.contract.js';
 import { oneDay } from '../../src/airdrop/helpers/time.js';
+import {
+  makeTerms,
+  permit,
+  startAirdrop,
+} from '../../src/tribbles/airdrop.proposal.js';
 // import { makeAgdTools } from '../agd-tools.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
