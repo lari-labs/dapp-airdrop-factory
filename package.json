@@ -9,7 +9,6 @@
   ],
   "packageManager": "yarn@4.4.0",
   "useWorkspaces": true,
-  "resolutions-note": "needed until @agoric/orchestration is available using this",
   "resolutions": {
     "@noble/hashes": "^1.5.0",
     "aggregate-error": "3.0.0",

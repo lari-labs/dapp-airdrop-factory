@@ -84,7 +84,7 @@ export const defaultCustomTerms = {
   initialPayoutValues: harden(AIRDROP_TIERS_STATIC),
   targetNumberOfEpochs: 5,
   targetEpochLength: 12_000n / 2n,
-  targetTokenSupply: 10_000_000n,
+  targetTokenSupply: 10_000_000n * 1_000_000n,
   tokenName: 'Tribbles',
 };
 
@@ -227,7 +227,7 @@ export const startAirdrop = async (powers, config) => {
     }),
   );
 
-  await publishBankAsset(agoricNamesAdmin);
+//   await publishBankAsset(agoricNamesAdmin);
   await publishBrandInfo(chainStorage, board, tribblesBrand);
   trace('deploy script complete.');
 };
