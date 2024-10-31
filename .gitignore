@@ -29,3 +29,8 @@ dist-ssr
 
 contract/ADTs.md
 contract/,tx.json
+
+
+.yarn/*
+
+TASK-LIST.md

@@ -1,11 +1,11 @@
 // @ts-check
+import { makeHelpers } from '@agoric/deploy-script-support';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { Fail } from '@endo/errors';
 import { makeTracer, deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 
-const head = ([x, ...xs]) => x;
 const ONE_DAY = 86_000n;
 
 const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n].map(
@@ -62,9 +62,16 @@ const publishBankAsset = async (
   await Promise.all([
     E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, kit.issuer),
     E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, kit.brand),
-    E(bankManager).addAsset(denom, keyword, description, kit),
   ]);
+  const tribblesIssuerDetails = harden(kit);
 
+  trace('added to agoricNames admin');
+  await E(bankManager).addAsset(
+    denom,
+    keyword,
+    description,
+    tribblesIssuerDetails,
+  );
   trace('Asset added to bank');
 };
 
@@ -93,11 +100,15 @@ const contractName = 'tribblesAirdrop';
 /**
  * Core eval script to start contract
  *
- * @param {BootstrapPowers & AirdropSpace} powers
- * @param {{
- *   options: { tribblesAirdrop: { bundleID: string }; customTerms: any };
- * }} config
- *   XXX export AirdropTerms record from contract
+ * @param {BootstrapPowers} powers
+ * @param {*} config
+ *
+ * @typedef {{
+ *   brand: PromiseSpaceOf<{ Tribbles: import('@agoric/ertp/src/types.js').Brand }>;
+ *   issuer: PromiseSpaceOf<{ Tribbles: import('@agoric/ertp/src/types.js').Issuer }>;
+ *   instance: { produce: { tribblesAirdrop: Instance } };
+ *   installation: { consume: { tribblesAirdrop: Installation } };
+ * }} AirdropSpace
  */
 
 /**
@@ -106,7 +117,7 @@ const contractName = 'tribblesAirdrop';
   @param {{ options: { customTerms: any }}} config XXX export AirdropTerms record from contract
  */
 
-export const startAirdrop = async (powers, config = defaultConfig) => {
+export const startAirdrop = async (powers, config) => {
   trace('######## inside startAirdrop ###########');
   trace('config ::::', config);
   trace('----------------------------------');
@@ -115,8 +126,7 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
   trace('powers.installation', powers.installation.consume[contractName]);
   const {
     consume: {
-      namesByAddressAdmin,
-      namesByAddress,
+      agoricNamesAdmin,
       bankManager,
       board,
       chainTimerService,
@@ -125,17 +135,17 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
       zoe,
     },
     installation: {
-      consume: { [contractName]: installationP },
+      consume: { [contractName]: airdropInstallationP },
     },
     instance: {
       produce: { [contractName]: produceInstance },
     },
     issuer: {
-      consume: { IST: istIssuer },
+      consume: { IST: istIssuer, Tribbles: consumeTribblesIssuer },
       produce: { Tribbles: produceTribblesIssuer },
     },
     brand: {
-      consume: { IST: istBrand },
+      consume: { IST: istBrand, Tribbles: consumeTribblesBrand },
       produce: { Tribbles: produceTribblesBrand },
     },
   } = powers;
@@ -167,7 +177,7 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
   const marshaller = await E(board).getReadonlyMarshaller();
 
   const startOpts = {
-    installation: await installationP,
+    installation: await airdropInstallationP,
     label: contractName,
     terms,
     issuerKeywordRecord: {
@@ -202,40 +212,31 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
   produceTribblesBrand.resolve(tribblesBrand);
   produceTribblesIssuer.resolve(tribblesIssuer);
 
-  // Sending invitation for pausing contract to a specific wallet
-  // TODO: add correct wallet address
-  const adminWallet = 'agoric1jng25adrtpl53eh50q7fch34e0vn4g72j6zcml';
-  await E(namesByAddressAdmin).reserve(adminWallet);
-  const adminDepositFacet = E(namesByAddress).lookup(
-    adminWallet,
-    'depositFacet',
-  );
-
-  await E(creatorFacet).makePauseContractInvitation(adminDepositFacet);
-
-  // Add utribbles token to vbank
   const tribblesMint = await E(creatorFacet).getBankAssetMint();
 
+  console.log('------------------------');
+  console.log('tribblesMint::', tribblesMint);
   await E(bankManager).addAsset(
     'utribbles',
     'Tribbles',
-    'Tribbles Intersubjective Token',
+    'Tribbles',
     harden({
-      issuer: tribblesIssuer,
-      brand: tribblesBrand,
       mint: tribblesMint,
+      brand: tribblesBrand,
+      issuer: tribblesIssuer,
     }),
   );
+
+//   await publishBankAsset(agoricNamesAdmin);
   await publishBrandInfo(chainStorage, board, tribblesBrand);
   trace('deploy script complete.');
 };
 
-/** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */
+/** @type { import("@agoric/vats/src/core/lib-boot").BootstrapManifest } */
 const airdropManifest = harden({
   [startAirdrop.name]: {
     consume: {
-      namesByAddress: true,
-      namesByAddressAdmin: true,
+      agoricNamesAdmin: true,
       bankManager: true,
       board: true,
       chainStorage: true,
@@ -261,22 +262,6 @@ const airdropManifest = harden({
   },
 });
 
-/**
- * Core eval script to start contract
- *
- * @param {BootstrapPowers} powers
- * @param {*} config
- *
- * @typedef {{
- *   brand: PromiseSpaceOf<{ Tribbles: import('@agoric/ertp/src/types.js').Brand }>;
- *   issuer: PromiseSpaceOf<{ Tribbles: import('@agoric/ertp/src/types.js').Issuer }>;
- *   instance: { produce: { tribblesAirdrop: Instance } };
- *   installation: { consume: { tribblesAirdrop: Installation } };
- * }} AirdropSpace
- */
-
-export const permit = Object.values(airdropManifest)[0];
-
 export const getManifestForAirdrop = (
   { restoreRef },
   {
@@ -285,7 +270,7 @@ export const getManifestForAirdrop = (
       customTerms: {
         ...defaultCustomTerms,
         merkleRoot:
-          '0f7e7eeb1c6e5dec518ec2534a4fc55738af04b5379a052c5e3fe836f451ccd0',
+          '9a2f65951204939963b32771032964b743991e7bba0a4ec11341e36d59b441f2',
       },
     },
   },
@@ -323,9 +308,10 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
 };
 
 export default async (homeP, endowments) => {
+  console.log('INSIDE DEPLOYER');
   // import dynamically so the module can work in CoreEval environment
-  const dspModule = await import('@agoric/deploy-script-support');
-  const { makeHelpers } = dspModule;
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  console.log('AFTER IMPORT WRITECOREEVAL');
+
   await writeCoreEval(startAirdrop.name, defaultProposalBuilder);
 };
