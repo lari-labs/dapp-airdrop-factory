@@ -222,7 +222,7 @@ test('Airdrop ::: happy paths', async t => {
   await E(timer).advanceBy(oneDay);
 });
 
-test.serial('pause method', async t => {
+test.serial('delegate pause access :: makePauseContractInvitation', async t => {
   const {
     zoe: zoeRef,
     invitationIssuer: zoeIssuer,
@@ -247,13 +247,19 @@ test.serial('pause method', async t => {
 
   await E(creatorFacet).makePauseContractInvitation(depositOnlyFacet);
 
-  const { brand: pauseInvitationBrand } = invitationPurse.getCurrentAmount();
+  const pauseInvitationAmt = invitationPurse.getCurrentAmount();
 
   t.deepEqual(
-    pauseInvitationBrand,
+    pauseInvitationAmt.brand,
     await E(zoeIssuer).getBrand(),
     'makePauseContractInvitation given a valid depositFacet should deposit an invitation into its purse.',
   );
+
+  const pauseOffersPayment = invitationPurse.withdraw(pauseInvitationAmt);
+
+  // Claming is not yet active in contract.
+  // Code below produces: "Illegal state transition. Can not transition from state: prepared to state paused."
+  //  await E(zoeRef).offer(pauseOffersPayment, undefined, undefined);
 
   await E(timer).advanceBy(oneDay * (oneDay / 2n));
 
@@ -264,13 +270,15 @@ test.serial('pause method', async t => {
 
   await simulateClaim(t, zoeRef, instance, feePurse, accounts[2]);
 
-  await E(timer).advanceBy(oneDay);
+  await E(zoeRef).offer(pauseOffersPayment, undefined, undefined);
 
   await E(timer).advanceBy(oneDay);
 
-  t.deepEqual(await E(publicFacet).getStatus(), 'claim-window-open');
-
   await E(timer).advanceBy(oneDay);
+
+  t.deepEqual(await E(publicFacet).getStatus(), 'paused');
+
+  // TODO: Validate that an offer make to contract fails when offer filter is present
 });
 
 test.skip('MN-2 Task: Add a deployment test that exercises the core-eval that will be used to install & start the contract on chain.', async t => {

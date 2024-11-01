@@ -37,15 +37,24 @@ const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n];
 const cancelTokenMaker = makeCancelTokenMaker('airdrop-campaign');
 
 const AIRDROP_STATES = {
-  INITIALIZED: 'initialized',
-  PREPARED: 'prepared',
-  OPEN: 'claim-window-open',
-  EXPIRED: 'claim-window-expired',
   CLOSED: 'claiming-closed',
+  EXPIRED: 'claim-window-expired',
+  INITIALIZED: 'initialized',
+  OPEN: 'claim-window-open',
+  PAUSED: 'paused',
+  PREPARED: 'prepared',
   RESTARTING: 'restarting',
 };
-export const { OPEN, EXPIRED, PREPARED, INITIALIZED, RESTARTING } =
-  AIRDROP_STATES;
+export const {
+  CLOSED,
+  EXPIRED,
+  INITIALIZED,
+  OPEN,
+  PAUSED,
+  PREPARED,
+  RESTARTING,
+} = AIRDROP_STATES;
+harden(CLOSED);
 harden(OPEN);
 harden(EXPIRED);
 harden(PREPARED);
@@ -173,8 +182,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     [
       [INITIALIZED, [PREPARED]],
       [PREPARED, [OPEN]],
-      [OPEN, [EXPIRED, RESTARTING]],
+      [OPEN, [EXPIRED, RESTARTING, PAUSED]],
       [RESTARTING, [OPEN]],
+      [PAUSED, [OPEN]],
       [EXPIRED, []],
     ],
     airdropStatusTracker,
@@ -204,7 +214,10 @@ export const start = async (zcf, privateArgs, baggage) => {
   });
 
   const divideAmount = divideAmountByTwo(tokenBrand);
-
+  const handlePauseOffers = () => {
+    void zcf.setOfferFilter([messagesObject.makeClaimInvitationDescription()]);
+    stateMachine.transitionTo(PAUSED);
+  };
   await objectToMap(
     {
       merkleRoot,
@@ -399,27 +412,19 @@ export const start = async (zcf, privateArgs, baggage) => {
         },
 
         makePauseContractInvitation(adminDepositFacet) {
-          console.log('------------------------');
-          console.log(':: inside makePauseContrractInvittion ::');
           const depositInvitation = async depositFacet => {
-            const pauseInvitation = await zcf.makeInvitation(
-              _seat =>
-                zcf.setOfferFilter([
-                  messagesObject.makeClaimInvitationDescription(),
-                ]),
-              'pause contract',
-            );
-            console.log('------------------------');
-            console.log(
-              'pauseInvitation:: ### Before .receive',
-              pauseInvitation,
-            );
+            const pauseInvitation = await zcf.makeInvitation(_seat => {
+              assert(
+                stateMachine.canTransitionTo(PAUSED),
+                `Illegal state transition. Can not transition from state: ${stateMachine.getStatus()} to state ${PAUSED}`,
+              );
+
+              return handlePauseOffers();
+            }, 'pause contract');
             E(depositFacet).receive(pauseInvitation);
           };
 
           const recievedPause = depositInvitation(adminDepositFacet);
-          console.log('------------------------');
-          console.log('recievedPause::', recievedPause);
           return recievedPause;
         },
       },

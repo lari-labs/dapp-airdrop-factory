@@ -130,7 +130,7 @@ const defaultConfig = {
  *   XXX export AirdropTerms record from contract
  */
 
-export const startAirdrop = async (powers, config) => {
+export const startAirdrop = async (powers, config = defaultConfig) => {
   trace('######## inside startAirdrop ###########');
   trace('config ::::', config);
   trace('----------------------------------');
@@ -188,6 +188,8 @@ export const startAirdrop = async (powers, config) => {
   );
   trace('AFTER assert(config?.options?.merkleRoot');
   const marshaller = await E(board).getReadonlyMarshaller();
+
+  const issuerKeyword = 'Tribbles';
 
   console.log('------------------------');
   const startOpts = {
@@ -322,7 +324,9 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
       {
         installKeys: {
           tribblesAirdrop: publishRef(
-            install('./src/tribbles/airdrop.contract.js'),
+            install(
+              '@agoric/orchestration/src/examples/airdrop/airdrop.contract.js',
+            ),
           ),
         },
       },

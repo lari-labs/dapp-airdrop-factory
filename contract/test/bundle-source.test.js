@@ -12,9 +12,9 @@ import { E, passStyleOf } from '@endo/far';
 import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
 
 const myRequire = createRequire(import.meta.url);
-const contractPath = myRequire.resolve(`../src/airdrop.contract.js`);
+const contractPath = myRequire.resolve(`../src/tribbles/airdrop.contract.js`);
 
-test('bundleSource() bundles the contract for use with zoe', async t => {
+test.serial('bundleSource() bundles the contract for use with zoe', async t => {
   const bundle = await bundleSource(contractPath);
   t.is(bundle.moduleFormat, 'endoZipBase64');
   t.log(bundle.endoZipBase64Sha512);
