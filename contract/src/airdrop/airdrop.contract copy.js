@@ -20,7 +20,7 @@ import {
 import { makeStateMachine } from './helpers/stateMachine.js';
 import { createClaimSuccessMsg } from './helpers/messages.js';
 import { objectToMap } from './helpers/objectTools.js';
-import { getMerkleRootFromMerkleProof } from '../merkle-tree/index.js';
+import { getMerkleRootFromMerkleProof } from './merkle-tree/index.js';
 import './types.js';
 
 const TT = makeTracer('ContractStartFn');
@@ -52,6 +52,7 @@ harden(PREPARED);
 harden(INITIALIZED);
 harden(RESTARTING);
 
+/** @import {CopySet} from '@endo/patterns'; */
 /** @import {AssetKind, Brand, Issuer, NatValue, Purse} from '@agoric/ertp/src/types.js'; */
 /** @import {CancelToken, TimerService, TimestampRecord} from '@agoric/time/src/types.js'; */
 /** @import {Baggage} from '@agoric/vat-data'; */
@@ -237,7 +238,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       getPayoutValues: M.call().returns(M.array()),
     }),
     creator: M.interface('creator', {
-      pauseContract: M.call().returns(M.any()),
+      makePauseContractInvitation: M.call(M.any()).returns(M.any()),
       getBankAssetMint: M.call().returns(MintShape),
     }),
   };
@@ -397,10 +398,42 @@ export const start = async (zcf, privateArgs, baggage) => {
         getBankAssetMint() {
           return tokenMint;
         },
-        pauseContract() {
-          void zcf.setOfferFilter([
-            messagesObject.makeClaimInvitationDescription(),
-          ]);
+
+        makePauseContractInvitation(adminDepositFacet) {
+          /** @type {OfferHandler} */
+          const handlePauseInvocation = (seat) => {
+            // const depositFacet = await getDepositFacet(recipient);
+            // const payouts = await withdrawFromSeat(zcf, tokenHolderSeat, {
+            //   Tokens: tokenHolderSeat.getAmountAllocated('Tokens'),
+            // });
+
+            // TODO: Use atomicRearrange to transfer tokens if necessary (not depositFacet)
+
+            // await Promise.all(
+            //   Object.values(payouts).map(pmtP =>
+            //     E.when(pmtP, pmt => E(depositFacet).receive(pmt)),
+            //   ),
+            // );
+            await zcf.setOfferFilter([
+              messagesObject.makeClaimInvitationDescription(),
+            ]);
+
+            seat.exit();
+
+            return `pause contract success.`;
+          };
+
+          const depositInvitation = async depositFacet => {
+            const pauseInvitation = zcf.makeInvitation(_seat =>
+              zcf.setOfferFilter([
+                messagesObject.makeClaimInvitationDescription(),
+              ]),
+            );
+            E(depositFacet).receive(pauseInvitation);
+          };
+
+          const recievedPause = depositInvitation(adminDepositFacet);
+          return recievedPause;
         },
       },
     },

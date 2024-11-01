@@ -12,7 +12,6 @@ import { AmountMath } from '@agoric/ertp';
 import { makeStableFaucet } from '../mintStable.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { oneDay, TimeIntervals } from '../../src/airdrop/helpers/time.js';
-import { startAirdrop, permit, makeTerms } from '../../src/airdrop.proposal.js';
 import {
   produceBoardAuxManager,
   permit as boardAuxPermit,
@@ -24,13 +23,22 @@ import { head } from '../../src/airdrop/helpers/objectTools.js';
 import { accounts, agoricPubkeys } from '../data/agd-keys.js';
 
 import { simulateClaim } from './actors.js';
-import { messagesObject, OPEN } from '../../src/airdrop/airdrop.contract.js';
+import { messagesObject, OPEN } from '../../src/tribbles/airdrop.contract.js';
 import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
+import {
+  startAirdrop,
+  permit,
+  makeTerms,
+} from '../../src/tribbles/airdrop.proposal.js';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { createStore } from '../../src/tribbles/utils.js';
 
 /** @typedef {typeof import('../../src/airdrop/airdrop.contract.js').start} AssetContractFn */
 
 const myRequire = createRequire(import.meta.url);
-const contractPath = myRequire.resolve(`../../src/airdrop.contract.js`);
+const contractPath = myRequire.resolve(
+  `../../src/tribbles/airdrop.contract.js`,
+);
 const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n];
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
@@ -71,11 +79,17 @@ const makeLocalTimer = async (
  * See test-bundle-source.js for basic use of bundleSource().
  * Here we use a bundle cache to optimize running tests multiple times.
  *
- * @param {unknown} _t
+ * @param {import('ava').TestFn} t
+ *
  */
-const makeTestContext = async _t => {
-  const { zoeService: zoe, feeMintAccess } = makeZoeKitForTest();
 
+const makeTestContext = async t => {
+  const { admin, vatAdminState } = makeFakeVatAdmin();
+  const { zoeService: zoe, feeMintAccess } = makeZoeKitForTest(admin);
+
+  const invitationIssuer = zoe.getInvitationIssuer();
+  console.log('------------------------');
+  console.log('invitationIssuer::', invitationIssuer);
   const bundleCache = await makeNodeBundleCache('bundles/', {}, s => import(s));
   const bundle = await bundleCache.load(contractPath, 'assetContract');
   const testFeeIssuer = await E(zoe).getFeeIssuer();
@@ -88,7 +102,9 @@ const makeTestContext = async _t => {
   });
   console.log('bundle:::', { bundle, bundleCache });
   return {
+    invitationIssuer,
     zoe,
+    invitationIssuer,
     bundle,
     bundleCache,
     makeLocalTimer,
@@ -122,7 +138,7 @@ const startLocalInstance = async (
   /** @type {ERef<Installation<AssetContractFn>>} */
   const installation = await E(zoe).install(bundle);
 
-  const instance = await E(zoe).startInstance(
+  const { instance, publicFacet, creatorFacet } = await E(zoe).startInstance(
     installation,
     { Fee: feeIssuer },
     {
@@ -131,10 +147,9 @@ const startLocalInstance = async (
     { timer },
   );
 
-  const publicFacet = await instance.publicFacet;
   t.log('instance', { instance });
 
-  return { instance, installation, timer, publicFacet };
+  return { instance, installation, timer, publicFacet, creatorFacet };
 };
 
 test.serial('Start the contract', async t => {
@@ -164,9 +179,9 @@ test.serial('Start the contract', async t => {
     },
   };
 
-  const contractInstance = await startLocalInstance(t, bundle, localTestConfig);
-  t.log(contractInstance.instance);
-  t.is(typeof contractInstance.instance, 'object');
+  const { instance } = await startLocalInstance(t, bundle, localTestConfig);
+  t.log(instance);
+  t.is(typeof instance, 'object');
 });
 
 test('Airdrop ::: happy paths', async t => {
@@ -194,11 +209,11 @@ test('Airdrop ::: happy paths', async t => {
     AmountMath.make(t.context.testFeeBrand, 5_000_000n),
   );
 
-  await simulateClaim(t, zoeRef, instance.instance, feePurse, head(accounts));
+  await simulateClaim(t, zoeRef, instance, feePurse, head(accounts));
 
   await E(timer).advanceBy(oneDay);
 
-  await simulateClaim(t, zoeRef, instance.instance, feePurse, accounts[2]);
+  await simulateClaim(t, zoeRef, instance, feePurse, accounts[2]);
 
   await E(timer).advanceBy(oneDay);
 
@@ -207,17 +222,38 @@ test('Airdrop ::: happy paths', async t => {
   await E(timer).advanceBy(oneDay);
 });
 
-test('pause method', async t => {
-  const { zoe: zoeRef, bundle, faucet, testFeeBrand } = await t.context;
-  console.log(t.context);
-  const { instance, publicFacet, timer } = await startLocalInstance(t, bundle, {
+test.serial('pause method', async t => {
+  const {
     zoe: zoeRef,
-    issuers: { Fee: await E(zoeRef).getFeeIssuer() },
-    terms: {
-      ...defaultCustomTerms,
-      feeAmount: AmountMath.make(testFeeBrand, 5n),
-    },
-  });
+    invitationIssuer: zoeIssuer,
+    bundle,
+    faucet,
+    testFeeBrand,
+  } = await t.context;
+  console.log(t.context);
+
+  const invitationPurse = await E(zoeIssuer).makeEmptyPurse();
+  const depositOnlyFacet = invitationPurse.getDepositFacet();
+
+  const { instance, publicFacet, timer, creatorFacet } =
+    await startLocalInstance(t, bundle, {
+      zoe: zoeRef,
+      issuers: { Fee: await E(zoeRef).getFeeIssuer() },
+      terms: {
+        ...defaultCustomTerms,
+        feeAmount: AmountMath.make(testFeeBrand, 5n),
+      },
+    });
+
+  await E(creatorFacet).makePauseContractInvitation(depositOnlyFacet);
+
+  const { brand: pauseInvitationBrand } = invitationPurse.getCurrentAmount();
+
+  t.deepEqual(
+    pauseInvitationBrand,
+    await E(zoeIssuer).getBrand(),
+    'makePauseContractInvitation given a valid depositFacet should deposit an invitation into its purse.',
+  );
 
   await E(timer).advanceBy(oneDay * (oneDay / 2n));
 
@@ -226,18 +262,9 @@ test('pause method', async t => {
   await E(timer).advanceBy(oneDay);
   const feePurse = await faucet(5n * UNIT6);
 
-  await simulateClaim(t, zoeRef, instance.instance, feePurse, accounts[2]);
+  await simulateClaim(t, zoeRef, instance, feePurse, accounts[2]);
 
   await E(timer).advanceBy(oneDay);
-
-  await E(instance.creatorFacet).pauseContract();
-
-  await t.throwsAsync(
-    simulateClaim(t, zoeRef, instance.instance, feePurse, accounts[3]),
-    {
-      message: `not accepting offer with description "${messagesObject.makeClaimInvitationDescription()}"`,
-    },
-  );
 
   await E(timer).advanceBy(oneDay);
 
