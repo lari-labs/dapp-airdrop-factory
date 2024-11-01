@@ -1,6 +1,6 @@
 {
   "name": "startAirdrop",
-  "script": "startAirdrop.js",
+  "script": "startAirdrop-xnet.js",
   "permit": "startAirdrop-permit.json",
   "bundles": [
     {
