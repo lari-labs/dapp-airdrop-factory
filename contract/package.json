@@ -12,9 +12,9 @@
     "build:deployer": "rollup -c rollup.config.mjs",
     "make:help": "make list",
     "start": "yarn docker:make clean start-contract",
-    "test": "ava --verbose",
-    "test:tap": "yarn run test -t | tap-color",
-    "test:isolated": "watch 'clear && npx ava ./test/airdropZone/test-*.js -t | tap-color' ./src",
+    "watch:test": "watch 'clear && yarn test | tap-color' ./test",
+    "watch:src": "watch 'clear && yarn test | tap-color' ./src",
+    "test": "ava",
     "lint": "eslint 'src/*.js'",
     "lint:fix": "eslint --fix 'src/*.js'"
   },
@@ -74,6 +74,10 @@
     "bech32": "^2.0.0"
   },
   "ava": {
+    "concurrency": 1,
+    "serial": true,
+    "failFast": true,
+    "tap": true,
     "extensions": [
       "ts",
       "js"

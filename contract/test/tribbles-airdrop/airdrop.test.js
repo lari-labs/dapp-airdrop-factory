@@ -12,7 +12,7 @@ import { merkleTreeAPI } from '../airdrop-data/merkle-tree/index.js';
 const test = anyTest;
 
 const contractName = 'tribblesAirdrop';
-const contractBuilder = 'test/builder/start-tribbles-airdrop.js';
+const contractBuilder = './builder/start-tribbles-airdrop.js';
 
 const generateInt = x => () => Math.floor(Math.random() * (x + 1));
 

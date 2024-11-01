@@ -87,7 +87,7 @@ const Orchestration = () => {
     walletConnection,
     pubkeyToAgoricAddress,
   });
-  return purse?.currentAmount?.value !== 0n ? (
+  return !purse == false &&  purse?.currentAmount?.value !== 0n ? (
     <div className="flex flex-col items-center shadow-lg bg-purple-900 rounded text-white">
       <h3>Tribbles Allocation</h3>
 

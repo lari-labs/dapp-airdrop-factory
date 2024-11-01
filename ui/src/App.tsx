@@ -11,7 +11,6 @@ import '@agoric/react-components/dist/style.css';
 function App() {
   const { themeClass } = useTheme();
 
-  console.log({themeClass})
   return (
     <ThemeProvider>
       <div className={themeClass}>
