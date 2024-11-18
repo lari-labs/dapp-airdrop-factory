@@ -12,16 +12,16 @@
     "build:deployer": "rollup -c rollup.config.mjs",
     "make:help": "make list",
     "start": "yarn docker:make clean start-contract",
-    "test": "ava --verbose",
-    "test:tap": "yarn run test -t | tap-color",
-    "test:isolated": "watch 'clear && npx ava ./test/airdropZone/test-*.js -t | tap-color' ./src",
+    "watch:test": "watch 'clear && yarn test | tap-color' ./test",
+    "watch:src": "watch 'clear && yarn test | tap-color' ./src",
+    "test": "ava",
     "lint": "eslint 'src/*.js'",
     "lint:fix": "eslint --fix 'src/*.js'"
   },
   "devDependencies": {
     "@agoric/eslint-config": "dev",
     "@endo/bundle-source": "^2.8.0",
-    "@endo/eslint-plugin": "^0.5.2",
+    "@endo/eslint-plugin": "^2.2.3",
     "@endo/init": "^0.5.60",
     "@endo/ses-ava": "^1.2.7",
     "@jessie.js/eslint-plugin": "^0.4.0",
@@ -71,9 +71,14 @@
     "@endo/promise-kit": "^1.1.7",
     "@noble/hashes": "1.5.0",
     "@noble/secp256k1": "^2.1.0",
+    "@paralleldrive/cuid2": "^2.2.2",
     "bech32": "^2.0.0"
   },
   "ava": {
+    "concurrency": 1,
+    "serial": true,
+    "failFast": true,
+    "tap": true,
     "extensions": [
       "ts",
       "js"
@@ -104,6 +109,7 @@
     },
     "extends": [
       "@agoric",
+      "plugin:@endo/recommended",
       "prettier"
     ],
     "ignorePatterns": [

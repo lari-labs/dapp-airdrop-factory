@@ -1,4 +1,4 @@
-import { Either } from './airdrop/helpers/adts.js';
+import { Either } from './src/helpers/adts.js';
 
 const { Right, Left } = Either;
 // /**

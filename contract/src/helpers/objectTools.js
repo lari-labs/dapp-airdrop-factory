@@ -3,6 +3,7 @@
 // @jessie-check
 
 /** @import { ERef } from '@endo/eventual-send'; */
+import { q } from '@endo/errors';
 
 export const compose =
   (...fns) =>

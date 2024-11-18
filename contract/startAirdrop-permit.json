@@ -1,8 +1,12 @@
 {
   "consume": {
+    "namesByAddress": true,
+    "namesByAddressAdmin": true,
+    "bankManager": true,
+    "board": true,
+    "chainStorage": true,
     "chainTimerService": true,
     "agoricNames": true,
-    "namesByAddress": true,
     "brandAuxPublisher": true,
     "startUpgradable": true,
     "zoe": "makeCoreProposalBehavior",
@@ -19,7 +23,8 @@
   },
   "issuer": {
     "consume": {
-      "IST": true
+      "IST": true,
+      "Tribbles": true
     },
     "produce": {
       "Tribbles": true
@@ -27,7 +32,8 @@
   },
   "brand": {
     "consume": {
-      "IST": true
+      "IST": true,
+      "Tribbles": true
     },
     "produce": {
       "Tribbles": true
