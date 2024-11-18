@@ -1,8 +1,5 @@
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import {
-  compose,
-  constructObject,
-} from '../src/airdrop/helpers/objectTools.js';
+import { compose, constructObject } from '../src/helpers/objectTools.js';
 
 const add = x => y => x + y;
 const addOne = add(1);

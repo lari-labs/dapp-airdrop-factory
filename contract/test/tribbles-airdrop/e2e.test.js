@@ -29,16 +29,9 @@ import {
 import { makeStableFaucet } from '../mintStable.js';
 import { simulateClaim } from './actors.js';
 import { accounts } from '../data/agd-keys.js';
-import {
-  messagesObject,
-  PREPARED,
-} from '../../src/tribbles/airdrop.contract.js';
-import { oneDay } from '../../src/airdrop/helpers/time.js';
-import {
-  makeTerms,
-  permit,
-  startAirdrop,
-} from '../../src/tribbles/airdrop.proposal.js';
+import { messagesObject, PREPARED } from '../../src/airdrop.contract.js';
+import { oneDay } from '../../src/helpers/time.js';
+import { makeTerms, permit, startAirdrop } from '../../src/airdrop.proposal.js';
 // import { makeAgdTools } from '../agd-tools.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */

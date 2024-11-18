@@ -14,7 +14,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
 import { mockWalletFactory } from './wallet-tools.js';
-import { allValues } from '../src/airdrop/helpers/objectTools.js';
+import { allValues } from '../src/helpers/objectTools.js';
 // import { getBundleId } from '../tools/bundle-tools.js';
 export const getBundleId = b => `b1-${b.endoZipBase64Sha512}`;
 

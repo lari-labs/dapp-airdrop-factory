@@ -1,6 +1,7 @@
 import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'child_process';
+import { createId } from '@paralleldrive/cuid2';
 import { generateMnemonic } from './tools/wallet.js';
 import { makeRetryUntilCondition } from './tools/sleep.js';
 import { makeDeployBuilder } from './tools/deploy.js';
@@ -9,6 +10,16 @@ import { makeAgdTools } from './tools/agd-tools.js';
 const makeKeyring = async e2eTools => {
   //   let _keys = ['user1'];
   let _keys = ['user1'];
+
+  const setupSpecificKeys = (mnemonics = ['']) =>
+    mnemonics.reduceRight(async (acc, val, index) => {
+      const name = `ACCOUNT-${createId()}`;
+      const res = await e2eTools.addKey(name, val);
+
+      const { address } = JSON.parse(res);
+      acc[name] = address;
+      return acc;
+    }, []);
   //   const setupTestKeys = async (keys = ['user1']) => {
   const setupTestKeys = async (keys = ['alice']) => {
     await null;
@@ -29,7 +40,7 @@ const makeKeyring = async e2eTools => {
       ),
     ).catch();
 
-  return { setupTestKeys, deleteTestKeys };
+  return { setupSpecificKeys, setupTestKeys, deleteTestKeys };
 };
 
 const commonSetup = async t => {
