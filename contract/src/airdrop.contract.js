@@ -54,6 +54,7 @@ export const {
   PREPARED,
   RESTARTING,
 } = AIRDROP_STATES;
+harden(PAUSED);
 
 harden(CLOSED);
 harden(OPEN);
@@ -216,8 +217,8 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const divideAmount = divideAmountByTwo(tokenBrand);
   const handlePauseOffers = () => {
-    void zcf.setOfferFilter([messagesObject.makeClaimInvitationDescription()]);
     stateMachine.transitionTo(PAUSED);
+    void zcf.setOfferFilter([messagesObject.makeClaimInvitationDescription()]);
   };
   await objectToMap(
     {
@@ -422,7 +423,7 @@ export const start = async (zcf, privateArgs, baggage) => {
                   stateMachine.canTransitionTo(PAUSED),
                   `Illegal state transition. Can not transition from state: ${stateMachine.getStatus()} to state ${PAUSED}`,
                 );
-                seat.exit('');
+                seat.exit('Exiting pause invitation');
                 return handlePauseOffers();
               },
               'pause contract',
