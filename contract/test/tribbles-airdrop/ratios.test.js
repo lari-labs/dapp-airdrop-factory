@@ -1,8 +1,8 @@
 import { test } from '../prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { makeIssuerKit } from '@agoric/ertp';
-import { AmountMath } from '../../src/airdrop/airdrop.coreEval.js';
-import { divideAmountByTwo } from '../../src/airdrop/airdrop.contract.js';
+import { AmountMath } from '../../src/platform-goals/start-contract.js';
+import { divideAmountByTwo } from '../../src/airdrop.contract.js';
 
 const testKit = makeIssuerKit('Testcoinz');
 
