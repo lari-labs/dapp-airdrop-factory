@@ -20,7 +20,7 @@ import { makeMockTools } from '../tools/boot-tools.js';
 import {
   makeTerms,
   startAirdrop as startAirdropCampaignContract,
-} from '../src/airdrop.proposal.js';
+} from '../src/tribbles/airdrop.proposal.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<setupTestContext>>>} */
 const test = anyTest;
@@ -28,11 +28,11 @@ const test = anyTest;
 const nodeRequire = createRequire(import.meta.url);
 
 const bundleRoots = {
-  airdrop: nodeRequire.resolve('../src/airdrop.contract.js'),
+  airdrop: nodeRequire.resolve('../src/tribbles/airdrop.contract.js'),
 };
 
 const scriptRoots = {
-  airdrop: nodeRequire.resolve('../src/airdrop.proposal.js'),
+  airdrop: nodeRequire.resolve('../src/tribbles/airdrop.proposal.js'),
 };
 
 /** @param {import('ava').ExecutionContext} t */

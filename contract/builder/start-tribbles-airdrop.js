@@ -5,8 +5,6 @@ import { Fail } from '@endo/errors';
 import { makeTracer, deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 
-const ONE_DAY = 86_000n;
-
 const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n].map(
   x => x * 1_000_000n,
 );
@@ -181,15 +179,12 @@ export const startAirdrop = async (powers, config) => {
       value: 5n,
     }),
   };
-  trace('BEFORE assert(config?.options?.merkleRoot');
   assert(
     customTerms?.merkleRoot,
     'can not start contract without merkleRoot???',
   );
-  trace('AFTER assert(config?.options?.merkleRoot');
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  console.log('------------------------');
   const startOpts = {
     installation: await airdropInstallationP,
     label: contractName,
