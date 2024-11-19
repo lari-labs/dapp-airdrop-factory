@@ -21,7 +21,7 @@
   "devDependencies": {
     "@agoric/eslint-config": "dev",
     "@endo/bundle-source": "^2.8.0",
-    "@endo/eslint-plugin": "^0.5.2",
+    "@endo/eslint-plugin": "^2.2.3",
     "@endo/init": "^0.5.60",
     "@endo/ses-ava": "^1.2.7",
     "@jessie.js/eslint-plugin": "^0.4.0",
@@ -71,6 +71,7 @@
     "@endo/promise-kit": "^1.1.7",
     "@noble/hashes": "1.5.0",
     "@noble/secp256k1": "^2.1.0",
+    "@paralleldrive/cuid2": "^2.2.2",
     "bech32": "^2.0.0"
   },
   "ava": {
@@ -108,6 +109,7 @@
     },
     "extends": [
       "@agoric",
+      "plugin:@endo/recommended",
       "prettier"
     ],
     "ignorePatterns": [

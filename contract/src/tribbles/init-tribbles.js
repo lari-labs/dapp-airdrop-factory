@@ -1,4 +1,4 @@
-import { startAirdrop } from './airdrop.proposal.js';
+import { startAirdrop } from '../airdrop.proposal.js';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) => {

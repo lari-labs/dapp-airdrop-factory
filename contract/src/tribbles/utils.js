@@ -1,4 +1,4 @@
-const createStore = (reducerFn, initialState) => {
+const createStore = (reducerFn, initialState = {}) => {
   let state = initialState;
   const getSlice = prop => state[prop];
   const getStore = () => state;

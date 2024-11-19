@@ -11,7 +11,7 @@ import { AmountMath } from '@agoric/ertp';
 
 import { makeStableFaucet } from '../mintStable.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { oneDay, TimeIntervals } from '../../src/airdrop/helpers/time.js';
+import { oneDay, TimeIntervals } from '../../src/helpers/time.js';
 import {
   produceBoardAuxManager,
   permit as boardAuxPermit,
@@ -19,26 +19,20 @@ import {
 import { extract } from '@agoric/vats/src/core/utils.js';
 import { mockBootstrapPowers } from '../../tools/boot-tools.js';
 import { getBundleId } from '../../tools/bundle-tools.js';
-import { head } from '../../src/airdrop/helpers/objectTools.js';
+import { head } from '../../src/helpers/objectTools.js';
 import { accounts, agoricPubkeys } from '../data/agd-keys.js';
 
 import { simulateClaim } from './actors.js';
-import { messagesObject, OPEN } from '../../src/tribbles/airdrop.contract.js';
+import { messagesObject, OPEN } from '../../src/airdrop.contract.js';
 import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
-import {
-  startAirdrop,
-  permit,
-  makeTerms,
-} from '../../src/tribbles/airdrop.proposal.js';
+import { startAirdrop, permit, makeTerms } from '../../src/airdrop.proposal.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { createStore } from '../../src/tribbles/utils.js';
 
 /** @typedef {typeof import('../../src/airdrop/airdrop.contract.js').start} AssetContractFn */
 
 const myRequire = createRequire(import.meta.url);
-const contractPath = myRequire.resolve(
-  `../../src/tribbles/airdrop.contract.js`,
-);
+const contractPath = myRequire.resolve(`../../src/airdrop.contract.js`);
 const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n];
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
