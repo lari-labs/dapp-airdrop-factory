@@ -1,17 +1,17 @@
 {
   "name": "startAirdrop",
-  "script": "startAirdrop-xnet.js",
+  "script": "startAirdrop.js",
   "permit": "startAirdrop-permit.json",
   "bundles": [
     {
-      "entrypoint": "../src/tribbles/airdrop.contract.js",
-      "bundleID": "b1-2ff7c3345606c2c8d65c1f69dbae169036f9a28683b55db4105ad8cc5ca6f005c6e702aee15b12eb0f77b5589df5f3d4bb0783b45d2bca81207fcdaa8c0beb65",
-      "fileName": "/Users/tgreco/.agoric/cache/b1-2ff7c3345606c2c8d65c1f69dbae169036f9a28683b55db4105ad8cc5ca6f005c6e702aee15b12eb0f77b5589df5f3d4bb0783b45d2bca81207fcdaa8c0beb65.json"
+      "entrypoint": "./src/airdrop.contract.js",
+      "bundleID": "b1-a2ee9dafe70d201a6661e3b599a19e3df2afdb67fca247f24be7268f4bb624e88de60317d2f368c276d97bfc415b96a0b9a75d5348c0b93bc774be674a922f2a",
+      "fileName": "/Users/tgreco/.agoric/cache/b1-a2ee9dafe70d201a6661e3b599a19e3df2afdb67fca247f24be7268f4bb624e88de60317d2f368c276d97bfc415b96a0b9a75d5348c0b93bc774be674a922f2a.json"
     },
     {
-      "entrypoint": "../builder/start-tribbles-airdrop.js",
-      "bundleID": "b1-493618f14e60d8d06de5378d3e426af25253bd789428de08098dadf5b1ba81353c658e4e538e45bca976baeb121c57419eb06c1e173d13567d1275ddc948cbee",
-      "fileName": "/Users/tgreco/.agoric/cache/b1-493618f14e60d8d06de5378d3e426af25253bd789428de08098dadf5b1ba81353c658e4e538e45bca976baeb121c57419eb06c1e173d13567d1275ddc948cbee.json"
+      "entrypoint": "./src/airdrop.proposal.js",
+      "bundleID": "b1-fc79d355ebf00a9d228202fe4329d481f30a5107dc68fc1e56e868d22c91f1fe9fa80dbfc2a8783639707ed468e09d45cb12540b46813ee30594ebaf10cd08b8",
+      "fileName": "/Users/tgreco/.agoric/cache/b1-fc79d355ebf00a9d228202fe4329d481f30a5107dc68fc1e56e868d22c91f1fe9fa80dbfc2a8783639707ed468e09d45cb12540b46813ee30594ebaf10cd08b8.json"
     }
   ]
 }

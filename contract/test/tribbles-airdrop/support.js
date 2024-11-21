@@ -2,10 +2,10 @@ import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'child_process';
 import { createId } from '@paralleldrive/cuid2';
-import { generateMnemonic } from './tools/wallet.js';
-import { makeRetryUntilCondition } from './tools/sleep.js';
-import { makeDeployBuilder } from './tools/deploy.js';
-import { makeAgdTools } from './tools/agd-tools.js';
+import { generateMnemonic } from '../../tools/wallet.js';
+import { makeRetryUntilCondition } from '../../tools/sleep.js';
+import { makeDeployBuilder } from '../../tools/deploy.js';
+import { makeAgdTools } from '../../tools/agd-tools.js';
 
 const makeKeyring = async e2eTools => {
   //   let _keys = ['user1'];
@@ -45,9 +45,10 @@ const makeKeyring = async e2eTools => {
 
 const commonSetup = async t => {
   const tools = await makeAgdTools(t.log, {
-    execFileSyncFn: childProcess.execFileSync,
-    execFileFn: childProcess.execFile,
+    execFileSync: childProcess.execFileSync,
+    execFile: childProcess.execFile,
   });
+  console.log({ tools });
   const keyring = await makeKeyring(tools);
   const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
   const retryUntilCondition = makeRetryUntilCondition({ log: t.log });

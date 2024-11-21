@@ -40,15 +40,11 @@ const test = anyTest;
 const nodeRequire = createRequire(import.meta.url);
 
 const bundleRoots = {
-  tribblesAirdrop: nodeRequire.resolve(
-    '../../src/tribbles/airdrop.contract.js',
-  ),
+  tribblesAirdrop: nodeRequire.resolve('../../src/airdrop.contract.js'),
 };
 
 const scriptRoots = {
-  tribblesAirdrop: nodeRequire.resolve(
-    '../../src/tribbles/airdrop.proposal.js',
-  ),
+  tribblesAirdrop: nodeRequire.resolve('../../src/airdrop.proposal.js'),
 };
 
 /** @param {import('ava').ExecutionContext} t */
@@ -211,7 +207,7 @@ test.skip('E2E test', async t => {
   ]);
   consoleCounter();
 
-  /** @type {import('../../src/tribbles/airdrop.proposal.js').AirdropSpace} */
+  /** @type {import('../../src/airdrop.proposal.js').AirdropSpace} */
   // @ts-expect-error cast
   const airdropSpace = powers;
   const instance = await airdropSpace.instance.consume.tribblesAirdrop;

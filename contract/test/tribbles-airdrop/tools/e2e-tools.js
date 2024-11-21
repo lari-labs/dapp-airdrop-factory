@@ -404,6 +404,10 @@ const runCoreEval = async (
   assert(detail.status, 'PROPOSAL_STATUS_PASSED');
   return detail;
 };
+const XNET_CONSTANTS = {
+  RPC: 'https://xnet.rpc.agoric.net:443',
+  LCD: 'https://xnet.api.agoric.net:443',
+};
 
 /**
  * @param {typeof console.log} log
@@ -425,8 +429,8 @@ export const makeE2ETools = async (
     execFileSync,
     fetch,
     setTimeout,
-    rpcAddress = 'http://localhost:26657',
-    apiAddress = 'http://localhost:1317',
+    rpcAddress = XNET_CONSTANTS.RPC,
+    apiAddress = XNET_CONSTANTS.LCD,
   },
 ) => {
   const agd = makeAgd({ execFileSync }).withOpts({ keyringBackend: 'test' });
