@@ -1,20 +1,31 @@
 // @ts-check
 import assert from 'node:assert';
+import { spawn } from 'node:child_process';
 
 const { freeze } = Object;
 
-const kubectlBinary = 'kubectl';
-const binaryArgs = [
-  'exec',
-  '-i',
-  'agoriclocal-genesis-0',
-  '-c',
-  'validator',
-  '--tty=false',
-  '--',
-  'agd',
-];
+const agdBinary = 'agd';
 
+/**
+ * @param {string[]} args
+ * @param {*} [opts]
+ */
+const runSpawn = (
+  args,
+  opts = {
+    stdio: ['ignore', 'pipe', 'inherit'], // (A)
+    encoding: 'utf-8', // (B)
+    shell: true,
+  },
+) => {
+  const inputArgs = [...args];
+  console.log({ inputArgs });
+
+  return spawn('agd', ['--node https://xnet.rpc.agoric.net:443 ', ...args], {
+    ...opts,
+    shell: true,
+  });
+};
 /**
  * @param {Record<string, string | undefined>} record - e.g. { color: 'blue' }
  * @returns {string[]} - e.g. ['--color', 'blue']
@@ -48,7 +59,7 @@ export const makeAgd = ({ execFileSync }) => {
    *     }} opts
    */
   const make = ({ home, keyringBackend, rpcAddrs } = {}) => {
-    const keyringArgs = flags({ home, 'keyring-backend': keyringBackend });
+    const keyringArgs = flags({ home, 'chain-id': 'agoricxnet-14' });
     if (rpcAddrs) {
       assert.equal(
         rpcAddrs.length,
@@ -56,16 +67,14 @@ export const makeAgd = ({ execFileSync }) => {
         'XXX rpcAddrs must contain only one entry',
       );
     }
-    const nodeArgs = flags({ node: rpcAddrs && rpcAddrs[0] });
+    const nodeArgs = flags({ node: 'https://xnet.rpc.agoric.net:443' });
 
     /**
      * @param {string[]} args
      * @param {*} [opts]
      */
-    const exec = (
-      args,
-      opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] },
-    ) => execFileSync(kubectlBinary, [...binaryArgs, ...args], opts);
+    const exec = (args, opts = { encoding: 'utf-8' }) =>
+      execFileSync(agdBinary, args, opts);
 
     const outJson = flags({ output: 'json' });
 
@@ -116,12 +125,12 @@ export const makeAgd = ({ execFileSync }) => {
        * @param {string[]} txArgs
        * @param {{ chainId: string; from: string; yes?: boolean }} opts
        */
-      tx: async (txArgs, { chainId, from, yes }) => {
+      tx: async (txArgs, { chainId = 'agoricxnet-14', from, yes }) => {
+        console.log('inside tx', { txArgs, chainId, from });
         const args = [
           'tx',
           ...txArgs,
-          ...nodeArgs,
-          ...keyringArgs,
+          ...flags({ node: 'https://xnet.rpc.agoric.net:443' }),
           ...flags({ 'chain-id': chainId, from }),
           ...flags({
             'broadcast-mode': 'block',
@@ -129,12 +138,11 @@ export const makeAgd = ({ execFileSync }) => {
             'gas-adjustment': '1.4',
           }),
           ...(yes ? ['--yes'] : []),
-          ...outJson,
         ];
-        console.log('$$$ agd', ...args);
-        const out = exec(args, { stdio: ['ignore', 'pipe', 'ignore'] });
+        console.log('$$$', agdBinary, ...args);
+        const out = exec(args);
         try {
-          const detail = JSON.parse(out);
+          const detail = out;
           if (detail.code !== 0) {
             throw Error(detail.raw_log);
           }
@@ -155,20 +163,14 @@ export const makeAgd = ({ execFileSync }) => {
          */
         add: (name, mnemonic) => {
           return execFileSync(
-            kubectlBinary,
-            [...binaryArgs, ...keyringArgs, 'keys', 'add', name, '--recover'],
-            {
-              encoding: 'utf-8',
-              input: mnemonic,
-              stdio: ['pipe', 'pipe', 'ignore'],
-            },
+            agdBinary,
+            [...keyringArgs, 'keys', 'add', name, '--recover'],
+            { encoding: 'utf-8', input: mnemonic },
           ).toString();
         },
         /** @param {string} name */
         delete: name => {
-          return exec([...keyringArgs, 'keys', 'delete', name, '-y'], {
-            stdio: ['pipe', 'pipe', 'ignore'],
-          });
+          return exec([agdBinary, ...keyringArgs, 'keys', 'delete', name]);
         },
       },
       /**
@@ -182,40 +184,3 @@ export const makeAgd = ({ execFileSync }) => {
 };
 
 /** @typedef {ReturnType<makeAgd>} Agd */
-
-/** @param {{ execFileSync: typeof import('child_process').execFileSync, log: typeof console.log }} powers */
-export const makeCopyFiles = (
-  { execFileSync, log },
-  {
-    podName = 'agoriclocal-genesis-0',
-    containerName = 'validator',
-    destDir = '/tmp/contracts',
-  } = {},
-) => {
-  /** @param {string[]} paths } */
-  return paths => {
-    // Create the destination directory if it doesn't exist
-    execFileSync(
-      kubectlBinary,
-      `exec -i ${podName} -c ${containerName} -- mkdir -p ${destDir}`.split(
-        ' ',
-      ),
-      { stdio: ['ignore', 'pipe', 'ignore'] },
-    );
-    for (const path of paths) {
-      execFileSync(
-        kubectlBinary,
-        `cp ${path} ${podName}:${destDir}/ -c ${containerName}`.split(' '),
-        { stdio: ['ignore', 'pipe', 'ignore'] },
-      );
-      log(`Copied ${path} to ${destDir} in pod ${podName}`);
-    }
-    const lsOutput = execFileSync(
-      kubectlBinary,
-      `exec -i ${podName} -c ${containerName}  -- ls ${destDir}`.split(' '),
-      { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf-8' },
-    );
-    log(`ls ${destDir}:\n${lsOutput}`);
-    return lsOutput;
-  };
-};

@@ -3,7 +3,7 @@ import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { makePromiseKit } from '@endo/promise-kit';
-import { flags, makeAgd, makeCopyFiles } from './agd-lib.js';
+import { flags, makeAgd } from './agd-lib.js';
 import { makeHttpClient, makeAPI } from './makeHttpClient.js';
 import { dedup, makeQueryKit, poll } from './queryKit.js';
 import { makeVStorage } from './batchQuery.js';
@@ -123,6 +123,7 @@ const installBundle = async (fullPath, opts) => {
  *   chainId?: string;
  *   whale?: string;
  *   progress?: typeof console.log;
+ *   q?: import('./queryKit.js').QueryTool
  * }} opts
  */
 export const provisionSmartWallet = async (
@@ -133,8 +134,8 @@ export const provisionSmartWallet = async (
     blockTool,
     lcd,
     delay,
-    chainId = 'agoriclocal',
-    whale = 'faucet',
+    chainId = 'agoricxnet-14',
+    whale = 'whale',
     progress = console.log,
     q = makeQueryKit(makeVStorage(lcd)).query,
   },
@@ -366,7 +367,7 @@ const runCoreEval = async (
   {
     agd,
     blockTool,
-    chainId = 'agoriclocal',
+    chainId = 'agoricxnet-14',
     proposer = 'genesis',
     deposit = `1${BLD}`,
   },
@@ -508,8 +509,6 @@ export const makeE2ETools = async (
     return proposal;
   };
 
-  const copyFiles = makeCopyFiles({ execFileSync, log });
-
   const vstorageClient = makeQueryKit(vstorage).query;
 
   return {
@@ -520,14 +519,17 @@ export const makeE2ETools = async (
      * @param {string} address
      * @param {Record<string, bigint>} amount
      */
-    provisionSmartWallet: (address, amount) =>
-      provisionSmartWallet(address, amount, {
+    provisionSmartWallet: (address, amount) => {
+      console.log('------------------------');
+      console.log('{address, amount}::', { address, amount });
+      return provisionSmartWallet(address, amount, {
         agd,
         blockTool,
         lcd,
         delay,
         q: vstorageClient,
-      }),
+      });
+    },
     /**
      * @param {string} name
      * @param {EnglishMnemonic | string} mnemonic
@@ -540,7 +542,6 @@ export const makeE2ETools = async (
       ),
     /** @param {string} name */
     deleteKey: async name => agd.keys.delete(name),
-    copyFiles,
   };
 };
 

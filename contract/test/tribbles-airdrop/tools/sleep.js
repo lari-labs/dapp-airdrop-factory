@@ -34,6 +34,7 @@ const retryUntilCondition = async (
   const { maxRetries, log, retryIntervalMs, setTimeout } = opts;
   console.log({ maxRetries, retryIntervalMs, message });
 
+  await null;
   while (retries < maxRetries) {
     try {
       const result = await operation();
@@ -48,7 +49,7 @@ const retryUntilCondition = async (
       }
     }
 
-    retries++;
+    retries += 1;
     console.log(
       `Retry ${retries}/${maxRetries} - Waiting for ${retryIntervalMs}ms for ${message}...`,
     );
