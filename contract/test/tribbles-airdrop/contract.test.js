@@ -262,7 +262,17 @@ test.serial('delegate pause access :: makePauseContractInvitation', async t => {
 
   await simulateClaim(t, zoeRef, instance, feePurse, accounts[2]);
 
-  await E(zoeRef).offer(pauseOffersPayment, undefined, undefined);
+  const adminSeat = await E(zoeRef).offer(
+    pauseOffersPayment,
+    undefined,
+    undefined,
+  );
+
+  t.deepEqual(
+    await adminSeat.hasExited(),
+    true,
+    'adminSeat.hasExited() should return true following a succesful offer to pause the contract.',
+  );
 
   await E(timer).advanceBy(oneDay);
 
