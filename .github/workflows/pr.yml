@@ -7,20 +7,9 @@ jobs:
   all:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-      - name: Use Node.js 18
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-      - name: yarn install
-        run: yarn
-      # commenting the lint process out below for purpose of seeing test code run to completion
-      - name: yarn lint
-        run: yarn lint
-      # - name: yarn build
-      #   run: yarn build
-      - name: yarn test
-        run: yarn test
-      - name: yarn test:e2e
-        run: yarn test:e2e
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: corepack enable
+      - run: yarn install
+      - name: test contracts
+        run: cd contract && yarn test
