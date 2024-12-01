@@ -11,5 +11,5 @@ jobs:
       - uses: actions/setup-node@v4
       - run: corepack enable
       - run: yarn install
-      - name: test contracts
-        run: cd contract && yarn test
+      - name: run tests
+        run: yarn test
