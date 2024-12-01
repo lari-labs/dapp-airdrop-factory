@@ -1,7 +1,8 @@
+import { performance } from 'node:perf_hooks';
 import { test as anyTest } from '../prepare-test-env-ava.js';
 import { makeDoOffer } from './tools/e2e-tools.js';
 import { commonSetup } from './support.js';
-import { merkleTreeObj, mnemonics } from './generated_keys.js';
+import { merkleTreeObj } from './generated_keys.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
@@ -12,8 +13,8 @@ const test = anyTest;
 //   instances: [{ key: string, value: Instance }]
 //   makeFeeAmount: () => Amount
 // };
-const contractName = 'airdrop';
-const contractBuilder = './builder/start-tribbles-airdrop.js';
+const contractName = 'tribblesAirdrop2';
+const contractBuilder = './start-tribbles-airdrop.js';
 
 // Using startsWith() method
 const checkSuccessMessage = result =>
@@ -162,9 +163,6 @@ const prepareAccountsForTests = (
 test.before(async t => {
   const setup = await commonSetup(t);
 
-  await setup.setupSpecificKeys(mnemonics.slice(0, 350));
-  console.log('successfully started contract::', contractName);
-
   console.log('setup', setup);
   // example usage. comment out after first run
   const chainData = await Promise.all([
@@ -186,10 +184,6 @@ test.before(async t => {
     instances,
     makeFeeAmount,
   };
-});
-
-test.serial('sample test', async t => {
-  t.deepEqual(t.context.brands, {});
 });
 
 const runManyOffers = async (t, delay = 10000, accounts) => {
@@ -236,12 +230,12 @@ const runManyOffers = async (t, delay = 10000, accounts) => {
 
 test.skip('makeClaimTokensInvitation offrs ### start: accounts[15] || end: accounts[35] ### offer interval: 10s', async t => {
   const { provisionSmartWallet, makeFeeAmount } = t.context;
-  const [startIndex, endIndex] = [15, 35];
+  const [startIndex, endIndex] = [0, 10];
   const testAccts = merkleTreeObj.accounts.slice(startIndex, endIndex);
 
   console.log({ testAccts });
 
-  const delay = 10000;
+  const delay = 30000;
   const results = await runManyOffers(t, delay, testAccts);
   t.log('Durations for all calls', results);
   console.group('################ START DURATIONS logger ##############');

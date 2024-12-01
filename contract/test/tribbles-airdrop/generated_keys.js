@@ -1,4 +1,4 @@
-import { makeMerkleTreeAPI } from './makeMerkleAPI.js';
+import { makeMerkleTreeAPI } from '../../src/merkle-tree/index.js';
 
 const TEST_ACCOUNTS = [
   {
@@ -11005,11 +11005,9 @@ const TEST_ACCOUNTS = [
 
 const defaultPubkeys = TEST_ACCOUNTS.map(x => x.pubkey.key);
 const merkleTreeObj = makeMerkleTreeAPI(defaultPubkeys, TEST_ACCOUNTS);
-const mnemonics = merkleTreeObj.accounts.map(x => x.mnemonic);
 
 export {
   TEST_ACCOUNTS,
-  mnemonics,
   TEST_ACCOUNTS as accounts,
   defaultPubkeys as pubkeys,
   merkleTreeObj,

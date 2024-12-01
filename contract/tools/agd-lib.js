@@ -3,7 +3,7 @@ import assert from 'node:assert';
 
 const { freeze } = Object;
 
-const agdBinary = 'agd --node https://xnet.rpc.agoric.net:443';
+const agdBinary = 'agd';
 
 /**
  * @param {Record<string, string | undefined>} record - e.g. { color: 'blue' }
@@ -147,9 +147,6 @@ export const makeAgd = ({ execFileSync }) => {
             [...keyringArgs, 'keys', 'add', name, '--recover'],
             { encoding: 'utf-8', input: mnemonic },
           ).toString();
-        },
-        delete: name => {
-          return exec([agdBinary, ...keyringArgs, 'keys', 'delete', name]);
         },
       },
       /**

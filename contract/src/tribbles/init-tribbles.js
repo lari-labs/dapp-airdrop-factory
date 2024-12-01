@@ -1,10 +1,11 @@
-import { startAirdrop } from '../airdrop.proposal.js';
+import { startAirdrop } from '../airdrop.local.proposal.js';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) => {
   return harden({
     // Somewhat unorthodox, source the exports from this builder module
-    sourceSpec: '@agoric/orchestration/examples/airdrop/airdrop.proposal.js',
+    sourceSpec:
+      '@agoric/orchestration/examples/airdrop/airdrop.local.proposal.js',
     getManifestCall: [
       'getManifestForAirdrop',
       {

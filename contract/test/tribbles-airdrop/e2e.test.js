@@ -12,6 +12,12 @@ import * as ambientFsp from 'node:fs/promises';
 import { E, passStyleOf } from '@endo/far';
 import { extract } from '@agoric/vats/src/core/utils.js';
 import {
+  makeTerms,
+  permit,
+  main,
+  startAirdrop,
+} from '../../src/airdrop.local.proposal.js';
+import {
   makeBundleCacheContext,
   getBundleId,
 } from '../../tools/bundle-tools.js';
@@ -22,16 +28,12 @@ import {
 } from '../../tools/ui-kit-goals/name-service-client.js';
 import { makeMockTools, mockBootstrapPowers } from '../../tools/boot-tools.js';
 import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
-import {
-  produceBoardAuxManager,
-  permit as boardAuxPermit,
-} from '../../src/platform-goals/board-aux.core.js';
 import { makeStableFaucet } from '../mintStable.js';
 import { simulateClaim } from './actors.js';
-import { accounts } from '../data/agd-keys.js';
-import { messagesObject, PREPARED } from '../../src/airdrop.contract.js';
 import { oneDay } from '../../src/helpers/time.js';
-import { makeTerms, permit, startAirdrop } from '../../src/airdrop.proposal.js';
+import { merkleTreeObj } from './generated_keys.js';
+
+const { accounts } = merkleTreeObj;
 // import { makeAgdTools } from '../agd-tools.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
@@ -44,7 +46,7 @@ const bundleRoots = {
 };
 
 const scriptRoots = {
-  tribblesAirdrop: nodeRequire.resolve('../../src/airdrop.proposal.js'),
+  tribblesAirdrop: nodeRequire.resolve('../../src/airdrop.local.proposal.js'),
 };
 
 /** @param {import('ava').ExecutionContext} t */
@@ -85,9 +87,7 @@ const makeTestContext = async t => {
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
-const consoleCounter = (label = 'default') => {
-  console.count(`${label} counter ###`);
-};
+
 //  console.log('after makeAgdTools:::', { context: t.context });
 
 test.serial('we1ll-known brand (ATOM) is available', async t => {
@@ -127,7 +127,7 @@ test.serial('install bundle: airdrop / tribblesAirdrop', async t => {
 const containsSubstring = (substring, string) =>
   new RegExp(substring, 'i').test(string);
 
-test.skip('deploy contract with core eval: airdrop / airdrop', async t => {
+test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
   const { runCoreEval } = t.context;
   const { bundles } = t.context.shared;
   const bundleID = getBundleId(bundles.tribblesAirdrop);
@@ -149,15 +149,16 @@ test.skip('deploy contract with core eval: airdrop / airdrop', async t => {
   const name = 'airdrop';
   const result = await runCoreEval({
     name,
-    behavior: startAirdrop,
+    behavior: main,
     entryFile: scriptRoots.tribblesAirdrop,
     config: {
       options: {
         customTerms: {
           ...makeTerms(),
-          merkleRoot,
+          merkleRoot: merkleTreeObj.root,
         },
-        airdrop: { bundleID },
+        tribblesAirdrop: { bundleID },
+        merkleRoot,
       },
     },
   });
@@ -176,7 +177,7 @@ test.skip('deploy contract with core eval: airdrop / airdrop', async t => {
 //   t.deepEqual(await checkBundle(tribblesAirdrop), '');
 // });
 
-test.skip('E2E test', async t => {
+test.serial('E2E test', async t => {
   const merkleRoot = merkleTreeAPI.generateMerkleRoot(
     accounts.map(x => x.pubkey.key),
   );
@@ -192,23 +193,20 @@ test.skip('E2E test', async t => {
 
   vatAdminState.installBundle(bundleID, tribblesAirdrop);
   const airdropPowers = extract(permit, powers);
-  const boardAuxPowers = extract(boardAuxPermit, powers);
-  await Promise.all([
-    produceBoardAuxManager(boardAuxPowers),
-    startAirdrop(airdropPowers, {
-      options: {
-        customTerms: {
-          ...makeTerms(),
-          merkleRoot,
-        },
-        airdrop: { bundleID },
+  await startAirdrop(airdropPowers, {
+    merkleRoot: merkleTreeObj.root,
+    options: {
+      customTerms: {
+        ...makeTerms(),
+        merkleRoot: merkleTreeObj.root,
       },
-    }),
-  ]);
-  consoleCounter();
+      tribblesAirdrop: { bundleID },
+      merkleRoot: merkleTreeObj.root,
+    },
+  });
 
-  /** @type {import('../../src/airdrop.proposal.js').AirdropSpace} */
-  // @ts-expect-error cast
+  /** @type {import('../../src/airdrop.local.proposal.js').AirdropSpace} */
+  // @ts-expeimport { merkleTreeObj } from '@agoric/orchestration/src/examples/airdrop/generated_keys.js';
   const airdropSpace = powers;
   const instance = await airdropSpace.instance.consume.tribblesAirdrop;
 
@@ -220,18 +218,30 @@ test.skip('E2E test', async t => {
   // see makeOfferArgs function for reference.
 
   const feePurse = await faucet(5n * 1_000_000n);
-  const claimAttempt = simulateClaim(t, zoe, instance, feePurse, accounts[4]);
-  await t.throwsAsync(
-    claimAttempt,
-    {
-      message: messagesObject.makeIllegalActionString(PREPARED),
-    },
-    'makeClaimInvitation() should throw an error stemming from the contract not being ready to accept offers.',
-  );
+  // const claimAttempt = simulateClaim(
+  //   t,
+  //   zoe,
+  //   instance,
+  //   feePurse,
+  //   merkleTreeObj.accounts[4],
+  // );
+  // await t.throwsAsync(
+  //   claimAttempt,
+  //   {
+  //     message: messagesObject.makeIllegalActionString(PREPARED),
+  //   },
+  //   'makeClaimInvitation() should throw an error stemming from the contract not being ready to accept offers.',
+  // );
 
   await E(chainTimerService).advanceBy(oneDay * (oneDay / 2n));
 
-  await simulateClaim(t, zoe, instance, feePurse, accounts[4]);
+  await simulateClaim(
+    t,
+    zoe,
+    instance,
+    await faucet(5n * 1_000_000n),
+    accounts[4],
+  );
 
   await simulateClaim(
     t,
@@ -242,4 +252,16 @@ test.skip('E2E test', async t => {
     true,
     `Allocation for address ${accounts[4].address} has already been claimed.`,
   );
+});
+
+test.serial('agoricNames.instances has contract: airdrop', async t => {
+  const { makeQueryTool } = t.context;
+  const hub0 = makeAgoricNames(makeQueryTool());
+
+  const agoricNames = makeNameProxy(hub0);
+  console.log({ agoricNames });
+  await null;
+  const instance = await E(agoricNames).lookup('instance', 'tribblesAirdrop');
+  t.is(passStyleOf(instance), 'remotable');
+  t.log(instance);
 });

@@ -1,9 +1,9 @@
-/* eslint-disable no-unused-vars */
 // @ts-check
-import { test } from './prepare-test-env-ava.js';
-// import { decodeBase64 } from '@endo/base64';
-// import { Secp256k1Signature } from '@cosmjs/crypto';
-// import { checkSig } from '../src/check-sig.js';
+import '@endo/init/debug.js';
+import test from 'ava';
+import { decodeBase64 } from '@endo/base64';
+import { Secp256k1Signature } from '@cosmjs/crypto';
+import { checkSig } from '../src/check-sig.js';
 
 const case0 = /** @type {const} */ ({
   sig: {
@@ -17,16 +17,15 @@ const case0 = /** @type {const} */ ({
   signer: 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
 });
 
-test.todo('construct cosmcj sig from keplr sig');
-// test.skip('can construct cosmjs sig from keplr sig', t => {
-//   const actual = decodeBase64(case0.sig.signature);
-//   t.is(actual.length, 64);
+test('can construct cosmjs sig from keplr sig', t => {
+  const actual = decodeBase64(case0.sig.signature);
+  t.is(actual.length, 64);
 
-//   const csig = Secp256k1Signature.fromFixedLength(actual);
-//   t.true(csig.r() instanceof Uint8Array);
-//   t.true(csig.s() instanceof Uint8Array);
-// });
+  const csig = Secp256k1Signature.fromFixedLength(actual);
+  t.true(csig.r() instanceof Uint8Array);
+  t.true(csig.s() instanceof Uint8Array);
+});
 
-// test.skip('checkSig', async t => {
-//   await t.notThrowsAsync(checkSig(case0.sig, case0.signer));
-// });
+test('checkSig', async t => {
+  await t.notThrowsAsync(checkSig(case0.sig, case0.signer));
+});

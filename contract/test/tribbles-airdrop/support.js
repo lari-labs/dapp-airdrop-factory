@@ -2,13 +2,14 @@ import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'child_process';
 import { createId } from '@paralleldrive/cuid2';
-import { generateMnemonic } from '../../tools/wallet.js';
-import { makeRetryUntilCondition } from '../../tools/sleep.js';
-import { makeDeployBuilder } from '../../tools/deploy.js';
-import { makeAgdTools } from '../../tools/agd-tools.js';
+import { generateMnemonic } from './tools/wallet.js';
+import { makeRetryUntilCondition } from './tools/sleep.js';
+import { makeDeployBuilder } from './tools/deploy.js';
+import { makeAgdTools } from './tools/agd-tools.js';
 
 const makeKeyring = async e2eTools => {
   //   let _keys = ['user1'];
+  // eslint-disable-next-line no-underscore-dangle
   let _keys = ['user1'];
 
   const setupSpecificKeys = (mnemonics = ['']) =>
@@ -19,7 +20,7 @@ const makeKeyring = async e2eTools => {
       const { address } = JSON.parse(res);
       acc[name] = address;
       return acc;
-    }, []);
+    }, Promise.resolve([]));
   //   const setupTestKeys = async (keys = ['user1']) => {
   const setupTestKeys = async (keys = ['alice']) => {
     await null;
@@ -45,21 +46,15 @@ const makeKeyring = async e2eTools => {
 
 const commonSetup = async t => {
   const tools = await makeAgdTools(t.log, {
-    execFileSync: childProcess.execFileSync,
-    execFile: childProcess.execFile,
+    execFileSyncFn: childProcess.execFileSync,
+    execFileFn: childProcess.execFile,
   });
-  console.log({ tools });
   const keyring = await makeKeyring(tools);
   const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
   const retryUntilCondition = makeRetryUntilCondition({ log: t.log });
   const startContract = async (contractName = '', contractBuilder = '') => {
     const { vstorageClient } = tools;
-    // const instances = Object.fromEntries(
-    //   await vstorageClient.queryData(`published.agoricNames.instance`),
-    // );
-    // if (contractName in instances) {
-    //   return t.log('Contract found. Skipping installation...');
-    // }
+
     t.log('bundle and install contract', contractName);
     await deployBuilder(contractBuilder);
     await retryUntilCondition(

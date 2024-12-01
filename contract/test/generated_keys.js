@@ -1,4 +1,4 @@
-import { makeMerkleTreeAPI } from './merkle-tree/index.js';
+import { makeMerkleTreeAPI } from '../../src/merkle-tree/index.js';
 
 const TEST_ACCOUNTS = [
   {

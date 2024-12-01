@@ -1,8 +1,8 @@
-import { test as anyTest } from '../prepare-test-env-ava.js';
 import { performance } from 'node:perf_hooks';
+import { test as anyTest } from '../prepare-test-env-ava.js';
 import { makeDoOffer } from './tools/e2e-tools.js';
 import { commonSetup } from './support.js';
-import { merkleTreeObj, mnemonics } from './generated_keys.js';
+import { merkleTreeObj } from './generated_keys.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
@@ -273,27 +273,38 @@ test.skip('makeClaimTokensInvitation offrs ### start: accounts[65] || end: accou
   console.groupEnd();
   t.deepEqual(results.length === 40, true);
 });
-test.serial(
-  'makeClaimTokensInvitation offrs ### start: accounts[95] || end: accounts[145] ### offer interval: 15s',
-  async t => {
-    const [startIndex, endIndex] = [95, 135];
-    const testAccts = merkleTreeObj.accounts.slice(startIndex, endIndex);
 
-    const delay = 17500;
-    const results = await runManyOffers(t, delay, testAccts);
-    t.log('Durations for all calls', results);
-    console.group('################ START DURATIONS logger ##############');
-    console.log('----------------------------------------');
-    console.log(
-      'durations ::::',
-      results.map(trace('inspecting offer results')),
-    );
-    console.log('----------------------------------------');
-    console.log('--------------- END DURATIONS logger -------------------');
-    console.groupEnd();
-    t.deepEqual(results.length === 40, true);
-  },
-);
+test.skip('makeClaimTokensInvitation offrs ### start: accounts[12] || end: accounts[129] ### offer interval: 25s', async t => {
+  const [startIndex, endIndex] = [12, 129];
+  const testAccts = merkleTreeObj.accounts.slice(startIndex, endIndex);
+
+  const delay = 25000;
+  const results = await runManyOffers(t, delay, testAccts);
+  t.log('Durations for all calls', results);
+  console.group('################ START DURATIONS logger ##############');
+  console.log('----------------------------------------');
+  console.log('durations ::::', results.map(trace('inspecting offer results')));
+  console.log('----------------------------------------');
+  console.log('--------------- END DURATIONS logger -------------------');
+  console.groupEnd();
+  t.deepEqual(results.length === 40, true);
+});
+
+test.skip('makeClaimTokensInvitation offrs ### start: accounts[105] || end: accounts[129] ### offer interval: 25s', async t => {
+  const [startIndex, endIndex] = [200, 220];
+  const testAccts = merkleTreeObj.accounts.slice(startIndex, endIndex);
+
+  const delay = 30000;
+  const results = await runManyOffers(t, delay, testAccts);
+  t.log('Durations for all calls', results);
+  console.group('################ START DURATIONS logger ##############');
+  console.log('----------------------------------------');
+  console.log('durations ::::', results.map(trace('inspecting offer results')));
+  console.log('----------------------------------------');
+  console.log('--------------- END DURATIONS logger -------------------');
+  console.groupEnd();
+  t.deepEqual(results.length === 40, true);
+});
 // test.serial('makeClaimTokensInvitation offers ### start: accounts[20] || end: accounts[35] ### offer interval: 6s', async t => {
 //   const claimRange = [20, 35];
 //   const testAccounts = prepareAccountsForTests(merkleTreeObj.accounts, claimRange)

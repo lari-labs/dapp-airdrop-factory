@@ -8,7 +8,6 @@ import { makeHttpClient, makeAPI } from './ui-kit-goals/makeHttpClient.js';
 import { dedup, makeQueryKit, poll } from './ui-kit-goals/queryKit.js';
 import { getBundleId } from './bundle-tools.js';
 import { makeVStorage } from './ui-kit-goals/batchQuery.js';
-import { seatLike } from './wallet-tools.js';
 
 const consoleCounter = (label = 'default') => {
   console.count(`${label} counter ###`);
@@ -607,18 +606,3 @@ export const makeE2ETools = (
       provisionSmartWallet(address, amount, { agd, blockTool, lcd, delay }),
   };
 };
-
-/** @param {Awaited<ReturnType<provisionSmartWallet>>} wallet */
-export const makeDoOffer = wallet => {
-  const doOffer = async offer => {
-    const updates = wallet.offers.executeOffer(offer);
-    // const seat = seatLike(updates);
-    // const result = await seat.getOfferResult();
-    await seatLike(updates).getPayoutAmounts();
-    // return result;
-  };
-
-  return doOffer;
-};
-
-/** @typedef {Awaited<ReturnType<makeE2ETools>>} E2ETools */

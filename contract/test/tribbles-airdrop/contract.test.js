@@ -12,24 +12,23 @@ import { AmountMath } from '@agoric/ertp';
 import { makeStableFaucet } from '../mintStable.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { oneDay, TimeIntervals } from '../../src/helpers/time.js';
-import {
-  produceBoardAuxManager,
-  permit as boardAuxPermit,
-} from '../../src/platform-goals/board-aux.core.js';
 import { extract } from '@agoric/vats/src/core/utils.js';
 import { mockBootstrapPowers } from '../../tools/boot-tools.js';
 import { getBundleId } from '../../tools/bundle-tools.js';
 import { head } from '../../src/helpers/objectTools.js';
-import { accounts, agoricPubkeys } from '../data/agd-keys.js';
 
 import { simulateClaim } from './actors.js';
-import { messagesObject, OPEN } from '../../src/airdrop.contract.js';
-import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
-import { startAirdrop, permit, makeTerms } from '../../src/airdrop.proposal.js';
+import { OPEN } from '../../src/airdrop.contract.js';
+import {
+  startAirdrop,
+  permit,
+  makeTerms,
+} from '../../src/airdrop.local.proposal.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { createStore } from '../../src/tribbles/utils.js';
+import { merkleTreeObj } from './generated_keys.js';
 
-/** @typedef {typeof import('../../src/airdrop/airdrop.contract.js').start} AssetContractFn */
+const { accounts } = merkleTreeObj;
+/** @typedef {typeof import('../../src/airdrop.contract.js').start} AssetContractFn */
 
 const myRequire = createRequire(import.meta.url);
 const contractPath = myRequire.resolve(`../../src/airdrop.contract.js`);
@@ -37,7 +36,6 @@ const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n];
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
-const publicKeys = accounts.map(x => x.pubkey.key);
 
 const defaultCustomTerms = {
   initialPayoutValues: AIRDROP_TIERS_STATIC,
@@ -46,7 +44,7 @@ const defaultCustomTerms = {
   targetTokenSupply: 10_000_000n,
   tokenName: 'Tribbles',
   startTime: oneDay,
-  merkleRoot: merkleTreeAPI.generateMerkleRoot(publicKeys),
+  merkleRoot: merkleTreeObj.root,
 };
 
 const UNIT6 = 1_000_000n;
@@ -275,42 +273,44 @@ test.serial('delegate pause access :: makePauseContractInvitation', async t => {
   // TODO: Validate that an offer make to contract fails when offer filter is present
 });
 
-test.skip('MN-2 Task: Add a deployment test that exercises the core-eval that will be used to install & start the contract on chain.', async t => {
-  const { bundle, testFeeBrand } = t.context;
+test.serial(
+  'MN-2 Task: Add a deployment test that exercises the core-eval that will be used to install & start the contract on chain.',
+  async t => {
+    const { bundle, testFeeBrand } = t.context;
 
-  console.groupEnd();
-  const bundleID = getBundleId(bundle);
-  const { powers, vatAdminState } = await mockBootstrapPowers(t.log);
-  const { feeMintAccess, zoe } = powers.consume;
+    const bundleID = getBundleId(bundle);
+    const { powers, vatAdminState } = await mockBootstrapPowers(t.log);
+    const { feeMintAccess, zoe } = powers.consume;
 
-  // When the BLD staker governance proposal passes,
-  // the startup function gets called.
-  vatAdminState.installBundle(bundleID, bundle);
-  const airdropPowers = extract(permit, powers);
-  const boardAuxPowers = extract(boardAuxPermit, powers);
-  await Promise.all([
-    produceBoardAuxManager(boardAuxPowers),
-    startAirdrop(airdropPowers, {
+    // When the BLD staker governance proposal passes,
+    // the startup function gets called.
+    vatAdminState.installBundle(bundleID, bundle);
+    const airdropPowers = extract(permit, powers);
+    await startAirdrop(airdropPowers, {
+      merkleRoot: merkleTreeObj.root,
       options: {
         customTerms: {
           ...makeTerms(),
-          merkleRoot: merkleTreeAPI.generateMerkleRoot(agoricPubkeys),
-          feeAmount: harden({ brand: testFeeBrand, value: 5n }),
+          merkleRoot: merkleTreeObj.root,
         },
-        airdrop: { bundleID },
+        tribblesAirdrop: { bundleID },
+        merkleRoot: merkleTreeObj.root,
       },
-    }),
-  ]);
-  const sellSpace = powers;
-  const instance = await sellSpace.instance.consume.tribblesAirdrop;
+    });
+    const sellSpace = powers;
+    const instance = await sellSpace.instance.consume.tribblesAirdrop;
+    console.log({ powers });
 
-  // Now that we have the instance, resume testing as above.
-  const { bundleCache } = t.context;
-  const { faucet } = makeStableFaucet({ bundleCache, feeMintAccess, zoe });
-  await t.throwsAsync(
-    simulateClaim(t, zoe, instance, await faucet(5n * UNIT6), accounts[3]),
-    {
-      message: 'Claim attempt failed.',
-    },
-  );
-});
+    // Now that we have the instance, resume testing as above.
+    const { bundleCache } = t.context;
+    const { faucet } = makeStableFaucet({ bundleCache, feeMintAccess, zoe });
+
+    await simulateClaim(
+      t,
+      zoe,
+      instance,
+      await faucet(5n * UNIT6),
+      accounts[3],
+    );
+  },
+);
