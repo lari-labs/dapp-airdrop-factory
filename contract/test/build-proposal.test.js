@@ -1,10 +1,10 @@
 /* eslint-disable import/order -- https://github.com/endojs/endo/issues/1235 */
 import { test } from './prepare-test-env-ava.js';
 import { execSync } from 'node:child_process';
-// import { promises as fs } from 'node:fs';
-// import { makeCompressFile } from './utils.js';
+import { promises as fs } from 'node:fs';
+import { makeCompressFile } from './utils.js';
 
-// test.before(t => (t.context.compressFile = makeCompressFile(fs.readFile)));
+test.before(t => (t.context.compressFile = makeCompressFile(fs.readFile)));
 
 // TODO: update to work like dapp-agoric-basics
 // https://github.com/Agoric/dapp-agoric-basics/blob/main/contract/test/test-build-proposal.js

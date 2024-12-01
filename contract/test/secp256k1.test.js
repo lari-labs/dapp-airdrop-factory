@@ -1,6 +1,6 @@
 /* eslint-disable import/order, import/no-extraneous-dependencies */
 // @ts-check
-import { test as anyTest } from './airdropData/prepare-test-env-ava.js';
+import { test as anyTest } from './prepare-test-env-ava.js';
 // eslint-disable import/no-extraneous-dependencies
 import * as secp from '@noble/secp256k1';
 // 2. node.js 18 and older, requires polyfilling globalThis.crypto
@@ -37,7 +37,7 @@ const runTestHashing = async t => {
   signature.recoverPublicKey(msgHash); // Public key recovery
 };
 
-test.skip('sepk256k1 import', async t => {
+test.serial('sepk256k1 import', async t => {
   await runTestHashing(t);
 });
 

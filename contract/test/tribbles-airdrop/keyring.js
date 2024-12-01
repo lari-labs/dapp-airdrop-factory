@@ -1,6 +1,6 @@
-import { makeMerkleTreeAPI } from '../../src/merkle-tree/index.js';
+import { makeMerkleTreeAPI } from './makeMerkleAPI.js';
 
-const TEST_ACCOUNTS = [
+const accounts = [
   {
     name: 'wallet-1731277116-1',
     type: 'local',
@@ -11003,13 +11003,8 @@ const TEST_ACCOUNTS = [
   },
 ];
 
-const defaultPubkeys = TEST_ACCOUNTS.map(x => x.pubkey.key);
-const merkleTreeObj = makeMerkleTreeAPI(defaultPubkeys, TEST_ACCOUNTS);
+const pubkeys = accounts.map(x => x.pubkey.key);
+const mnemonics = accounts.map(x => x.mnemonic);
 
-export {
-  TEST_ACCOUNTS,
-  TEST_ACCOUNTS as accounts,
-  defaultPubkeys as pubkeys,
-  merkleTreeObj,
-  makeMerkleTreeAPI,
-};
+const merkleTreeObj = makeMerkleTreeAPI(pubkeys, accounts);
+export { pubkeys, mnemonics, accounts, merkleTreeObj };

@@ -1,6 +1,7 @@
 import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import { accounts } from '../data/agd-keys.js';
+import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
 import { merkleTreeObj } from './generated_keys.js';
 
 const generateInt = x => () => Math.floor(Math.random() * (x + 1));
@@ -30,6 +31,7 @@ export const makeOfferArgs = ({
  * @param {{pubkey: {key: string, type: string}, address: string, tier?: number, name?: string, type?:string}} accountObject
  * @param {boolean} shouldThrow boolean flag indicating whether or not the contract is expected to throw an error.
  * @param {string} errorMessage Error message produced by contract resulting from some error arising during the claiming process.
+ * @param {Array} pubkeys Array of all public keys used when constructing the contract's merkle tree
  *
  */
 const simulateClaim = async (
@@ -40,6 +42,7 @@ const simulateClaim = async (
   accountObject,
   shouldThrow = false,
   errorMessage = '',
+  pubkeys = publicKeys,
 ) => {
   const [pfFromZoe, terms] = await Promise.all([
     E(zoe).getPublicFacet(instance),

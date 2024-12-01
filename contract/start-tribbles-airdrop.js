@@ -5,6 +5,9 @@ import { Fail } from '@endo/errors';
 import { makeTracer, deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 
+const head = ([x, ...xs]) => x;
+const ONE_DAY = 86_000n;
+
 const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n].map(
   x => x * 1_000_000n,
 );
@@ -48,15 +51,25 @@ const publishBrandInfo = async (chainStorage, board, brand) => {
   await E(node).setValue(stringifiedAux);
 };
 
+const publishBankAsset = async (
+  agoricNamesAdmin,
+  bankManager,
+  denom,
+  keyword,
+  description,
+  kit,
+) => {
+  await Promise.all([
+    E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, kit.issuer),
+    E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, kit.brand),
+    E(bankManager).addAsset(denom, keyword, description, kit),
+  ]);
+
+  trace('Asset added to bank');
+};
+
 /**
- * @typedef {{
- *   startTime: bigint;
- *   initialPayoutValues: any;
- *   targetNumberOfEpochs: number;
- *   targetEpochLength: bigint;
- *   targetTokenSupply: bigint;
- *   tokenName: string;
- * }} CustomContractTerms
+ * @type {{ startTime: bigint, initialPayoutValues: any; targetNumberOfEpochs: number; targetEpochLength: bigint; targetTokenSupply: bigint; tokenName: string; }}
  */
 
 export const defaultCustomTerms = {
@@ -78,30 +91,6 @@ harden(makeTerms);
 const contractName = 'tribblesAirdrop';
 
 /**
- * Core eval script to start contract q
- *
- * @param {BootstrapPowers} powers
- * @param {any} config
- *
- * @typedef {{
- *   brand: PromiseSpaceOf<{
- *     Tribbles: import('@agoric/ertp/src/types.js').Brand;
- *   }>;
- *   issuer: PromiseSpaceOf<{
- *     Tribbles: import('@agoric/ertp/src/types.js').Issuer;
- *   }>;
- *   instance: { produce: { tribblesAirdrop: Instance } };
- *   installation: { consume: { tribblesAirdrop: Installation } };
- * }} AirdropSpace
- */
-
-const defaultConfig = {
-  options: {
-    [contractName]: { bundleID: '' },
-    customTerms: defaultCustomTerms,
-  },
-};
-/**
  * Core eval script to start contract
  *
  * @param {BootstrapPowers & AirdropSpace} powers
@@ -111,7 +100,13 @@ const defaultConfig = {
  *   XXX export AirdropTerms record from contract
  */
 
-export const startAirdrop = async (powers, config = defaultConfig) => {
+/**
+ * Core eval script to start contract
+  @param {BootstrapPowers & AirdropSpace} powers
+  @param {{ options: { customTerms: any }}} config XXX export AirdropTerms record from contract
+ */
+
+export const startAirdrop = async (powers, config) => {
   trace('######## inside startAirdrop ###########');
   trace('config ::::', config);
   trace('----------------------------------');
@@ -130,7 +125,7 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
       zoe,
     },
     installation: {
-      consume: { [contractName]: airdropInstallationP },
+      consume: { [contractName]: installationP },
     },
     instance: {
       produce: { [contractName]: produceInstance },
@@ -162,17 +157,17 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
       value: 5n,
     }),
   };
-
   trace('BEFORE assert(config?.options?.merkleRoot');
   assert(
     customTerms?.merkleRoot,
     'can not start contract without merkleRoot???',
   );
   trace('AFTER assert(config?.options?.merkleRoot');
+
   const marshaller = await E(board).getReadonlyMarshaller();
 
   const startOpts = {
-    installation: await airdropInstallationP,
+    installation: await installationP,
     label: contractName,
     terms,
     issuerKeywordRecord: {
@@ -235,7 +230,7 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
   trace('deploy script complete.');
 };
 
-/** @type {BootstrapManifest} */
+/** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */
 const airdropManifest = harden({
   [startAirdrop.name]: {
     consume: {
@@ -266,6 +261,22 @@ const airdropManifest = harden({
   },
 });
 
+/**
+ * Core eval script to start contract
+ *
+ * @param {BootstrapPowers} powers
+ * @param {*} config
+ *
+ * @typedef {{
+ *   brand: PromiseSpaceOf<{ Tribbles: import('@agoric/ertp/src/types.js').Brand }>;
+ *   issuer: PromiseSpaceOf<{ Tribbles: import('@agoric/ertp/src/types.js').Issuer }>;
+ *   instance: { produce: { tribblesAirdrop: Instance } };
+ *   installation: { consume: { tribblesAirdrop: Installation } };
+ * }} AirdropSpace
+ */
+
+export const permit = Object.values(airdropManifest)[0];
+
 export const getManifestForAirdrop = (
   { restoreRef },
   {
@@ -274,7 +285,7 @@ export const getManifestForAirdrop = (
       customTerms: {
         ...defaultCustomTerms,
         merkleRoot:
-          '0f7e7eeb1c6e5dec518ec2534a4fc55738af04b5379a052c5e3fe836f451ccd0',
+          '05d861f740b1d752f6ac9bbb37be65a84ba988134028422d14714fd0e9673c58',
       },
     },
   },
@@ -291,22 +302,16 @@ export const getManifestForAirdrop = (
   });
 };
 
-export const permit = Object.values(airdropManifest)[0];
-
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) => {
   return harden({
     // Somewhat unorthodox, source the exports from this builder module
-    sourceSpec: '@agoric/builders/scripts/testing/start-tribbles-airdrop.js',
+    sourceSpec: './src/airdrop.proposal.js',
     getManifestCall: [
       'getManifestForAirdrop',
       {
         installKeys: {
-          tribblesAirdrop: publishRef(
-            install(
-              '@agoric/orchestration/src/examples/airdrop/airdrop.contract.js',
-            ),
-          ),
+          tribblesAirdrop: publishRef(install('./src/airdrop.contract.js')),
         },
       },
     ],

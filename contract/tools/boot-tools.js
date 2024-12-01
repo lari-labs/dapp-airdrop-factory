@@ -216,8 +216,6 @@ export const makeMockTools = async (t, bundleCache) => {
     smartWalletIssuers,
   );
 
-  console.log({ walletFactory });
-
   let pid = 0;
   const runCoreEval = async ({
     behavior,
@@ -225,6 +223,8 @@ export const makeMockTools = async (t, bundleCache) => {
     entryFile: _e,
     name: _todo,
   }) => {
+    console.log('------------------------');
+    console.log('runCoreEval::', { config, behavior });
     if (!behavior) throw Error('TODO: run core eval without live behavior');
     console.log({ behavior, powers, config });
     await behavior(powers, config);

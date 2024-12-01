@@ -10249,16 +10249,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"autodux@npm:^5.0.3":
-  version: 5.0.3
-  resolution: "autodux@npm:5.0.3"
-  dependencies:
-    esm: "npm:3.2.25"
-    ramda: "npm:0.26.1"
-  checksum: 10c0/93b995846ab3d0e825ccf5ceeda7471457450d6d7dc9cc4150715a0448751adcd8ec9c1bc6ca70263c4999852568f83ce164ad47dc66b9371902a9ee9bbff5f5
-  languageName: node
-  linkType: hard
-
 "autoprefixer@npm:^10.4.17":
   version: 10.4.20
   resolution: "autoprefixer@npm:10.4.20"
@@ -11557,13 +11547,11 @@ __metadata:
     "@interchain-ui/react": "npm:1.21.18"
     "@keplr-wallet/types": "npm:^0.12.121"
     "@noble/hashes": "npm:1.5.0"
-    "@paralleldrive/cuid2": "npm:^2.2.2"
     "@types/react": "npm:^18.2.56"
     "@types/react-dom": "npm:^18.2.19"
     "@typescript-eslint/eslint-plugin": "npm:^7.0.2"
     "@typescript-eslint/parser": "npm:^7.15.0"
     "@vitejs/plugin-react": "npm:^4.2.1"
-    autodux: "npm:^5.0.3"
     autoprefixer: "npm:^10.4.17"
     bech32: "npm:2.0.0"
     buffer: "npm:^6.0.3"
@@ -12186,7 +12174,7 @@ __metadata:
     eslint-plugin-import: "npm:^2.25.3"
     eslint-plugin-jsdoc: "npm:^46.4.3"
     eslint-plugin-prettier: "npm:^5.0.0"
-    execa: "npm:^9.2.0"
+    execa: "npm:^9.5.1"
     fs-extra: "npm:^11.2.0"
     immutable: "npm:5.0.0-beta.5"
     import-meta-resolve: "npm:^2.2.1"
@@ -13097,7 +13085,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"execa@npm:^9.2.0":
+"execa@npm:^9.5.1":
   version: 9.5.1
   resolution: "execa@npm:9.5.1"
   dependencies:
@@ -13985,13 +13973,6 @@ __metadata:
   version: 5.3.2
   resolution: "ignore@npm:5.3.2"
   checksum: 10c0/f9f652c957983634ded1e7f02da3b559a0d4cc210fca3792cb67f1b153623c9c42efdc1c4121af171e295444459fc4a9201101fb041b1104a3c000bccb188337
-  languageName: node
-  linkType: hard
-
-"immer@npm:^10.1.1":
-  version: 10.1.1
-  resolution: "immer@npm:10.1.1"
-  checksum: 10c0/b749e10d137ccae91788f41bd57e9387f32ea6d6ea8fd7eb47b23fd7766681575efc7f86ceef7fe24c3bc9d61e38ff5d2f49c2663b2b0c056e280a4510923653
   languageName: node
   linkType: hard
 
@@ -17327,13 +17308,6 @@ __metadata:
     "@vanilla-extract/css": ^1
     "@vanilla-extract/dynamic": ^2
   checksum: 10c0/fc6c98ddb5ad8a1b09ffa96df305c7c69a1aef07da13f1e318cebd8dd5bb9d175ea6653e8316f6d8a07c8c3b0568c05a3f25545a7f2e51ca2ac23ae892b837d2
-  languageName: node
-  linkType: hard
-
-"ramda@npm:0.26.1":
-  version: 0.26.1
-  resolution: "ramda@npm:0.26.1"
-  checksum: 10c0/af591bdb593a7bd4c715af306f9a1c591ed0eccabc9bb5166dd17e68b182e6ff313b35c057f9dc300715d060c3ed2f56e424a42499fe2b27b40446fb447838ba
   languageName: node
   linkType: hard
 
