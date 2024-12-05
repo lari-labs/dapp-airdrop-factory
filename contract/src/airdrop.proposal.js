@@ -182,8 +182,8 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
     privateArgs: await deeplyFulfilledObject(
       harden({
         timer,
-        storageNode,
-        marshaller,
+        namesByAddress,
+        namesByAddressAdmin,
       }),
     ),
   };

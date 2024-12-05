@@ -12,6 +12,10 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { divideBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeTracer } from '@agoric/internal';
+import { sha256 } from '@noble/hashes/sha256';
+import { bech32 } from 'bech32';
+import { decodeBase64 } from '@endo/base64';
+import { ripemd160 } from '@noble/hashes/ripemd160';
 import { makeWaker, oneDay } from './helpers/time.js';
 import {
   handleFirstIncarnation,
@@ -24,7 +28,10 @@ import { getMerkleRootFromMerkleProof } from './merkle-tree/index.js';
 import '@agoric/zoe/exported.js';
 
 const TT = makeTracer('ContractStartFn');
-
+const getDepositFacet = namesByAddressAdmin => async address => {
+  const hub = E(E(namesByAddressAdmin).lookupAdmin(address)).readonly();
+  return E(hub).lookup('depositFacet');
+};
 export const messagesObject = {
   makeClaimInvitationDescription: () => 'claim airdrop',
   makeIllegalActionString: status =>
@@ -69,10 +76,11 @@ harden(RESTARTING);
 /** @import {Zone} from '@agoric/base-zone'; */
 /** @import {ContractMeta} from './@types/zoe-contract-facet.d'; */
 /** @import {Remotable} from '@endo/marshal' */
+/** @import {NameHub, NamesByAdddressAdmin} from '@agoric/vats' */
 
 export const privateArgsShape = harden({
-  marshaller: M.remotable('marshaller'),
-  storageNode: M.remotable('chainStorageNode'),
+  namesByAddress: M.remotable('namesByAddress'),
+  namesByAddressAdmin: M.remotable('NamesByAdddressAdmin'),
   timer: TimerShape,
 });
 harden(privateArgsShape);
@@ -137,6 +145,35 @@ const withdrawAndBurn = async (zcf, seat, keyword, issuer, brand) => {
   return 'Successfully burned remaining tokens.';
 };
 
+const compose =
+  (...fns) =>
+  initialValue =>
+    fns.reduceRight((acc, val) => val(acc), initialValue);
+
+const decodePk = string => decodeBase64(string);
+const createRipe160Digest = data => ripemd160.create().update(data).digest();
+const createSha256Digest = data => sha256.create().update(data).digest();
+
+const tgTrace = label => value => {
+  console.log(label, '::::', value);
+  return value;
+};
+const computeAddress = compose(
+  createRipe160Digest,
+  tgTrace('after sha256'),
+  createSha256Digest,
+  decodePk,
+  tgTrace('before decodeBase65'),
+);
+
+const pubkeyToAddress = string => {
+  console.log('------------------------');
+  console.log('inside pubkeyToAddress::');
+  console.log('------------------------');
+  console.log('string::', string);
+  const encoded = computeAddress(string);
+  return bech32.encode('agoric', bech32.toWords(encoded));
+};
 /**
  * @param {TimestampRecord} sourceTs Base timestamp used to as the starting time
  *   which a new Timestamp will be created against.
@@ -150,7 +187,7 @@ const createFutureTs = (sourceTs, inputTs) =>
 const SIX_DIGITS = 1_000_000n;
 /**
  * @param {ZCF<ContractTerms>} zcf
- * @param {{ marshaller: Remotable; timer: TimerService }} privateArgs
+ * @param {{ namesByAddress: NameHub, namesByAddressAdmin:  Remotable; timer: TimerService }} privateArgs
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
@@ -162,7 +199,19 @@ export const start = async (zcf, privateArgs, baggage) => {
   /** @type {Zone} */
   const zone = makeDurableZone(baggage, 'rootZone');
 
-  const { timer } = privateArgs;
+  const { timer, namesByAddressAdmin, namesByAddress } = privateArgs;
+
+  const reserveAndCreateDepositFacet = async address => {
+    await E(namesByAddressAdmin).reserve(address);
+    const claimaintDepositFacet = E(namesByAddress).lookup(
+      address,
+      'depositFacet',
+    );
+    return claimaintDepositFacet;
+  };
+
+  const getDepositFacetFn = getDepositFacet(namesByAddressAdmin);
+
   /** @type {ContractTerms} */
   const {
     startTime = 120n,
@@ -247,6 +296,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     }),
     public: M.interface('public facet', {
       makeClaimTokensInvitation: M.call().returns(M.promise()),
+      makeClaimWithDepositFacetInvitation: M.call().returns(M.any()),
       getStatus: M.call().returns(M.string()),
       getEpoch: M.call().returns(M.bigint()),
       getPayoutValues: M.call().returns(M.array()),
@@ -328,7 +378,76 @@ export const start = async (zcf, privateArgs, baggage) => {
         },
       },
       public: {
+        makeClaimWithDepositFacetInvitation() {
+          assert(
+            airdropStatusTracker.get('currentStatus') === AIRDROP_STATES.OPEN,
+            messagesObject.makeIllegalActionString(
+              airdropStatusTracker.get('currentStatus'),
+            ),
+          );
+
+          const claimHandler = async (claimSeat, offerArgs) => {
+            const {
+              give: { Fee: claimTokensFee },
+            } = claimSeat.getProposal();
+
+            const { proof, key: pubkey, tier } = offerArgs;
+
+            const derivedAddress = pubkeyToAddress(pubkey, 'agoric');
+
+            console.log('------------------------');
+            console.log('derivedAddress::', derivedAddress);
+
+            // This line was added because of issues when testing
+            // Is there a way to gracefully test assertion failures????
+            if (accountStore.has(pubkey)) {
+              claimSeat.exit();
+              throw new Error(
+                `Allocation for address ${derivedAddress} has already been claimed.`,
+              );
+            }
+
+            assert.equal(
+              getMerkleRootFromMerkleProof(proof),
+              merkleRoot,
+              'Computed proof does not equal the correct root hash. ',
+            );
+
+            const claimantDepositFacet = getDepositFacetFn(derivedAddress);
+            console.log('------------------------');
+            console.log('claimantDepositFacetw::', claimantDepositFacet);
+            const paymentAmount = this.state.payoutArray[tier];
+
+            const payment = withdrawFromSeat(zcf, tokenHolderSeat, {
+              Tokens: paymentAmount,
+            });
+            rearrange(
+              harden([[claimSeat, tokenHolderSeat, { Fee: claimTokensFee }]]),
+            );
+
+            accountStore.add(pubkey, {
+              address: derivedAddress,
+              pubkey,
+              tier,
+              amountAllocated: paymentAmount,
+              epoch: this.state.currentEpoch,
+            });
+
+            await E(claimantDepositFacet).receive(payment);
+          };
+          return zcf.makeInvitation(
+            claimHandler,
+            messagesObject.makeClaimInvitationDescription(),
+            {
+              currentEpoch: this.state.currentEpoch,
+            },
+            M.splitRecord({
+              give: { Fee: feeAmount },
+            }),
+          );
+        },
         makeClaimTokensInvitation() {
+          console.log({ sha256 });
           assert(
             airdropStatusTracker.get('currentStatus') === AIRDROP_STATES.OPEN,
             messagesObject.makeIllegalActionString(
@@ -348,7 +467,6 @@ export const start = async (zcf, privateArgs, baggage) => {
             const {
               give: { Fee: claimTokensFee },
             } = claimSeat.getProposal();
-
             const { proof, key: pubkey, address, tier } = offerArgs;
 
             // This line was added because of issues when testing
@@ -359,6 +477,10 @@ export const start = async (zcf, privateArgs, baggage) => {
                 `Allocation for address ${address} has already been claimed.`,
               );
             }
+
+            const derivedAddress = pubkeyToAddress(pubkey);
+            console.log('------------------------');
+            console.log('derivedAddress::', derivedAddress);
 
             assert.equal(
               getMerkleRootFromMerkleProof(proof),

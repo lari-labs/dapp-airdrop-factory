@@ -12,10 +12,10 @@
  */
 
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getManifestForAirdrop, makeTerms } from '../src/airdrop.proposal.js';
+import { getManifestForAirdrop } from '../src/airdrop.proposal.js';
 
 /** @type {import('./types.js').ProposalBuilder} */
-export const airdropProposalBuilder = async ({ publishRef, install }, opts) => {
+export const airdropProposalBuilder = async ({ publishRef, install }) => {
   console.group(
     '------------- NESTED LOGGER OPEN:: inside airdropPrposalBuilder -------------',
   );

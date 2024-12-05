@@ -96,7 +96,6 @@ const makeTestContext = async t => {
   return {
     invitationIssuer,
     zoe,
-    invitationIssuer,
     bundle,
     bundleCache,
     makeLocalTimer,

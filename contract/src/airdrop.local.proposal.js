@@ -168,6 +168,8 @@ export const startAirdrop = async (powers, config) => {
     issuerNames: ['Tribbles'],
     privateArgs: harden({
       timer,
+      namesByAddress,
+      namesByAddressAdmin,
     }),
   };
   trace('BEFORE astartContract(permittedPowers, startOpts);', { startOpts });
