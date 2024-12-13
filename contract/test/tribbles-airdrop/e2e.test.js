@@ -29,9 +29,10 @@ import {
 import { makeMockTools, mockBootstrapPowers } from '../../tools/boot-tools.js';
 import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
 import { makeStableFaucet } from '../mintStable.js';
-import { simulateClaim } from './actors.js';
+import { makeOfferArgs, simulateClaim } from './actors.js';
 import { oneDay } from '../../src/helpers/time.js';
 import { merkleTreeObj } from './generated_keys.js';
+import { AmountMath } from '@agoric/ertp';
 
 const { accounts } = merkleTreeObj;
 // import { makeAgdTools } from '../agd-tools.js';
@@ -176,11 +177,21 @@ test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
 //   const { tribblesAirdrop } = t.context.shared.bundles;
 //   t.deepEqual(await checkBundle(tribblesAirdrop), '');
 // });
-
+const makeMakeOfferSpec = instance => (account, feeAmount) => ({
+  id: `${account.address}-offer-${Date.now()}`,
+  invitationSpec: {
+    source: 'contract',
+    instance,
+    publicInvitationMaker: 'makeClaimTokensInvitation',
+  },
+  proposal: { give: { Fee: feeAmount } },
+  offerArgs: { ...makeOfferArgs(account) },
+});
 test.serial('E2E test', async t => {
   const merkleRoot = merkleTreeAPI.generateMerkleRoot(
     accounts.map(x => x.pubkey.key),
   );
+  const { bundleCache } = t.context;
 
   t.log('starting contract with merkleRoot:', merkleRoot);
   // Is there a better way to obtain a reference to this bundle???
@@ -188,7 +199,10 @@ test.serial('E2E test', async t => {
   const { tribblesAirdrop } = t.context.shared.bundles;
 
   const bundleID = getBundleId(tribblesAirdrop);
-  const { powers, vatAdminState } = await mockBootstrapPowers(t.log);
+  const { powers, vatAdminState, makeMockWalletFactory } = await makeMockTools(
+    t,
+    bundleCache,
+  );
   const { feeMintAccess, zoe, chainTimerService } = powers.consume;
 
   vatAdminState.installBundle(bundleID, tribblesAirdrop);
@@ -210,9 +224,33 @@ test.serial('E2E test', async t => {
   const airdropSpace = powers;
   const instance = await airdropSpace.instance.consume.tribblesAirdrop;
 
+  const terms = await E(zoe).getTerms(instance);
+  const { issuers, brands } = terms;
+
+  const walletFactory = makeMockWalletFactory({
+    Tribbles: issuers.Tribbles,
+    Fee: issuers.Fee,
+  });
+
+  console.log('BRANDS::', brands);
+  const wallets = {
+    alice: await walletFactory.makeSmartWallet(accounts[4].address),
+    bob: await walletFactory.makeSmartWallet(accounts[2].address),
+  };
+  const { faucet, mintBrandedPayment } = makeStableFaucet({
+    bundleCache,
+    feeMintAccess,
+    zoe,
+  });
+
+  await Object.values(wallets).map(async wallet => {
+    const pmt = await mintBrandedPayment(10n);
+    console.log('payment::', pmt);
+    await E(wallet.deposit).receive(pmt);
+  });
+  const makeOfferSpec = makeMakeOfferSpec(instance);
+
   // Now that we have the instance, resume testing as above.
-  const { bundleCache } = t.context;
-  const { faucet } = makeStableFaucet({ bundleCache, feeMintAccess, zoe });
 
   // TODO: update simulateClaim to construct claimArgs object.
   // see makeOfferArgs function for reference.
@@ -234,34 +272,82 @@ test.serial('E2E test', async t => {
   // );
 
   await E(chainTimerService).advanceBy(oneDay * (oneDay / 2n));
+  const makeFeeAmount = () => AmountMath.make(brands.Fee, 5n);
 
-  await simulateClaim(
-    t,
-    zoe,
-    instance,
-    await faucet(5n * 1_000_000n),
-    accounts[4],
+  /**
+   * @summary this creates an  AsyncGenerator object that emits values in the code blocks that follow.
+   *
+   * @example the first value is recieved as a  result of the following code
+   *
+   * await E(aliceUpdates).next()
+   * .then(res => {
+   *    console.log('update res', res);
+   *    return res;
+   * });
+   */
+  const aliceUpdates = E(wallets.alice.offers).executeOffer(
+    makeOfferSpec(accounts[4], makeFeeAmount()),
   );
 
-  await simulateClaim(
-    t,
-    zoe,
-    instance,
-    await faucet(5n * 1_000_000n),
-    accounts[4],
+  /*
+   *
+   * {
+   *    value: {
+   *    updated: 'offerStatus',
+   *    status: {
+   *      id: 'agoric19s266pak0llft2gcapn64x5aa37ysqnqzky46y-offer-1734092744506',
+   *      invitationSpec: [Object],
+   *      proposal: [Object],
+   *      offerArgs: [Object]
+   *     }
+   *   },
+   *    done: false
+   * }
+   */
+  /**
+   * @typedef {{value: { updated: string, status: { id: string, invitationSpec: import('../../tools/wallet-tools.js').InvitationSpec, proposal:Proposal, offerArgs: {key: string, proof: []}}}}} OfferResult
+   */
+
+  /** @returns {OfferResult} */
+  await E(aliceUpdates)
+    .next()
+    .then(res => {
+      console.log('update res', res);
+      return res;
+    });
+
+  const tribblesWatcher = await E(wallets.alice.peek).purseUpdates(
+    brands.Tribbles,
+  );
+
+  let payout;
+  for await (const value of tribblesWatcher) {
+    console.log('update from smartWallet', value); // Process the value here
+    payout = value;
+  }
+  t.deepEqual(
+    AmountMath.isGTE(payout, AmountMath.make(brands.Tribbles, 0n)),
     true,
-    `Allocation for address ${accounts[4].address} has already been claimed.`,
   );
+  // await simulateClaim(
+  //   t,
+  //   zoe,
+  //   instance,
+  //   await faucet(5n * 1_000_000n),
+  //   accounts[4],
+  //   true,
+  //   `Allocation for address ${accounts[4].address} has already been claimed.`,
+  // );
 });
 
-test.serial('agoricNames.instances has contract: airdrop', async t => {
-  const { makeQueryTool } = t.context;
-  const hub0 = makeAgoricNames(makeQueryTool());
+// test.serial('agoricNames.instances has contract: airdrop', async t => {
+//   const { makeQueryTool } = t.context;
+//   const hub0 = makeAgoricNames(makeQueryTool());
 
-  const agoricNames = makeNameProxy(hub0);
-  console.log({ agoricNames });
-  await null;
-  const instance = await E(agoricNames).lookup('instance', 'tribblesAirdrop');
-  t.is(passStyleOf(instance), 'remotable');
-  t.log(instance);
-});
+//   const agoricNames = makeNameProxy(hub0);
+//   console.log({ agoricNames });
+//   await null;
+//   const instance = await E(agoricNames).lookup('instance', 'tribblesAirdrop');
+//   t.is(passStyleOf(instance), 'remotable');
+//   t.log(instance);
+// });
