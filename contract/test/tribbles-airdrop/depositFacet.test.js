@@ -263,15 +263,15 @@ test.serial('E2E test', async t => {
    *
    * @example the first value is recieved as a  result of the following code
    *
-   * await E(aliceUpdates).next()
+   * await E(alicesOfferUpdates).next()
    * .then(res => {
    *    console.log('update res', res);
    *    return res;
    * });
    */
 
-  const [aliceTier] = [0];
-  const [aliceUpdates, alicePurse] = [
+  const [aliceTier, bobTier] = [0, 2];
+  const [alicesOfferUpdates, alicePurse] = [
     E(wallets.alice.offers).executeOffer(
       makeOfferSpec({ ...accounts[4], tier: 0 }, makeFeeAmount(), 0),
     ),
@@ -298,7 +298,7 @@ test.serial('E2E test', async t => {
 
   const makeAsyncObserverObject = (
     generator,
-    completeMessage = 'Default completion message.',
+    completeMessage = 'Iterator lifecycle complete.',
     maxCount = Infinity,
   ) =>
     Observable(async observer => {
@@ -327,27 +327,86 @@ test.serial('E2E test', async t => {
     return value;
   };
 
-  await makeAsyncObserverObject(aliceUpdates).subscribe({
+  await makeAsyncObserverObject(alicesOfferUpdates).subscribe({
     next: traceFn('SUBSCRIBE.NEXT'),
     error: traceFn('AliceOffer Error'),
     complete: ({ message, values }) => {
-      t.deepEqual(message, 'Default completion message.');
+      t.deepEqual(message, 'Iterator lifecycle complete.');
       t.deepEqual(values.length, 4);
     },
   });
 
   await makeAsyncObserverObject(
     alicePurse,
-    'Watch wallet completion',
+    'AsyncGenerator alicePurse has fufilled its requirements.',
     1,
   ).subscribe({
     next: traceFn('TRIBBLES_WATCHER ### SUBSCRIBE.NEXT'),
     error: traceFn('TRIBBLES_WATCHER #### SUBSCRIBE.ERROR'),
     complete: ({ message, values }) => {
-      t.deepEqual(message, 'Watch wallet completion');
+      t.deepEqual(
+        message,
+        'AsyncGenerator alicePurse has fufilled its requirements.',
+      );
       t.deepEqual(
         head(values),
         AmountMath.make(brands.Tribbles, AIRDROP_TIERS_STATIC[aliceTier]),
+      );
+    },
+  });
+  const [alicesSecondClaim] = [
+    E(wallets.alice.offers).executeOffer(
+      makeOfferSpec({ ...accounts[4], tier: 0 }, makeFeeAmount(), 0),
+    ),
+  ];
+
+  const alicesSecondOfferSubscriber = makeAsyncObserverObject(
+    alicesSecondClaim,
+  ).subscribe({
+    next: traceFn('alicesSecondClaim ### SUBSCRIBE.NEXT'),
+    error: traceFn('alicesSecondClaim #### SUBSCRIBE.ERROR'),
+    complete: traceFn('alicesSecondClaim ### SUBSCRIBE.COMPLETE'),
+  });
+  await t.throwsAsync(alicesSecondOfferSubscriber, {
+    message: `Allocation for address ${accounts[4].address} has already been claimed.`,
+  });
+  const [bobsOfferUpdate, bobsPurse] = [
+    E(wallets.bob.offers).executeOffer(
+      makeOfferSpec({ ...accounts[2], tier: bobTier }, makeFeeAmount(), 0),
+    ),
+    E(wallets.bob.peek).purseUpdates(brands.Tribbles),
+  ];
+
+  await makeAsyncObserverObject(
+    bobsOfferUpdate,
+    'AsyncGenerator bobsOfferUpdate has fufilled its requirements.',
+  ).subscribe({
+    next: traceFn('BOBS_OFFER_UPDATE:::: SUBSCRIBE.NEXT'),
+    error: traceFn('BOBS_OFFER_UPDATE:::: SUBSCRIBE.ERROR'),
+    complete: ({ message, values }) => {
+      t.deepEqual(
+        message,
+        'AsyncGenerator bobsOfferUpdate has fufilled its requirements.',
+      );
+      t.deepEqual(values.length, 4);
+    },
+  });
+
+  await makeAsyncObserverObject(
+    bobsPurse,
+    'AsyncGenerator bobsPurse has fufilled its requirements.',
+    1,
+  ).subscribe({
+    next: traceFn('TRIBBLES_WATCHER ### SUBSCRIBE.NEXT'),
+    error: traceFn('TRIBBLES_WATCHER #### SUBSCRIBE.ERROR'),
+    complete: ({ message, values }) => {
+      t.deepEqual(
+        message,
+        'AsyncGenerator bobsPurse has fufilled its requirements.',
+      );
+      t.deepEqual(
+        head(values),
+        AmountMath.make(brands.Tribbles, AIRDROP_TIERS_STATIC[bobTier]),
       );
     },
   });
