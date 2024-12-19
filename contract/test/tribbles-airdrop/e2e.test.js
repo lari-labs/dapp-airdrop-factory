@@ -29,10 +29,27 @@ import {
 import { makeMockTools, mockBootstrapPowers } from '../../tools/boot-tools.js';
 import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
 import { makeStableFaucet } from '../mintStable.js';
-import { makeOfferArgs, simulateClaim } from './actors.js';
+import {
+  makeAsyncObserverObject,
+  makeOfferArgs,
+  simulateClaim,
+} from './actors.js';
 import { oneDay } from '../../src/helpers/time.js';
 import { merkleTreeObj } from './generated_keys.js';
 import { AmountMath } from '@agoric/ertp';
+import '../types.js';
+import { Observable } from '../../src/helpers/adts.js';
+import { createStore } from '../../src/tribbles/utils.js';
+import { head } from '../../src/helpers/objectTools.js';
+
+const traceFn = label => value => {
+  console.log(label, '::::', value);
+  return value;
+};
+
+const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n].map(
+  x => x * 1_000_000n,
+);
 
 const { accounts } = merkleTreeObj;
 // import { makeAgdTools } from '../agd-tools.js';
@@ -128,50 +145,48 @@ test.serial('install bundle: airdrop / tribblesAirdrop', async t => {
 const containsSubstring = (substring, string) =>
   new RegExp(substring, 'i').test(string);
 
-test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
-  const { runCoreEval } = t.context;
-  const { bundles } = t.context.shared;
-  const bundleID = getBundleId(bundles.tribblesAirdrop);
+test.serial(
+  'runCoreEval test ::: deploy contract with core eval: airdrop / airdrop',
+  async t => {
+    const { runCoreEval } = t.context;
+    const { bundles } = t.context.shared;
+    const bundleID = getBundleId(bundles.tribblesAirdrop);
 
-  t.deepEqual(
-    containsSubstring(bundles.tribblesAirdrop.endoZipBase64Sha512, bundleID),
-    true,
-  );
-  const merkleRoot = merkleTreeAPI.generateMerkleRoot(
-    accounts.map(x => x.pubkey.key),
-  );
-
-  const { vatAdminState } = await mockBootstrapPowers(t.log);
-
-  vatAdminState.installBundle(bundleID, bundles.tribblesAirdrop);
-
-  console.log('inside deploy test::', bundleID);
-  // this runCoreEval does not work
-  const name = 'airdrop';
-  const result = await runCoreEval({
-    name,
-    behavior: main,
-    entryFile: scriptRoots.tribblesAirdrop,
-    config: {
-      options: {
-        customTerms: {
-          ...makeTerms(),
-          merkleRoot: merkleTreeObj.root,
+    t.deepEqual(
+      containsSubstring(bundles.tribblesAirdrop.endoZipBase64Sha512, bundleID),
+      true,
+    );
+    const merkleRoot = merkleTreeAPI.generateMerkleRoot(
+      accounts.map(x => x.pubkey.key),
+    );
+    console.log('inside deploy test::', bundleID);
+    // this runCoreEval does not work
+    const name = 'tribblesAirdrop';
+    const result = await runCoreEval({
+      name,
+      behavior: main,
+      entryFile: scriptRoots.tribblesAirdrop,
+      config: {
+        options: {
+          customTerms: {
+            ...makeTerms(),
+            merkleRoot: merkleTreeObj.root,
+          },
+          tribblesAirdrop: { bundleID },
+          merkleRoot,
         },
-        tribblesAirdrop: { bundleID },
-        merkleRoot,
       },
-    },
-  });
+    });
 
-  t.log(result.voting_end_time, '#', result.proposal_id, name);
-  t.like(result, {
-    content: {
-      '@type': '/agoric.swingset.CoreEvalProposal',
-    },
-    status: 'PROPOSAL_STATUS_PASSED',
-  });
-});
+    t.log(result.voting_end_time, '#', result.proposal_id, name);
+    t.like(result, {
+      content: {
+        '@type': '/agoric.swingset.CoreEvalProposal',
+      },
+      status: 'PROPOSAL_STATUS_PASSED',
+    });
+  },
+);
 
 // test.serial('checkBundle()', async t => {
 //   const { tribblesAirdrop } = t.context.shared.bundles;
@@ -237,6 +252,7 @@ test.serial('E2E test', async t => {
     alice: await walletFactory.makeSmartWallet(accounts[4].address),
     bob: await walletFactory.makeSmartWallet(accounts[2].address),
   };
+
   const { faucet, mintBrandedPayment } = makeStableFaucet({
     bundleCache,
     feeMintAccess,
@@ -256,22 +272,7 @@ test.serial('E2E test', async t => {
   // see makeOfferArgs function for reference.
 
   const feePurse = await faucet(5n * 1_000_000n);
-  // const claimAttempt = simulateClaim(
-  //   t,
-  //   zoe,
-  //   instance,
-  //   feePurse,
-  //   merkleTreeObj.accounts[4],
-  // );
-  // await t.throwsAsync(
-  //   claimAttempt,
-  //   {
-  //     message: messagesObject.makeIllegalActionString(PREPARED),
-  //   },
-  //   'makeClaimInvitation() should throw an error stemming from the contract not being ready to accept offers.',
-  // );
 
-  await E(chainTimerService).advanceBy(oneDay * (oneDay / 2n));
   const makeFeeAmount = () => AmountMath.make(brands.Fee, 5n);
 
   /**
@@ -279,75 +280,118 @@ test.serial('E2E test', async t => {
    *
    * @example the first value is recieved as a  result of the following code
    *
-   * await E(aliceUpdates).next()
+   * await E(alicesOfferUpdates).next()
    * .then(res => {
    *    console.log('update res', res);
    *    return res;
    * });
    */
-  const aliceUpdates = E(wallets.alice.offers).executeOffer(
-    makeOfferSpec(accounts[4], makeFeeAmount()),
-  );
 
-  /*
-   *
-   * {
-   *    value: {
-   *    updated: 'offerStatus',
-   *    status: {
-   *      id: 'agoric19s266pak0llft2gcapn64x5aa37ysqnqzky46y-offer-1734092744506',
-   *      invitationSpec: [Object],
-   *      proposal: [Object],
-   *      offerArgs: [Object]
-   *     }
-   *   },
-   *    done: false
-   * }
-   */
+  const [aliceTier, bobTier] = [0, 2];
+  const [alicesOfferUpdates, alicePurse] = [
+    E(wallets.alice.offers).executeOffer(
+      makeOfferSpec({ ...accounts[4], tier: 0 }, makeFeeAmount(), 0),
+    ),
+    E(wallets.alice.peek).purseUpdates(brands.Tribbles),
+  ];
+
   /**
    * @typedef {{value: { updated: string, status: { id: string, invitationSpec: import('../../tools/wallet-tools.js').InvitationSpec, proposal:Proposal, offerArgs: {key: string, proof: []}}}}} OfferResult
    */
 
-  /** @returns {OfferResult} */
-  await E(aliceUpdates)
-    .next()
-    .then(res => {
-      console.log('update res', res);
-      return res;
-    });
+  await makeAsyncObserverObject(alicesOfferUpdates).subscribe({
+    next: traceFn('SUBSCRIBE.NEXT'),
+    error: traceFn('AliceOffer Error'),
+    complete: ({ message, values }) => {
+      t.deepEqual(message, 'Iterator lifecycle complete.');
+      t.deepEqual(values.length, 4);
+    },
+  });
 
-  const tribblesWatcher = await E(wallets.alice.peek).purseUpdates(
-    brands.Tribbles,
-  );
+  await makeAsyncObserverObject(
+    alicePurse,
+    'AsyncGenerator alicePurse has fufilled its requirements.',
+    1,
+  ).subscribe({
+    next: traceFn('TRIBBLES_WATCHER ### SUBSCRIBE.NEXT'),
+    error: traceFn('TRIBBLES_WATCHER #### SUBSCRIBE.ERROR'),
+    complete: ({ message, values }) => {
+      t.deepEqual(
+        message,
+        'AsyncGenerator alicePurse has fufilled its requirements.',
+      );
+      t.deepEqual(
+        head(values),
+        AmountMath.make(brands.Tribbles, AIRDROP_TIERS_STATIC[aliceTier]),
+      );
+    },
+  });
+  const [alicesSecondClaim] = [
+    E(wallets.alice.offers).executeOffer(
+      makeOfferSpec({ ...accounts[4], tier: 0 }, makeFeeAmount(), 0),
+    ),
+  ];
 
-  let payout;
-  for await (const value of tribblesWatcher) {
-    console.log('update from smartWallet', value); // Process the value here
-    payout = value;
-  }
-  t.deepEqual(
-    AmountMath.isGTE(payout, AmountMath.make(brands.Tribbles, 0n)),
-    true,
-  );
-  // await simulateClaim(
-  //   t,
-  //   zoe,
-  //   instance,
-  //   await faucet(5n * 1_000_000n),
-  //   accounts[4],
-  //   true,
-  //   `Allocation for address ${accounts[4].address} has already been claimed.`,
-  // );
+  const alicesSecondOfferSubscriber = makeAsyncObserverObject(
+    alicesSecondClaim,
+  ).subscribe({
+    next: traceFn('alicesSecondClaim ### SUBSCRIBE.NEXT'),
+    error: traceFn('alicesSecondClaim #### SUBSCRIBE.ERROR'),
+    complete: traceFn('alicesSecondClaim ### SUBSCRIBE.COMPLETE'),
+  });
+  await t.throwsAsync(alicesSecondOfferSubscriber, {
+    message: `Allocation for address ${accounts[4].address} has already been claimed.`,
+  });
+  const [bobsOfferUpdate, bobsPurse] = [
+    E(wallets.bob.offers).executeOffer(
+      makeOfferSpec({ ...accounts[2], tier: bobTier }, makeFeeAmount(), 0),
+    ),
+    E(wallets.bob.peek).purseUpdates(brands.Tribbles),
+  ];
+
+  await makeAsyncObserverObject(
+    bobsOfferUpdate,
+    'AsyncGenerator bobsOfferUpdate has fufilled its requirements.',
+  ).subscribe({
+    next: traceFn('BOBS_OFFER_UPDATE:::: SUBSCRIBE.NEXT'),
+    error: traceFn('BOBS_OFFER_UPDATE:::: SUBSCRIBE.ERROR'),
+    complete: ({ message, values }) => {
+      t.deepEqual(
+        message,
+        'AsyncGenerator bobsOfferUpdate has fufilled its requirements.',
+      );
+      t.deepEqual(values.length, 4);
+    },
+  });
+
+  await makeAsyncObserverObject(
+    bobsPurse,
+    'AsyncGenerator bobsPurse has fufilled its requirements.',
+    1,
+  ).subscribe({
+    next: traceFn('TRIBBLES_WATCHER ### SUBSCRIBE.NEXT'),
+    error: traceFn('TRIBBLES_WATCHER #### SUBSCRIBE.ERROR'),
+    complete: ({ message, values }) => {
+      t.deepEqual(
+        message,
+        'AsyncGenerator bobsPurse has fufilled its requirements.',
+      );
+      t.deepEqual(
+        head(values),
+        AmountMath.make(brands.Tribbles, AIRDROP_TIERS_STATIC[bobTier]),
+      );
+    },
+  });
 });
 
-// test.serial('agoricNames.instances has contract: airdrop', async t => {
-//   const { makeQueryTool } = t.context;
-//   const hub0 = makeAgoricNames(makeQueryTool());
+test.serial('agoricNames.instances has contract: airdrop', async t => {
+  const { makeQueryTool } = t.context;
+  const hub0 = makeAgoricNames(makeQueryTool());
 
-//   const agoricNames = makeNameProxy(hub0);
-//   console.log({ agoricNames });
-//   await null;
-//   const instance = await E(agoricNames).lookup('instance', 'tribblesAirdrop');
-//   t.is(passStyleOf(instance), 'remotable');
-//   t.log(instance);
-// });
+  const agoricNames = makeNameProxy(hub0);
+  console.log({ agoricNames });
+  await null;
+  const instance = await E(agoricNames).lookup('instance', 'tribblesAirdrop');
+  t.is(passStyleOf(instance), 'remotable');
+  t.log(instance);
+});
