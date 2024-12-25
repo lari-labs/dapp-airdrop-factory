@@ -15,7 +15,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { decodeBase64 } from '@endo/base64';
 import { divideBy } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, mustMatch } from '@agoric/internal';
 import { makeWaker, oneDay } from './helpers/time.js';
 import {
   handleFirstIncarnation,
@@ -26,6 +26,17 @@ import { createClaimSuccessMsg } from './helpers/messages.js';
 import { objectToMap } from './helpers/objectTools.js';
 import { getMerkleRootFromMerkleProof } from './merkle-tree/index.js';
 import '@agoric/zoe/exported.js';
+
+const ProofDataShape = harden({
+  hash: M.string(),
+  direction: M.string(),
+});
+
+const OfferArgsShape = harden({
+  tier: M.number(),
+  key: M.string(),
+  proof: M.arrayOf(ProofDataShape),
+});
 
 const compose =
   (...fns) =>
@@ -400,9 +411,15 @@ export const start = async (zcf, privateArgs, baggage) => {
            * }} offerArgs
            */
           const claimHandler = async (claimSeat, offerArgs) => {
+            mustMatch(
+              offerArgs,
+              OfferArgsShape,
+              'offerArgs does not contain the correct data.',
+            );
             const {
               give: { Fee: claimTokensFee },
             } = claimSeat.getProposal();
+            
 
             const { proof, key: pubkey, tier } = offerArgs;
 
@@ -477,6 +494,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
             return createClaimSuccessMsg(paymentAmount);
           };
+
           return zcf.makeInvitation(
             claimHandler,
             messagesObject.makeClaimInvitationDescription(),
