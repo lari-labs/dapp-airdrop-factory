@@ -1,0 +1,1195 @@
+response from makeeDoOfferHandler {
+  offerIndex: 2,
+  account: {
+    name: 'wallet-1731277116-2',
+    type: 'local',
+    address: 'agoric188gu9dkv0ey3h8c79n3xkdjr7aa7p9pw9rrtn5',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'AsMy9sdrQ7ORSha5nYaA5OinnBaXD/nanO+G4op3OX4c'
+    },
+    mnemonic: 'iron taste nerve parade analyst album feel flush quarter travel capital almost guilt thing symbol fence slab odor very absurd swing cushion erosion myth'
+  },
+  startTime: 55291.962249999866,
+  endTime: 65427.35512499977,
+  latency: 10135.392874999903,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+},
+{
+  offerIndex: 3,
+  account: {
+    name: 'wallet-1731277116-3',
+    type: 'local',
+    address: 'agoric1zvkurdadzu0h5dmvrh2hgjj50k55dhwa247rx6',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'A5X9LgZ7Uf81IOKy+mYuuU5lKLWx72OhMIR9DqMtzP2t'
+    },
+    mnemonic: 'glare orchard detail december kiss child fun orient duty bomb accuse awful fancy stool idea coral dust convince order candy settle layer omit law'
+  },
+  {
+    offerIndex: 4,
+    account: {
+      name: 'wallet-1731277116-4',
+      type: 'local',
+      address: 'agoric1hcangx770kzv2ysjp7gegnan7p2kcx52jadwya',
+      pubkey: {
+        type: '/cosmos.crypto.secp256k1.PubKey',
+        key: 'A/dyU0pT3+pdmKQNGFb+penGQowpbI6GcCmDd4EKwynE'
+      },
+      mnemonic: 'express write casual evil digital oppose job manual actor space cycle what beef estate ranch fish video polar rely together census seat figure addict'
+    },
+    startTime: 131463.7334579993,
+    endTime: 139755.5116659999,
+    latency: 8291.778208000585,
+    isError: false,
+    data: {},
+    message: 'Offer handled properly.'
+  },
+  {
+    offerIndex: 5,
+    account: {
+      name: 'wallet-1731277116-5',
+      type: 'local',
+      address: 'agoric19s266pak0llft2gcapn64x5aa37ysqnqzky46y',
+      pubkey: {
+        type: '/cosmos.crypto.secp256k1.PubKey',
+        key: 'AwSxb3Rltxqvz7fz3iF6tzNZrjBnCfHAWt8mBHV6F2ZM'
+      },
+      mnemonic: 'defy fox marble brand loyal labor salt country kind leg acid claim laundry treat cruel real hundred escape camera pelican gallery student essay veteran'
+    },
+    startTime: 172293.47208299953,
+    endTime: 184630.19125000015,
+    latency: 12336.719167000614,
+    isError: false,
+    data: {},
+    message: 'Offer handled properly.'
+  },
+  {
+    offerIndex: 6,
+    account: {
+      name: 'wallet-1731277116-6',
+      type: 'local',
+      address: 'agoric1s76tmnvcrxjvwxng7gdh9vgewre5kafdlqdryn',
+      pubkey: {
+        type: '/cosmos.crypto.secp256k1.PubKey',
+        key: 'A/jJvVOyO2uB4206xaU8QmAPodJZsIVsdV9Dg7iuq9AU'
+      },
+      mnemonic: 'beauty fringe enter camp arch poem odor legal inject cushion alpha title few runway coyote flavor pass assume taxi army note pill leg best'
+    },
+    startTime: 212983.73512499966,
+    endTime: 220140.51179100014,
+    latency: 7156.776666000485,
+    isError: false,
+    data: {},
+    message: 'Offer handled properly.'
+  },
+  {
+    offerIndex: 7,
+    account: {
+      name: 'wallet-1731277116-7',
+      type: 'local',
+      address: 'agoric1slr5nm0f3v6zw3ne77ldu4m60gf3rd6vw2s8mp',
+      pubkey: {
+        type: '/cosmos.crypto.secp256k1.PubKey',
+        key: 'Awy4hvPX3Iq4LsNdqxvCvMXv9gcpC9gVkkjsV2eaPykI'
+      },
+      mnemonic: 'figure flush uphold great wing valid hazard stock capable course wine person van carbon nephew bone pilot famous snap shine wave remind always favorite'
+    },
+    startTime: 245875.54712499958,
+    endTime: 255037.1449579997,
+    latency: 9161.597833000124,
+    isError: false,
+    data: {},
+    message: 'Offer handled properly.'
+  },
+  {
+    offerIndex: 8,
+    account: {
+      name: 'wallet-1731277116-8',
+      type: 'local',
+      address: 'agoric1p0h40ra2v7n2vkdjhdzra6daqzf6u66lmq8tlh',
+      pubkey: {
+        type: '/cosmos.crypto.secp256k1.PubKey',
+        key: 'Ahm7IXGnYy8JysfiHP7xXazHnEbMkZczIjw/jBG2fory'
+      },
+      mnemonic: 'tip topple reunion weekend inquiry document uniform ocean yellow hip truly habit dash welcome intact volume panda crop together record column speak save slice'
+    },
+    startTime: 284251.89279099926,
+    endTime: 291333.77974999975,
+    latency: 7081.886959000491,
+    isError: false,
+    data: {},
+    message: 'Offer handled properly.'
+  },
+  {
+    offerIndex: 9,
+    account: {
+      name: 'wallet-1731277116-9',
+      type: 'local',
+      address: 'agoric1ppdynxh9msx529zvd4lzpyutjsvxvcktujv9lw',
+      pubkey: {
+        type: '/cosmos.crypto.secp256k1.PubKey',
+        key: 'A7jG1NqUSZVfYzo6VQxbP7EBCRLanYMAFFmSgxWkLUtN'
+      },
+      mnemonic: 'combine dune enroll able primary slush frown inflict hurt option soap cage suspect kangaroo misery catalog fence story quit symbol long genuine valley elder'
+    },
+    startTime: 316734.5910829995,
+    endTime: 325242.4648749996,
+    latency: 8507.873792000115,
+    isError: false,
+    data: {},
+    message: 'Offer handled properly.'
+  }
+,
+{
+  offerIndex: 10,
+  account: {
+    name: 'wallet-1731277116-10',
+    type: 'local',
+    address: 'agoric13g79zexugr7c6xr0zutv0jshkq30hawv363aej',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'AsbgPBHCEYc3haCltruUi1tWFiF/kOVfdIncKx/7JTvW'
+    },
+    mnemonic: 'measure motion sketch muffin divorce crystal boil token ice stuff select clean gospel license theory dice winner stand detail brown glance stone myth wet'
+  },
+  startTime: 352076.9289579997,
+  endTime: 361688.87904099934,
+  latency: 9611.950082999654,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+} {
+  name: 'wallet-1731277116-11',
+  type: 'local',
+  address: 'agoric1qjqe6qpsccc2mndg72l0w4snhmgdhp5djvsn8f',
+  pubkey: {
+    type: '/cosmos.crypto.secp256k1.PubKey',
+    key: 'A1lBApRSW/pjkSoi94a6pASihcgC952pKiDmw8PCmHVU'
+  },
+  mnemonic: 'loud resemble brand tag visual organ naive analyst orchard ready burst disease dumb merit crouch issue unit seven lesson cute arm zone fade usual'
+},
+startTime: 387530.39933299925,
+endTime: 393794.0428329995,
+latency: 6263.643500000238,
+isError: false,
+data: {},
+message: 'Offer handled properly.'
+}
+{
+  offerIndex: 12,
+  account: {
+    name: 'wallet-1731277116-12',
+    type: 'local',
+    address: 'agoric1l5cyvac9d8p27q2ud4a4rc2msd3yd7a4vnnqr2',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'Ax9Tybq6UPIHBabQ+Yn0ZXwlSfCkoNa0Xn1QFspQuJQs'
+    },
+    mnemonic: 'dash art blue pill raw wrist wonder slide will abuse wife fringe output nature grunt island wash ancient wrestle already prosper twelve future clarify'
+  },
+  startTime: 420904.5265409993,
+  endTime: 428507.82058299985,
+  latency: 7603.294042000547,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+},
+{
+  offerIndex: 13,
+  account: {
+    name: 'wallet-1731277116-13',
+    type: 'local',
+    address: 'agoric1n3w8f05ra0y0ruy6aa8su08tfd39hpwpsmzqee',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'A8kNldATTV7PmWfjcP8xq242VPK8ZLhGGYlVw+RW5cl3'
+    },
+    mnemonic: 'sword image seed hobby behind yellow again express tape phone execute pumpkin retire board response polar size shrug shiver champion tongue heart forum truth'
+  },
+  startTime: 452818.035375,
+  endTime: 461191.19574999996,
+  latency: 8373.160374999978,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+},
+{
+  offerIndex: 14,
+  account: {
+    name: 'wallet-1731277116-14',
+    type: 'local',
+    address: 'agoric1glvzdn7950r5m7j2ynjv2ur29rl24mvsmdurg8',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'AlVOXQfB8PXvGfy3ROtVWJYLJTV6MkVNg4Fg/qTW7AyK'
+    },
+    mnemonic: 'cement limit bachelor claim absurd trouble program magnet essence dog husband scrub swap chicken deputy motor million mutual young divide clap neck silent invest'
+  },
+  startTime: 491315.78125,
+  endTime: 500027.2946659997,
+  latency: 8711.51341599971,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+},
+
+
+
+
+
+
+
+
+paid out offer-1734906470885
+response from makeeDoOfferHandler {
+  offerIndex: 1,
+  account: {
+    name: 'wallet-1731277116-1',
+    type: 'local',
+    address: 'agoric19265cz9jkld4gnndrqqt2fvexwtt2xzan00zrl',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'AnEGbxH55aKu/9zIbgVDV2qXC43bpIqtZdHTKV8BAM58'
+    },
+    mnemonic: 'sugar canal sniff fruit photo asset elbow praise result hamster debris sport account cool vessel either guess nominee certain tone crew donkey shed typical'
+  },
+  startTime: 17106.17524999939,
+  endTime: 26969.565999999642,
+  latency: 9863.390750000253,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+paid out offer-1734906509071
+response from makeeDoOfferHandler {
+  offerIndex: 2,
+  account: {
+    name: 'wallet-1731277116-2',
+    type: 'local',
+    address: 'agoric188gu9dkv0ey3h8c79n3xkdjr7aa7p9pw9rrtn5',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'AsMy9sdrQ7ORSha5nYaA5OinnBaXD/nanO+G4op3OX4c'
+    },
+    mnemonic: 'iron taste nerve parade analyst album feel flush quarter travel capital almost guilt thing symbol fence slab odor very absurd swing cushion erosion myth'
+  },
+  startTime: 55291.962249999866,
+  endTime: 65427.35512499977,
+  latency: 10135.392874999903,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+
+
+
+
+
+
+
+paid out offer-1734906546984
+response from makeeDoOfferHandler {
+  offerIndex: 3,
+  account: {
+    name: 'wallet-1731277116-3',
+    type: 'local',
+    address: 'agoric1zvkurdadzu0h5dmvrh2hgjj50k55dhwa247rx6',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'A5X9LgZ7Uf81IOKy+mYuuU5lKLWx72OhMIR9DqMtzP2t'
+    },
+    mnemonic: 'glare orchard detail december kiss child fun orient duty bomb accuse awful fancy stool idea coral dust convince order candy settle layer omit law'
+  },
+  startTime: 93204.8910829993,
+  endTime: 101836.91554099973,
+  latency: 8632.024458000436,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+^[paid out offer-1734906585243
+response from makeeDoOfferHandler {
+  offerIndex: 4,
+  account: {
+    name: 'wallet-1731277116-4',
+    type: 'local',
+    address: 'agoric1hcangx770kzv2ysjp7gegnan7p2kcx52jadwya',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'A/dyU0pT3+pdmKQNGFb+penGQowpbI6GcCmDd4EKwynE'
+    },
+    mnemonic: 'express write casual evil digital oppose job manual actor space cycle what beef estate ranch fish video polar rely together census seat figure addict'
+  },
+  startTime: 131463.7334579993,
+  endTime: 139755.5116659999,
+  latency: 8291.778208000585,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+},
+
+paid out offer-1734906626073
+response from makeeDoOfferHandler {
+  offerIndex: 5,
+  account: {
+    name: 'wallet-1731277116-5',
+    type: 'local',
+    address: 'agoric19s266pak0llft2gcapn64x5aa37ysqnqzky46y',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'AwSxb3Rltxqvz7fz3iF6tzNZrjBnCfHAWt8mBHV6F2ZM'
+    },
+    mnemonic: 'defy fox marble brand loyal labor salt country kind leg acid claim laundry treat cruel real hundred escape camera pelican gallery student essay veteran'
+  },
+  startTime: 172293.47208299953,
+  endTime: 184630.19125000015,
+  latency: 12336.719167000614,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+paid out offer-1734906666763
+response from makeeDoOfferHandler {
+  offerIndex: 6,
+  account: {
+    name: 'wallet-1731277116-6',
+    type: 'local',
+    address: 'agoric1s76tmnvcrxjvwxng7gdh9vgewre5kafdlqdryn',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'A/jJvVOyO2uB4206xaU8QmAPodJZsIVsdV9Dg7iuq9AU'
+    },
+    mnemonic: 'beauty fringe enter camp arch poem odor legal inject cushion alpha title few runway coyote flavor pass assume taxi army note pill leg best'
+  },
+  startTime: 212983.73512499966,
+  endTime: 220140.51179100014,
+  latency: 7156.776666000485,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+paid out offer-1734906699655
+response from makeeDoOfferHandler {
+  offerIndex: 7,
+  account: {
+    name: 'wallet-1731277116-7',
+    type: 'local',
+    address: 'agoric1slr5nm0f3v6zw3ne77ldu4m60gf3rd6vw2s8mp',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'Awy4hvPX3Iq4LsNdqxvCvMXv9gcpC9gVkkjsV2eaPykI'
+    },
+    mnemonic: 'figure flush uphold great wing valid hazard stock capable course wine person van carbon nephew bone pilot famous snap shine wave remind always favorite'
+  },
+  startTime: 245875.54712499958,
+  endTime: 255037.1449579997,
+  latency: 9161.597833000124,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+
+
+paid out offer-1734906738031
+response from makeeDoOfferHandler {
+  offerIndex: 8,
+  account: {
+    name: 'wallet-1731277116-8',
+    type: 'local',
+    address: 'agoric1p0h40ra2v7n2vkdjhdzra6daqzf6u66lmq8tlh',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'Ahm7IXGnYy8JysfiHP7xXazHnEbMkZczIjw/jBG2fory'
+    },
+    mnemonic: 'tip topple reunion weekend inquiry document uniform ocean yellow hip truly habit dash welcome intact volume panda crop together record column speak save slice'
+  },
+  startTime: 284251.89279099926,
+  endTime: 291333.77974999975,
+  latency: 7081.886959000491,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+
+
+paid out offer-1734906770514
+response from makeeDoOfferHandler {
+  offerIndex: 9,
+  account: {
+    name: 'wallet-1731277116-9',
+    type: 'local',
+    address: 'agoric1ppdynxh9msx529zvd4lzpyutjsvxvcktujv9lw',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'A7jG1NqUSZVfYzo6VQxbP7EBCRLanYMAFFmSgxWkLUtN'
+    },
+    mnemonic: 'combine dune enroll able primary slush frown inflict hurt option soap cage suspect kangaroo misery catalog fence story quit symbol long genuine valley elder'
+  },
+  startTime: 316734.5910829995,
+  endTime: 325242.4648749996,
+  latency: 8507.873792000115,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+paid out offer-1734906805856
+response from makeeDoOfferHandler {
+  offerIndex: 10,
+  account: {
+    name: 'wallet-1731277116-10',
+    type: 'local',
+    address: 'agoric13g79zexugr7c6xr0zutv0jshkq30hawv363aej',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'AsbgPBHCEYc3haCltruUi1tWFiF/kOVfdIncKx/7JTvW'
+    },
+    mnemonic: 'measure motion sketch muffin divorce crystal boil token ice stuff select clean gospel license theory dice winner stand detail brown glance stone myth wet'
+  },
+  startTime: 352076.9289579997,
+  endTime: 361688.87904099934,
+  latency: 9611.950082999654,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+
+
+paid out offer-1734906841310
+response from makeeDoOfferHandler {
+  offerIndex: 11,
+  account: {
+    name: 'wallet-1731277116-11',
+    type: 'local',
+    address: 'agoric1qjqe6qpsccc2mndg72l0w4snhmgdhp5djvsn8f',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'A1lBApRSW/pjkSoi94a6pASihcgC952pKiDmw8PCmHVU'
+    },
+    mnemonic: 'loud resemble brand tag visual organ naive analyst orchard ready burst disease dumb merit crouch issue unit seven lesson cute arm zone fade usual'
+  },
+  startTime: 387530.39933299925,
+  endTime: 393794.0428329995,
+  latency: 6263.643500000238,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+paid out offer-1734906874684
+response from makeeDoOfferHandler {
+  offerIndex: 12,
+  account: {
+    name: 'wallet-1731277116-12',
+    type: 'local',
+    address: 'agoric1l5cyvac9d8p27q2ud4a4rc2msd3yd7a4vnnqr2',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'Ax9Tybq6UPIHBabQ+Yn0ZXwlSfCkoNa0Xn1QFspQuJQs'
+    },
+    mnemonic: 'dash art blue pill raw wrist wonder slide will abuse wife fringe output nature grunt island wash ancient wrestle already prosper twelve future clarify'
+  },
+  startTime: 420904.5265409993,
+  endTime: 428507.82058299985,
+  latency: 7603.294042000547,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+
+
+
+
+
+
+
+
+
+
+paid out offer-1734906906598
+response from makeeDoOfferHandler {
+  offerIndex: 13,
+  account: {
+    name: 'wallet-1731277116-13',
+    type: 'local',
+    address: 'agoric1n3w8f05ra0y0ruy6aa8su08tfd39hpwpsmzqee',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'A8kNldATTV7PmWfjcP8xq242VPK8ZLhGGYlVw+RW5cl3'
+    },
+    mnemonic: 'sword image seed hobby behind yellow again express tape phone execute pumpkin retire board response polar size shrug shiver champion tongue heart forum truth'
+  },
+  startTime: 452818.035375,
+  endTime: 461191.19574999996,
+  latency: 8373.160374999978,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+
+paid out offer-1734906945096
+response from makeeDoOfferHandler {
+  offerIndex: 14,
+  account: {
+    name: 'wallet-1731277116-14',
+    type: 'local',
+    address: 'agoric1glvzdn7950r5m7j2ynjv2ur29rl24mvsmdurg8',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'AlVOXQfB8PXvGfy3ROtVWJYLJTV6MkVNg4Fg/qTW7AyK'
+    },
+    mnemonic: 'cement limit bachelor claim absurd trouble program magnet essence dog husband scrub swap chicken deputy motor million mutual young divide clap neck silent invest'
+  },
+  startTime: 491315.78125,
+  endTime: 500027.2946659997,
+  latency: 8711.51341599971,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+paid out offer-1734906983500
+response from makeeDoOfferHandler {
+  offerIndex: 15,
+  account: {
+    name: 'wallet-1731277116-15',
+    type: 'local',
+    address: 'agoric13f27km4ats0ddt09hlnz62qwhwuglvy585aumy',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'A12neOEkOrWlakYmfu0KKvsyF5FBzSTZC03XHKJtJf1L'
+    },
+    mnemonic: 'slot cushion fox ship fish flat maximum soldier dish plunge favorite dish sustain silk settle wink crawl idle reform eager song twist foster solve'
+  },
+  startTime: 529720.1278329995,
+  endTime: 535312.9310829993,
+  latency: 5592.803249999881,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+
+
+paid out offer-1734907015769
+response from makeeDoOfferHandler {
+  offerIndex: 16,
+  account: {
+    name: 'wallet-1731277116-16',
+    type: 'local',
+    address: 'agoric1gj4adjt653d6hnww0755wzarhnmdfsasp7ee0s',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'A/6BuDnISiorZDL4k6GPAQ+O0+PAXi+HX9DCuJSX7vo3'
+    },
+    mnemonic: 'effort industry change trim elbow staff science sunset black cause sunny sausage remind gauge mix pen vast author poet quick ride abstract veteran seat'
+  },
+  startTime: 561988.638208,
+  endTime: 568499.9716659999,
+  latency: 6511.333457999863,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+paid out offer-1734907048068
+response from makeeDoOfferHandler {
+  offerIndex: 17,
+  account: {
+    name: 'wallet-1731277116-17',
+    type: 'local',
+    address: 'agoric1v4l4z4pd4wxz74xg4ezffjgq3qlu7xz63s7j3p',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'AwoqLWc/WzJCWYfQwbU1Y6flRf3A9EAr+zes6LoitA2Y'
+    },
+    mnemonic: 'come slab hawk sing prison goddess sorry arm betray jewel heavy mule vague kitten habit daring slow ride lobster diesel clock venture rebuild asthma'
+  },
+  startTime: 594288.0906659998,
+  endTime: 604177.4989160001,
+  latency: 9889.408250000328,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+paid out offer-1734907088704
+response from makeeDoOfferHandler {
+  offerIndex: 18,
+  account: {
+    name: 'wallet-1731277116-18',
+    type: 'local',
+    address: 'agoric13mhm3a8w8lt7ptslwjjm806jmwq5n2yt45lkat',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'A4UNUqfBJSK0IpjSPbJ5CxbNY/R3oKL8cBRNdsEstR4e'
+    },
+    mnemonic: 'video unfair sea aerobic spell element vague trial solar day drum army cricket warm enter sad cradle razor master rural allow debate satisfy gauge'
+  },
+  startTime: 634923.7956249993,
+  endTime: 647548.699333,
+  latency: 12624.903708000667,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+paid out offer-1734907129628
+response from makeeDoOfferHandler {
+  offerIndex: 19,
+  account: {
+    name: 'wallet-1731277116-19',
+    type: 'local',
+    address: 'agoric1qlxazdvc79a9nxl8uhr88njrwp2psxx0s5dls0',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'AhXLKwQB8v+FiR+Dy0dhBo0F9430CuLi8qwALU2Q7smC'
+    },
+    mnemonic: 'buzz ramp window fit bronze forward dose discover inspire shadow segment lesson program best pitch snack scissors bid path fence moment patrol seven draft'
+  },
+  startTime: 675847.8297499996,
+  endTime: 684218.3472499996,
+  latency: 8370.517500000075,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+paid out offer-1734907162687
+response from makeeDoOfferHandler {
+  offerIndex: 20,
+  account: {
+    name: 'wallet-1731277116-20',
+    type: 'local',
+    address: 'agoric1cww6mpazl8epxk029mc64f7pm66e885z6hn26s',
+    pubkey: {
+      type: '/cosmos.crypto.secp256k1.PubKey',
+      key: 'A973wY6QrKUEV/rc33x1mu7pWAfCYjwJGAKLFgWz1tZo'
+    },
+    mnemonic: 'purity pond wing hotel prize material shield fee connect sphere wreck around size hedgehog remember crumble olive transfer insect useful sleep unknown detail garbage'
+  },
+  startTime: 708906.5727079995,
+  endTime: 716501.0306659993,
+  latency: 7594.457957999781,
+  isError: false,
+  data: {},
+  message: 'Offer handled properly.'
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------
+currentAccount.address :::: undefined
+----------------------------------
+------------------------
+{address, amount}:: {
+  address: 'agoric1g2d2nt5a9m4qg6t3ta3pqa6ftlnz6zvywhadrn',
+  amount: { IST: 10n, BLD: 10n }
+}
+{
+  send: { IST: 10n, BLD: 10n },
+  to: 'agoric1g2d2nt5a9m4qg6t3ta3pqa6ftlnz6zvywhadrn'
+}
+$$$ agd --node https://xnet.rpc.agoric.net:443 tx bank send user1 agoric1g2d2nt5a9m4qg6t3ta3pqa6ftlnz6zvywhadrn 10000000uist --chain-id agoricxnet-14 --from user1 --keyring-backend test --broadcast-mode block --gas auto --gas-adjustment 1.5 --yes
+output: code: 0
+codespace: ""
+data: 12260A242F636F736D6F732E62616E6B2E763162657461312E4D736753656E64526573706F6E7365
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  - index: true
+    key: ZmVlX3BheWVy
+    value: YWdvcmljMWpuZzI1YWRydHBsNTNlaDUwcTdmY2gzNGUwdm40ZzcyajZ6Y21s
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: YWdvcmljMWpuZzI1YWRydHBsNTNlaDUwcTdmY2gzNGUwdm40ZzcyajZ6Y21sLzg0
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: cXdNeFBiazhwc1o2YjM0SjlwRWZETWpIZy81NVhKamVhbWlqaUNCdjBtWVlpRHBFQ2hDQ1B0THNCdE1NcFpHeXFZQ2IwbUo1ZkNGa3ZhNkdra25kZmc9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: L2Nvc21vcy5iYW5rLnYxYmV0YTEuTXNnU2VuZA==
+  type: message
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: YWdvcmljMWpuZzI1YWRydHBsNTNlaDUwcTdmY2gzNGUwdm40ZzcyajZ6Y21s
+  - index: true
+    key: YW1vdW50
+    value: MTAwMDAwMDB1aXN0
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: YWdvcmljMWcyZDJudDVhOW00cWc2dDN0YTNwcWE2ZnRsbno2enZ5d2hhZHJu
+  - index: true
+    key: YW1vdW50
+    value: MTAwMDAwMDB1aXN0
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: YWdvcmljMWcyZDJudDVhOW00cWc2dDN0YTNwcWE2ZnRsbno2enZ5d2hhZHJu
+  - index: true
+    key: c2VuZGVy
+    value: YWdvcmljMWpuZzI1YWRydHBsNTNlaDUwcTdmY2gzNGUwdm40ZzcyajZ6Y21s
+  - index: true
+    key: YW1vdW50
+    value: MTAwMDAwMDB1aXN0
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: YWdvcmljMWpuZzI1YWRydHBsNTNlaDUwcTdmY2gzNGUwdm40ZzcyajZ6Y21s
+  type: message
+- attributes:
+  - index: true
+    key: bW9kdWxl
+    value: YmFuaw==
+  type: message
+gas_used: "56232"
+gas_wanted: "86725"
+height: "27226"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: agoric1g2d2nt5a9m4qg6t3ta3pqa6ftlnz6zvywhadrn
+    - key: amount
+      value: 10000000uist
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: agoric1jng25adrtpl53eh50q7fch34e0vn4g72j6zcml
+    - key: amount
+      value: 10000000uist
+    type: coin_spent
+  - attributes:
+    - key: action
+      value: /cosmos.bank.v1beta1.MsgSend
+    - key: sender
+      value: agoric1jng25adrtpl53eh50q7fch34e0vn4g72j6zcml
+    - key: module
+      value: bank
+    type: message
+  - attributes:
+    - key: recipient
+      value: agoric1g2d2nt5a9m4qg6t3ta3pqa6ftlnz6zvywhadrn
+    - key: sender
+      value: agoric1jng25adrtpl53eh50q7fch34e0vn4g72j6zcml
+    - key: amount
+      value: 10000000uist
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"msg_index":0,"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"agoric1g2d2nt5a9m4qg6t3ta3pqa6ftlnz6zvywhadrn"},{"key":"amount","value":"10000000uist"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"agoric1jng25adrtpl53eh50q7fch34e0vn4g72j6zcml"},{"key":"amount","value":"10000000uist"}]},{"type":"message","attributes":[{"key":"action","value":"/cosmos.bank.v1beta1.MsgSend"},{"key":"sender","value":"agoric1jng25adrtpl53eh50q7fch34e0vn4g72j6zcml"},{"key":"module","value":"bank"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"agoric1g2d2nt5a9m4qg6t3ta3pqa6ftlnz6zvywhadrn"},{"key":"sender","value":"agoric1jng25adrtpl53eh50q7fch34e0vn4g72j6zcml"},{"key":"amount","value":"10000000uist"}]}]}]'
+timestamp: ""
+tx: null
+txhash: 9BA08425FCCDC0754836550657F5336D024339DC4DC6BE1564B90C4BF5FC440E
+
+(Error#81)
+Error#81:
+
+
+{
+  amount: '10000000ubld',
+  to: 'agoric1g2d2nt5a9m4qg6t3ta3pqa6ftlnz6zvywhadrn'
+}
+Error: rpc error: code = Unknown desc = rpc error: code = Unknown desc = failed to execute message; message index: 0: 2000000ubld is smaller than 10000000ubld: insufficient funds [agoric-labs/cosmos-sdk@v0.46.16-alpha.agoric.2.4/x/bank/keeper/send.go:191] With gas wanted: '18446744073709551615' and gas used: '47639' : unknown request
+Usage:
+  agd tx bank send [from_key_or_address] [to_address] [amount] [flags]
+
+Flags:
+  -a, --account-number uint      The account number of the signing account (offline mode only)
+      --aux                      Generate aux signer data instead of sending a tx
+  -b, --broadcast-mode string    Transaction broadcasting mode (sync|async|block) (default "sync")
+      --dry-run                  ignore the --gas flag and perform a simulation of a transaction, but don't broadcast it (when enabled, the local Keybase is not accessible)
+      --fee-granter string       Fee granter grants fees for the transaction
+      --fee-payer string         Fee payer pays fees for the transaction instead of deducting from the signer
+      --fees string              Fees to pay along with transaction; eg: 10uatom
+      --from string              Name or address of private key with which to sign
+      --gas string               gas limit to set per-transaction; set to "auto" to calculate sufficient gas automatically. Note: "auto" option doesn't always report accurate results. Set a valid coin value to adjust the result. Can be used instead of "fees". (default 200000)
+      --gas-adjustment float     adjustment factor to be multiplied against the estimate returned by the tx simulation; if the gas limit is set manually this flag is ignored  (default 1)
+      --gas-prices string        Gas prices in decimal format to determine the transaction fee (e.g. 0.1uatom)
+      --generate-only            Build an unsigned transaction and write it to STDOUT (when enabled, the local Keybase only accessed when providing a key name)
+  -h, --help                     help for send
+      --keyring-backend string   Select keyring's backend (os|file|kwallet|pass|test|memory) (default "os")
+      --keyring-dir string       The client Keyring directory; if omitted, the default 'home' directory will be used
+      --ledger                   Use a connected Ledger device
+      --node string              <host>:<port> to tendermint rpc interface for this chain (default "tcp://localhost:26657")
+      --note string              Note to add a description to the transaction (previously --memo)
+      --offline                  Offline mode (does not allow any online functionality)
+  -o, --output string            Output format (text|json) (default "json")
+  -s, --sequence uint            The sequence number of the signing account (offline mode only)
+      --sign-mode string         Choose sign mode (direct|amino-json|direct-aux), this is an advanced feature
+      --timeout-height uint      Set a block timeout height to prevent the tx from being committed past a certain height
+      --tip string               Tip is the amount that is going to be transferred to the fee payer on the target chain. This flag is only valid when used with --aux, and is ignored if the target chain didn't enable the TipDecorator
+  -y, --yes                      Skip tx broadcasting prompt confirmation
+
+Global Flags:
+      --chain-id string     The network chain ID
+      --home string         directory for config and data (default "/Users/tgreco/.agoric")
+      --log_format string   The logging format (json|plain) (default "plain")
+      --log_level string    The logging level (trace|debug|info|warn|error|fatal|panic) (default "info")
+      --trace               print out full stack trace on errors
+
+not ok 3 - makeClaimTokensInvitation offrs ### start: accounts[0] || end: accounts[10] ### offer interval: 60s
+#   REJECTED from ava test.serial("makeClaimTokensInvitation offrs ### start: accounts[0] || end: accounts[10] ### offer interval: 60s"): (Error#82)
+#   Error#82: Command failed: agd --node https://xnet.rpc.agoric.net:443 tx bank send user1 agoric1g2d2nt5a9m4qg6t3ta3pqa6ftlnz6zvywhadrn 10000000ubld --chain-id agoricxnet-14 --from user1 --keyring-backend test --broadcast-mode block --gas auto --gas-adjustment 1.5 --yes
+#   Error: rpc error: code = Unknown desc = rpc error: code = Unknown desc = failed to execute message; message index: 0: 2000000ubld is smaller than 10000000ubld: insufficient funds [agoric-labs/cosmos-sdk@v0.46.16-alpha.agoric.2.4/x/bank/keeper/send.go:191] With gas wanted: '18446744073709551615' and gas used: '47639' : unknown request
+#   Usage:
+#     agd tx bank send [from_key_or_address] [to_address] [amount] [flags]
+
+#   Flags:
+#     -a, --account-number uint      The account number of the signing account (offline mode only)
+#         --aux                      Generate aux signer data instead of sending a tx
+#     -b, --broadcast-mode string    Transaction broadcasting mode (sync|async|block) (default "sync")
+#         --dry-run                  ignore the --gas flag and perform a simulation of a transaction, but don't broadcast it (when enabled, the local Keybase is not accessible)
+#         --fee-granter string       Fee granter grants fees for the transaction
+#         --fee-payer string         Fee payer pays fees for the transaction instead of deducting from the signer
+#         --fees string              Fees to pay along with transaction; eg: 10uatom
+#         --from string              Name or address of private key with which to sign
+#         --gas string               gas limit to set per-transaction; set to "auto" to calculate sufficient gas automatically. Note: "auto" option doesn't always report accurate results. Set a valid coin value to adjust the result. Can be used instead of "fees". (default 200000)
+#         --gas-adjustment float     adjustment factor to be multiplied against the estimate returned by the tx simulation; if the gas limit is set manually this flag is ignored  (default 1)
+#         --gas-prices string        Gas prices in decimal format to determine the transaction fee (e.g. 0.1uatom)
+#         --generate-only            Build an unsigned transaction and write it to STDOUT (when enabled, the local Keybase only accessed when providing a key name)
+#     -h, --help                     help for send
+#         --keyring-backend string   Select keyring's backend (os|file|kwallet|pass|test|memory) (default "os")
+#         --keyring-dir string       The client Keyring directory; if omitted, the default 'home' directory will be used
+#         --ledger                   Use a connected Ledger device
+#         --node string              <host>:<port> to tendermint rpc interface for this chain (default "tcp://localhost:26657")
+#         --note string              Note to add a description to the transaction (previously --memo)
+#         --offline                  Offline mode (does not allow any online functionality)
+#     -o, --output string            Output format (text|json) (default "json")
+#     -s, --sequence uint            The sequence number of the signing account (offline mode only)
+#         --sign-mode string         Choose sign mode (direct|amino-json|direct-aux), this is an advanced feature
+#         --timeout-height uint      Set a block timeout height to prevent the tx from being committed past a certain height
+#         --tip string               Tip is the amount that is going to be transferred to the fee payer on the target chain. This flag is only valid when used with --aux, and is ignored if the target chain didn't enable the TipDecorator
+#     -y, --yes                      Skip tx broadcasting prompt confirmation
+
+#   Global Flags:
+#         --chain-id string     The network chain ID
+#         --home string         directory for config and data (default "/Users/tgreco/.agoric")
+#         --log_format string   The logging format (json|plain) (default "plain")
+#         --log_level string    The logging level (trace|debug|info|warn|error|fatal|panic) (default "info")
+#         --trace               print out full stack trace on errors
+
+
+#   Error: rpc error: code = Unknown desc = rpc error: code = Unknown desc = failed to execute message; message index: 0: 2000000ubld is smaller than 10000000ubld: insufficient funds [agoric-labs/cosmos-sdk@v0.46.16-alpha.agoric.2.4/x/bank/keeper/send.go:191] With gas wanted: '18446744073709551615' and gas used: '47639' : unknown request
+#   Usage:
+#     agd tx bank send [from_key_or_address] [to_address] [amount] [flags]
+
+#   Flags:
+#     -a, --account-number uint      The account number of the signing account (offline mode only)
+#         --aux                      Generate aux signer data instead of sending a tx
+#     -b, --broadcast-mode string    Transaction broadcasting mode (sync|async|block) (default "sync")
+#         --dry-run                  ignore the --gas flag and perform a simulation of a transaction, but don't broadcast it (when enabled, the local Keybase is not accessible)
+#         --fee-granter string       Fee granter grants fees for the transaction
+#         --fee-payer string         Fee payer pays fees for the transaction instead of deducting from the signer
+#         --fees string              Fees to pay along with transaction; eg: 10uatom
+#         --from string              Name or address of private key with which to sign
+#         --gas string               gas limit to set per-transaction; set to "auto" to calculate sufficient gas automatically. Note: "auto" option doesn't always report accurate results. Set a valid coin value to adjust the result. Can be used instead of "fees". (default 200000)
+#         --gas-adjustment float     adjustment factor to be multiplied against the estimate returned by the tx simulation; if the gas limit is set manually this flag is ignored  (default 1)
+#         --gas-prices string        Gas prices in decimal format to determine the transaction fee (e.g. 0.1uatom)
+#         --generate-only            Build an unsigned transaction and write it to STDOUT (when enabled, the local Keybase only accessed when providing a key name)
+#     -h, --help                     help for send
+#         --keyring-backend string   Select keyring's backend (os|file|kwallet|pass|test|memory) (default "os")
+#         --keyring-dir string       The client Keyring directory; if omitted, the default 'home' directory will be used
+#         --ledger                   Use a connected Ledger device
+#         --node string              <host>:<port> to tendermint rpc interface for this chain (default "tcp://localhost:26657")
+#         --note string              Note to add a description to the transaction (previously --memo)
+#         --offline                  Offline mode (does not allow any online functionality)
+#     -o, --output string            Output format (text|json) (default "json")
+#     -s, --sequence uint            The sequence number of the signing account (offline mode only)
+#         --sign-mode string         Choose sign mode (direct|amino-json|direct-aux), this is an advanced feature
+#         --timeout-height uint      Set a block timeout height to prevent the tx from being committed past a certain height
+#         --tip string               Tip is the amount that is going to be transferred to the fee payer on the target chain. This flag is only valid when used with --aux, and is ignored if the target chain didn't enable the TipDecorator
+#     -y, --yes                      Skip tx broadcasting prompt confirmation
+
+#   Global Flags:
+#         --chain-id string     The network chain ID
+#         --home string         directory for config and data (default "/Users/tgreco/.agoric")
+#         --log_format string   The logging format (json|plain) (default "plain")
+#         --log_level string    The logging level (trace|debug|info|warn|error|fatal|panic) (default "info")
+#         --trace               print out full stack trace on errors
+
+
+#       at __node_internal_genericNodeError (node:internal/errors:865:15)
+#       at checkExecSyncError (node:child_process:890:11)
+#       at execFileSync (node:child_process:926:15)
+#       at exec (file:///Users/tgreco/dapp-airdrop/contract/test/tribbles-airdrop/tools/agd-lib.js:77:7)
+#       at Object.tx (file:///Users/tgreco/dapp-airdrop/contract/test/tribbles-airdrop/tools/agd-lib.js:147:21)
+#       at sendFromWhale (file:///Users/tgreco/dapp-airdrop/contract/test/tribbles-airdrop/tools/e2e-tools.js:160:15)
+#       at provisionSmartWallet (file:///Users/tgreco/dapp-airdrop/contract/test/tribbles-airdrop/tools/e2e-tools.js:179:11)
+#       at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+#       at async runManyOffers (file:///Users/tgreco/dapp-airdrop/contract/test/tribbles-airdrop/performance.test.js:197:16)
+#       at async file:///Users/tgreco/dapp-airdrop/contract/test/tribbles-airdrop/performance.test.js:243:21
+
+  ---
+    name: AssertionError
+    message: Rejected promise returned by test
+    values:
+      'Rejected promise returned by test. Reason:': |-
+        Error {
+          output: [
+            null,
+            '',
+            `Error: rpc error: code = Unknown desc = rpc error: code = Unknown desc = failed to execute message; message index: 0: 2000000ubld is smaller than 10000000ubld: insufficient funds [agoric-labs/cosmos-sdk@v0.46.16-alpha.agoric.2.4/x/bank/keeper/send.go:191] With gas wanted: '18446744073709551615' and gas used: '47639' : unknown request␊
+            Usage:␊
+              agd tx bank send [from_key_or_address] [to_address] [amount] [flags]␊
+            ␊
+            Flags:␊
+              -a, --account-number uint      The account number of the signing account (offline mode only)␊
+                  --aux                      Generate aux signer data instead of sending a tx␊
+              -b, --broadcast-mode string    Transaction broadcasting mode (sync|async|block) (default "sync")␊
+                  --dry-run                  ignore the --gas flag and perform a simulation of a transaction, but don't broadcast it (when enabled, the local Keybase is not accessible)␊
+                  --fee-granter string       Fee granter grants fees for the transaction␊
+                  --fee-payer string         Fee payer pays fees for the transaction instead of deducting from the signer␊
+                  --fees string              Fees to pay along with transaction; eg: 10uatom␊
+                  --from string              Name or address of private key with which to sign␊
+                  --gas string               gas limit to set per-transaction; set to "auto" to calculate sufficient gas automatically. Note: "auto" option doesn't always report accurate results. Set a valid coin value to adjust the result. Can be used instead of "fees". (default 200000)␊
+                  --gas-adjustment float     adjustment factor to be multiplied against the estimate returned by the tx simulation; if the gas limit is set manually this flag is ignored  (default 1)␊
+                  --gas-prices string        Gas prices in decimal format to determine the transaction fee (e.g. 0.1uatom)␊
+                  --generate-only            Build an unsigned transaction and write it to STDOUT (when enabled, the local Keybase only accessed when providing a key name)␊
+              -h, --help                     help for send␊
+                  --keyring-backend string   Select keyring's backend (os|file|kwallet|pass|test|memory) (default "os")␊
+                  --keyring-dir string       The client Keyring directory; if omitted, the default 'home' directory will be used␊
+                  --ledger                   Use a connected Ledger device␊
+                  --node string              <host>:<port> to tendermint rpc interface for this chain (default "tcp://localhost:26657")␊
+                  --note string              Note to add a description to the transaction (previously --memo)␊
+                  --offline                  Offline mode (does not allow any online functionality)␊
+              -o, --output string            Output format (text|json) (default "json")␊
+              -s, --sequence uint            The sequence number of the signing account (offline mode only)␊
+                  --sign-mode string         Choose sign mode (direct|amino-json|direct-aux), this is an advanced feature␊
+                  --timeout-height uint      Set a block timeout height to prevent the tx from being committed past a certain height␊
+                  --tip string               Tip is the amount that is going to be transferred to the fee payer on the target chain. This flag is only valid when used with --aux, and is ignored if the target chain didn't enable the TipDecorator␊
+              -y, --yes                      Skip tx broadcasting prompt confirmation␊
+            ␊
+            Global Flags:␊
+                  --chain-id string     The network chain ID␊
+                  --home string         directory for config and data (default "/Users/tgreco/.agoric")␊
+                  --log_format string   The logging format (json|plain) (default "plain")␊
+                  --log_level string    The logging level (trace|debug|info|warn|error|fatal|panic) (default "info")␊
+                  --trace               print out full stack trace on errors␊
+            ␊
+            `,
+          ],
+          pid: 89102,
+          signal: null,
+          status: 1,
+          stderr: `Error: rpc error: code = Unknown desc = rpc error: code = Unknown desc = failed to execute message; message index: 0: 2000000ubld is smaller than 10000000ubld: insufficient funds [agoric-labs/cosmos-sdk@v0.46.16-alpha.agoric.2.4/x/bank/keeper/send.go:191] With gas wanted: '18446744073709551615' and gas used: '47639' : unknown request␊
+          Usage:␊
+            agd tx bank send [from_key_or_address] [to_address] [amount] [flags]␊
+          ␊
+          Flags:␊
+            -a, --account-number uint      The account number of the signing account (offline mode only)␊
+                --aux                      Generate aux signer data instead of sending a tx␊
+            -b, --broadcast-mode string    Transaction broadcasting mode (sync|async|block) (default "sync")␊
+                --dry-run                  ignore the --gas flag and perform a simulation of a transaction, but don't broadcast it (when enabled, the local Keybase is not accessible)␊
+                --fee-granter string       Fee granter grants fees for the transaction␊
+                --fee-payer string         Fee payer pays fees for the transaction instead of deducting from the signer␊
+                --fees string              Fees to pay along with transaction; eg: 10uatom␊
+                --from string              Name or address of private key with which to sign␊
+                --gas string               gas limit to set per-transaction; set to "auto" to calculate sufficient gas automatically. Note: "auto" option doesn't always report accurate results. Set a valid coin value to adjust the result. Can be used instead of "fees". (default 200000)␊
+                --gas-adjustment float     adjustment factor to be multiplied against the estimate returned by the tx simulation; if the gas limit is set manually this flag is ignored  (default 1)␊
+                --gas-prices string        Gas prices in decimal format to determine the transaction fee (e.g. 0.1uatom)␊
+                --generate-only            Build an unsigned transaction and write it to STDOUT (when enabled, the local Keybase only accessed when providing a key name)␊
+            -h, --help                     help for send␊
+                --keyring-backend string   Select keyring's backend (os|file|kwallet|pass|test|memory) (default "os")␊
+                --keyring-dir string       The client Keyring directory; if omitted, the default 'home' directory will be used␊
+                --ledger                   Use a connected Ledger device␊
+                --node string              <host>:<port> to tendermint rpc interface for this chain (default "tcp://localhost:26657")␊
+                --note string              Note to add a description to the transaction (previously --memo)␊
+                --offline                  Offline mode (does not allow any online functionality)␊
+            -o, --output string            Output format (text|json) (default "json")␊
+            -s, --sequence uint            The sequence number of the signing account (offline mode only)␊
+                --sign-mode string         Choose sign mode (direct|amino-json|direct-aux), this is an advanced feature␊
+                --timeout-height uint      Set a block timeout height to prevent the tx from being committed past a certain height␊
+                --tip string               Tip is the amount that is going to be transferred to the fee payer on the target chain. This flag is only valid when used with --aux, and is ignored if the target chain didn't enable the TipDecorator␊
+            -y, --yes                      Skip tx broadcasting prompt confirmation␊
+          ␊
+          Global Flags:␊
+                --chain-id string     The network chain ID␊
+                --home string         directory for config and data (default "/Users/tgreco/.agoric")␊
+                --log_format string   The logging format (json|plain) (default "plain")␊
+                --log_level string    The logging level (trace|debug|info|warn|error|fatal|panic) (default "info")␊
+                --trace               print out full stack trace on errors␊
+          ␊
+          `,
+          stdout: '',
+          message: `Command failed: agd --node https://xnet.rpc.agoric.net:443 tx bank send user1 agoric1g2d2nt5a9m4qg6t3ta3pqa6ftlnz6zvywhadrn 10000000ubld --chain-id agoricxnet-14 --from user1 --keyring-backend test --broadcast-mode block --gas auto --gas-adjustment 1.5 --yes␊
+          Error: rpc error: code = Unknown desc = rpc error: code = Unknown desc = failed to execute message; message index: 0: 2000000ubld is smaller than 10000000ubld: insufficient funds [agoric-labs/cosmos-sdk@v0.46.16-alpha.agoric.2.4/x/bank/keeper/send.go:191] With gas wanted: '18446744073709551615' and gas used: '47639' : unknown request␊
+          Usage:␊
+            agd tx bank send [from_key_or_address] [to_address] [amount] [flags]␊
+          ␊
+          Flags:␊
+            -a, --account-number uint      The account number of the signing account (offline mode only)␊
+                --aux                      Generate aux signer data instead of sending a tx␊
+            -b, --broadcast-mode string    Transaction broadcasting mode (sync|async|block) (default "sync")␊
+                --dry-run                  ignore the --gas flag and perform a simulation of a transaction, but don't broadcast it (when enabled, the local Keybase is not accessible)␊
+                --fee-granter string       Fee granter grants fees for the transaction␊
+                --fee-payer string         Fee payer pays fees for the transaction instead of deducting from the signer␊
+                --fees string              Fees to pay along with transaction; eg: 10uatom␊
+                --from string              Name or address of private key with which to sign␊
+                --gas string               gas limit to set per-transaction; set to "auto" to calculate sufficient gas automatically. Note: "auto" option doesn't always report accurate results. Set a valid coin value to adjust the result. Can be used instead of "fees". (default 200000)␊
+                --gas-adjustment float     adjustment factor to be multiplied against the estimate returned by the tx simulation; if the gas limit is set manually this flag is ignored  (default 1)␊
+                --gas-prices string        Gas prices in decimal format to determine the transaction fee (e.g. 0.1uatom)␊
+                --generate-only            Build an unsigned transaction and write it to STDOUT (when enabled, the local Keybase only accessed when providing a key name)␊
+            -h, --help                     help for send␊
+                --keyring-backend string   Select keyring's backend (os|file|kwallet|pass|test|memory) (default "os")␊
+                --keyring-dir string       The client Keyring directory; if omitted, the default 'home' directory will be used␊
+                --ledger                   Use a connected Ledger device␊
+                --node string              <host>:<port> to tendermint rpc interface for this chain (default "tcp://localhost:26657")␊
+                --note string              Note to add a description to the transaction (previously --memo)␊
+                --offline                  Offline mode (does not allow any online functionality)␊
+            -o, --output string            Output format (text|json) (default "json")␊
+            -s, --sequence uint            The sequence number of the signing account (offline mode only)␊
+                --sign-mode string         Choose sign mode (direct|amino-json|direct-aux), this is an advanced feature␊
+                --timeout-height uint      Set a block timeout height to prevent the tx from being committed past a certain height␊
+                --tip string               Tip is the amount that is going to be transferred to the fee payer on the target chain. This flag is only valid when used with --aux, and is ignored if the target chain didn't enable the TipDecorator␊
+            -y, --yes                      Skip tx broadcasting prompt confirmation␊
+          ␊
+          Global Flags:␊
+                --chain-id string     The network chain ID␊
+                --home string         directory for config and data (default "/Users/tgreco/.agoric")␊
+                --log_format string   The logging format (json|plain) (default "plain")␊
+                --log_level string    The logging level (trace|debug|info|warn|error|fatal|panic) (default "info")␊
+                --trace               print out full stack trace on errors␊
+          ␊
+          `,
+        }
+    at: |-
+      --trace               print out full stack trace on errors
+      exec (file://test/tribbles-airdrop/tools/agd-lib.js:77:7)
+      Object.tx (file://test/tribbles-airdrop/tools/agd-lib.js:147:21)
+      sendFromWhale (file://test/tribbles-airdrop/tools/e2e-tools.js:160:15)
+      provisionSmartWallet (file://test/tribbles-airdrop/tools/e2e-tools.js:179:11)
+      async runManyOffers (file://test/tribbles-airdrop/performance.test.js:197:16)
+      async file://test/tribbles-airdrop/performance.test.js:243:21
+  ...
+inside tx {
+  txArgs: [
+    'bank',
+    'send',
+    'user1',
+    'agoric1g2d2nt5a9m4qg6t3ta3pqa6ftlnz6zvywhadrn',
+    '10000000ubld'
+  ],
+  chainId: 'agoricxnet-14',
+  from: 'user1'
+}
+$$$ agd --node https://xnet.rpc.agoric.net:443 tx bank send user1 agoric1g2d2nt5a9m4qg6t3ta3pqa6ftlnz6zvywhadrn 10000000ubld --chain-id agoricxnet-14 --from user1 --keyring-backend test --broadcast-mode block --gas auto --gas-adjustment 1.5 --yes
+
+1..3
+# tests 3
+# pass 0
+# skip 2
+# fail 1

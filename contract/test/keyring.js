@@ -11005,6 +11005,7 @@ const accounts = [
 
 const pubkeys = accounts.map(x => x.pubkey.key);
 const mnemonics = accounts.map(x => x.mnemonic);
-
+0f7e7eeb1c6e5dec518ec2534a4fc55738af04b5379a052c5e3fe836f451ccd0
 const merkleTreeObj = makeMerkleTreeAPI(pubkeys, accounts);
+merkleTreeObj.root //?
 export { pubkeys, mnemonics, accounts, merkleTreeObj };

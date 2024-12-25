@@ -1,0 +1,10 @@
+[
+{}
+][
+{"message":"Offer handled properly.","offerId":"offer-1735117183544","account":{"address":"agoric15gyyhtn4mdh0s99gg6ng5yhjw99lrrxpac97y2","pubkey":"AlFzPBrvRlRSRKDVOdXCKKsKoacLZ+OEGuKWKV07ZyQy"},"startTime":18438.698541998863,"endTime":26808.029124997556,"latency":8369.330582998693},
+{"message":"Offer handled properly.","offerId":"offer-1735117216961","account":{"address":"agoric18pdkcp2j3utx0cl4x9mufdhpqxchaxehl5yp4f","pubkey":"AmsJpVfWTbvLvYylvr4yaZkXVI2KdABxY7mEefEv+MjA"},"startTime":51855.48149999976,"endTime":58308.739541999996,"latency":6453.258042000234},
+{"message":"Offer handled properly.","offerId":"offer-1735117249488","account":{"address":"agoric1tkxs9hlpqpglz7nnd4vrpzllp7g8p60tr4rh5j","pubkey":"A7z5bOLDpOjrLcRALkua0saO8b/uALuFp7yrjqoFjy1w"},"startTime":84383.08166699857,"endTime":91147.18258400261,"latency":6764.100917004049},
+{}
+][
+{"message":"Offer handled properly.","offerId":"offer-1735117418219","account":{"address":"agoric15gyyhtn4mdh0s99gg6ng5yhjw99lrrxpac97y2","pubkey":"AlFzPBrvRlRSRKDVOdXCKKsKoacLZ+OEGuKWKV07ZyQy"},"startTime":17811.160000003874,"endTime":25172.04779200256,"latency":7360.887791998684},
+{"message":"Offer handled properly.","offerId":"offer-1735117450809","account":{"address":"agoric18pdkcp2j3utx0cl4x9mufdhpqxchaxehl5yp4f","pubkey":"AmsJpVfWTbvLvYylvr4yaZkXVI2KdABxY7mEefEv+MjA"},"startTime":50400.864541999996,"endTime":59822.4293750003,"latency":9421.564833000302},

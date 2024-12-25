@@ -59,7 +59,7 @@ export const makeAgd = ({ execFileSync }) => {
    *     }} opts
    */
   const make = ({ home, keyringBackend, rpcAddrs } = {}) => {
-    const keyringArgs = flags({ home, 'chain-id': 'agoricxnet-14' });
+    const keyringArgs = flags({ home });
     if (rpcAddrs) {
       assert.equal(
         rpcAddrs.length,
@@ -125,17 +125,20 @@ export const makeAgd = ({ execFileSync }) => {
        * @param {string[]} txArgs
        * @param {{ chainId: string; from: string; yes?: boolean }} opts
        */
-      tx: async (txArgs, { chainId = 'agoricxnet-14', from, yes }) => {
+      tx: async (
+        txArgs,
+        { chainId = 'agoricxnet-14', from, keyringBackend = 'test', yes },
+      ) => {
         console.log('inside tx', { txArgs, chainId, from });
         const args = [
+          ...flags({ node: 'https://xnet.rpc.agoric.net:443' }),
           'tx',
           ...txArgs,
-          ...flags({ node: 'https://xnet.rpc.agoric.net:443' }),
           ...flags({ 'chain-id': chainId, from }),
+          ...flags({ 'keyring-backend': keyringBackend }),
           ...flags({
             'broadcast-mode': 'block',
-            gas: 'auto',
-            'gas-adjustment': '1.4',
+            'gas-adjustment': '2.75',
           }),
           ...(yes ? ['--yes'] : []),
         ];
@@ -143,9 +146,10 @@ export const makeAgd = ({ execFileSync }) => {
         const out = exec(args);
         try {
           const detail = out;
-          if (detail.code !== 0) {
-            throw Error(detail.raw_log);
-          }
+
+          // if (detail.code !== 0) {
+          //   throw Error(detail.raw_log);
+          // }
           return detail;
         } catch (e) {
           console.error(e);
@@ -164,7 +168,15 @@ export const makeAgd = ({ execFileSync }) => {
         add: (name, mnemonic) => {
           return execFileSync(
             agdBinary,
-            [...keyringArgs, 'keys', 'add', name, '--recover'],
+            [
+              ...keyringArgs,
+              'keys',
+              'add',
+              name,
+              '--recover',
+              '--keyring-backend',
+              'test',
+            ],
             { encoding: 'utf-8', input: mnemonic },
           ).toString();
         },

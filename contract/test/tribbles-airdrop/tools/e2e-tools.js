@@ -135,7 +135,7 @@ export const provisionSmartWallet = async (
     lcd,
     delay,
     chainId = 'agoricxnet-14',
-    whale = 'whale',
+    whale = 'user1',
     progress = console.log,
     q = makeQueryKit(makeVStorage(lcd)).query,
   },
@@ -159,7 +159,10 @@ export const provisionSmartWallet = async (
     // ad-hoc waitForBlock stuff is not necessary.
     await agd.tx(['bank', 'send', whale, address, amount], {
       chainId,
-      from: whale,
+      from: 'user1',
+      ...{ '--keyring-backend': 'test' },
+      ...{ '--gas': 'auto' },
+      ...{ '--gas-adjustment': 1.4 },
       yes: true,
     });
     await blockTool.waitForBlock(1, { step: 'bank send' });
@@ -434,7 +437,11 @@ export const makeE2ETools = async (
     apiAddress = XNET_CONSTANTS.LCD,
   },
 ) => {
-  const agd = makeAgd({ execFileSync }).withOpts({ keyringBackend: 'test' });
+  const agd = makeAgd({ execFileSync }).withOpts({
+    keyringBackend: 'test',
+    rpcAddress,
+    apiAddress,
+  });
   const rpc = makeHttpClient(rpcAddress, fetch);
   const lcd = makeAPI(apiAddress, { fetch });
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));

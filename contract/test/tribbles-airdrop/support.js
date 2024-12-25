@@ -2,10 +2,10 @@ import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'child_process';
 import { createId } from '@paralleldrive/cuid2';
-import { generateMnemonic } from '../../tools/wallet.js';
-import { makeRetryUntilCondition } from '../../tools/sleep.js';
-import { makeDeployBuilder } from '../../tools/deploy.js';
-import { makeAgdTools } from '../../tools/agd-tools.js';
+import { generateMnemonic } from './tools/wallet.js';
+import { makeRetryUntilCondition } from './tools/sleep.js';
+import { makeDeployBuilder } from './tools/deploy.js';
+import { makeAgdTools, AgdTools } from './tools/agd-tools.js';
 
 const makeKeyring = async e2eTools => {
   //   let _keys = ['user1'];
@@ -45,21 +45,21 @@ const makeKeyring = async e2eTools => {
 
 const commonSetup = async t => {
   const tools = await makeAgdTools(t.log, {
-    execFileSync: childProcess.execFileSync,
-    execFile: childProcess.execFile,
+    execFileFn: childProcess.execFile,
+    execFileSyncFn: childProcess.execFileSync,
   });
   console.log({ tools });
   const keyring = await makeKeyring(tools);
-  const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
+  const deployBuilder = await makeDeployBuilder(tools, fse.readJSON, execa);
   const retryUntilCondition = makeRetryUntilCondition({ log: t.log });
   const startContract = async (contractName = '', contractBuilder = '') => {
-    const { vstorageClient } = tools;
-    // const instances = Object.fromEntries(
-    //   await vstorageClient.queryData(`published.agoricNames.instance`),
-    // );
-    // if (contractName in instances) {
-    //   return t.log('Contract found. Skipping installation...');
-    // }
+    const { vstorageClient } = await tools;
+    const instances = Object.fromEntries(
+      await vstorageClient.queryData(`published.agoricNames.instance`),
+    );
+    if (contractName in instances) {
+      return t.log('Contract found. Skipping installation...');
+    }
     t.log('bundle and install contract', contractName);
     await deployBuilder(contractBuilder);
     await retryUntilCondition(

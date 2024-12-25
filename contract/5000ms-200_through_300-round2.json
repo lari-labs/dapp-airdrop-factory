@@ -1,0 +1,4 @@
+[
+{"message":"Offer handled properly.","offerIndex":1,"offerId":"offer-1735116706067","account":{"address":"agoric1hfkdsyfjsq3577ddegz93y0a48tn30vd6qnf92","pubkey":"ApsGHlPcnIWrpQQR2fp2XQ15DnPM+kp3N9AAKW3oGykH"},"startTime":20717.21387499571,"endTime":25802.544959001243,"latency":5085.331084005535},
+{"message":"Offer handled properly.","offerIndex":2,"offerId":"offer-1735116731715","account":{"address":"agoric1fjtfgqzwskluwysd26rszctd3s0z3w8af4fjqp","pubkey":"A/BCmBq9AO8cJUggckUEJhlrKmmjHQkKP9dxU6TNjM48"},"startTime":46364.64491699636,"endTime":53642.59495899826,"latency":7277.950042001903},
+{"message":"Offer handled properly.","offerIndex":3,"offerId":"offer-1735116758740","account":{"address":"agoric1sr9ywz975ytav73spcjgn23vphnu3t822gflq9","pubkey":"A9lbhzIhl3qUnoeB2u+Bohc7l6Cfu2Uw40JTLGqKFbvN"},"startTime":73390.05999999493,"endTime":81261.24308399856,"latency":7871.183084003627},

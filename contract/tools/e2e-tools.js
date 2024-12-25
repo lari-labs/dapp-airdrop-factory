@@ -445,8 +445,8 @@ export const makeE2ETools = (
     setTimeout,
     writeFile,
     bundleDir = 'bundles',
-    rpcAddress = 'http://localhost:26657',
-    apiAddress = 'http://localhost:1317',
+    rpcAddress = 'https://xnet.rpc.agoric.net:443',
+    apiAddress = 'http://xnet.api.agoric.net',
     join = (...parts) => parts.join('/'),
   },
 ) => {

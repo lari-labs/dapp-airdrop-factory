@@ -1,5 +1,5 @@
-import { test as anyTest } from '../prepare-test-env-ava.js';
 import { performance } from 'node:perf_hooks';
+import { test as anyTest } from '../prepare-test-env-ava.js';
 import { makeDoOffer } from './tools/e2e-tools.js';
 import { commonSetup } from './support.js';
 import { merkleTreeObj, mnemonics } from './generated_keys.js';
@@ -162,11 +162,13 @@ const prepareAccountsForTests = (
 test.before(async t => {
   const setup = await commonSetup(t);
 
+  const queryTool = setup.makeQueryTool();
+
   console.log('setup', setup);
   // example usage. comment out after first run
   const chainData = await Promise.all([
-    setup.vstorageClient.queryData('published.agoricNames.brand'),
-    setup.vstorageClient.queryData('published.agoricNames.instance'),
+    queryTool.queryData('published.agoricNames.brand'),
+    queryTool.queryData('published.agoricNames.instance'),
   ]);
 
   const [brands, instances] = [
@@ -227,22 +229,28 @@ const runManyOffers = async (t, delay = 10000, accounts) => {
   return durations;
 };
 
-test.skip('makeClaimTokensInvitation offrs ### start: accounts[0] || end: accounts[11] ### offer interval: 30s', async t => {
-  const { provisionSmartWallet, makeFeeAmount } = t.context;
-  const [startIndex, endIndex] = [20, 30];
-  const testAccts = merkleTreeObj.accounts.slice(startIndex, endIndex);
+test.serial(
+  'makeClaimTokensInvitation offrs ### start: accounts[0] || end: accounts[11] ### offer interval: 30s',
+  async t => {
+    const { provisionSmartWallet, makeFeeAmount } = t.context;
+    const [startIndex, endIndex] = [0, 10];
+    const testAccts = merkleTreeObj.accounts.slice(startIndex, endIndex);
 
-  const delay = 20000;
-  const results = await runManyOffers(t, delay, testAccts);
-  t.log('Durations for all calls', results);
-  console.group('################ START DURATIONS logger ##############');
-  console.log('----------------------------------------');
-  console.log('durations ::::', results.map(trace('inspecting offer results')));
-  console.log('----------------------------------------');
-  console.log('--------------- END DURATIONS logger -------------------');
-  console.groupEnd();
-  t.deepEqual(results.length === 10, true);
-});
+    const delay = 20000;
+    const results = await runManyOffers(t, delay, testAccts);
+    t.log('Durations for all calls', results);
+    console.group('################ START DURATIONS logger ##############');
+    console.log('----------------------------------------');
+    console.log(
+      'durations ::::',
+      results.map(trace('inspecting offer results')),
+    );
+    console.log('----------------------------------------');
+    console.log('--------------- END DURATIONS logger -------------------');
+    console.groupEnd();
+    t.deepEqual(results.length === 10, true);
+  },
+);
 
 test.skip('makeClaimTokensInvitation offrs ### start: accounts[205] || end: accounts[245] ### offer interval: 30s', async t => {
   const [startIndex, endIndex] = [0, 45];
