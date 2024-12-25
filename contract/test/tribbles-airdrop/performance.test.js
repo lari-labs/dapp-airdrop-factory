@@ -170,55 +170,13 @@ test.before(async t => {
 
   t.context = {
     ...setup,
-    wallets: [],
+    wallets: merkleTreeObj.accounts,
     provisionSmartWallet: setup.provisionSmartWallet,
     brands,
     instances,
     makeFeeAmount,
   };
 });
-const runManyOffersConcurrently = async (
-  t,
-  delay = 10000,
-  accounts,
-  concurrencyLimit = 5,
-  outputPath = './performance_data.json',
-) => {
-  const performanceStream = createPerformanceDataStream(outputPath);
-
-  // Helper to process an offer and add a delay
-  const processOffer = async account => {
-    const wallet = await t.context.provisionSmartWallet(account.address, {
-      IST: 100n,
-      BLD: 100n,
-    });
-
-    const response = await makeDoOfferHandler(
-      account,
-      wallet,
-      t.context.makeFeeAmount,
-      createPerformanceObject,
-    );
-
-    performanceStream.write(response);
-    await new Promise(resolve => setTimeout(resolve, delay));
-  };
-
-  await null;
-  try {
-    const results = [];
-    for (let i = 0; i < accounts.length; i += concurrencyLimit) {
-      const chunk = accounts.slice(i, i + concurrencyLimit); // Get a batch of accounts
-      const chunkResults = await Promise.allSettled(chunk.map(processOffer)); // Process the batch concurrently
-      results.push(...chunkResults);
-    }
-    return results;
-  } catch (error) {
-    console.error('Error during concurrent stress testing:', error);
-  } finally {
-    performanceStream.close();
-  }
-};
 
 const runManyOffers = async (
   t,
@@ -292,33 +250,72 @@ const runManyOffers = async (
     performanceStream.close();
   }
 };
-test.skip('Stress Test: Concurrent Offers', async t => {
-  const startIndex = 20;
-  const endIndex = 80; // Example range
-  const testAccounts = merkleTreeObj.accounts.slice(startIndex, endIndex);
+test.serial(
+  'makeClaimTokensInvitation offrs ### start: accounts[0] || end: accounts[60] ### offer interval: 10s',
+  async t => {
+    const { wallets } = t.context;
+    const [startIndex, endIndex] = [0, 60];
+    const testAccts = wallets.slice(startIndex, endIndex);
 
-  // Adjust concurrency limit and delay as necessary
-  const concurrencyLimit = 5;
-  const delay = 2000;
+    console.log({ testAccts });
 
-  const results = await runManyOffersConcurrently(
-    t,
-    delay,
-    testAccounts,
-    concurrencyLimit,
-  );
-  t.log('Results:', results);
+    const delay = 7500;
+    const results = await runManyOffers(
+      t,
+      delay,
+      testAccts,
+      `${delay}ms-${startIndex}_through_${endIndex}-round2`,
+    );
+    const res =
+      await t.context[`${delay}ms-${startIndex}_through_${endIndex}-round2`];
+    t.log('Durations for all calls', results);
+    console.group('################ START DURATIONS logger ##############');
+    console.log('----------------------------------------');
 
-  // Ensure all transactions were processed
-  t.deepEqual(testAccounts.length, 60);
-});
+    console.log('----------------------------------------');
+    console.log('--------------- END DURATIONS logger -------------------');
+    console.groupEnd();
+
+    t.truthy(t.context, 'Dummy test');
+  },
+);
 
 test.serial(
-  'makeClaimTokensInvitation offrs ### start: accounts[0] || end: accounts[10] ### offer interval: 10s',
+  'makeClaimTokensInvitation offrs ### start: accounts[300] || end: accounts[350] ### offer interval: 7500',
   async t => {
-    const { provisionSmartWallet, makeFeeAmount } = t.context;
-    const [startIndex, endIndex] = [300, 500];
-    const testAccts = merkleTreeObj.accounts.slice(startIndex, endIndex);
+    const { wallets } = t.context;
+    const [startIndex, endIndex] = [300, 350];
+    const testAccts = wallets.slice(startIndex, endIndex);
+
+    console.log({ testAccts });
+
+    const delay = 7500;
+    const results = await runManyOffers(
+      t,
+      delay,
+      testAccts,
+      `${delay}ms-${startIndex}_through_${endIndex}-round2`,
+    );
+    const res =
+      await t.context[`${delay}ms-${startIndex}_through_${endIndex}-round2`];
+    t.log('Durations for all calls', results);
+    console.group('################ START DURATIONS logger ##############');
+    console.log('----------------------------------------');
+
+    console.log('----------------------------------------');
+    console.log('--------------- END DURATIONS logger -------------------');
+    console.groupEnd();
+
+    t.truthy(t.context, 'Dummy test');
+  },
+);
+
+test.serial(
+  'makeClaimTokensInvitation offrs ### start: accounts[350] || end: accounts[425] ### offer interval: 10s',
+  async t => {
+    const { wallets } = t.context;
+    const [startIndex, endIndex] = [350, 425];
+    const testAccts = wallets.slice(startIndex, endIndex);
 
     console.log({ testAccts });
 
@@ -363,22 +360,6 @@ test.skip('makeClaimTokensInvitation offrs ### start: accounts[30] || end: accou
   console.log('--------------- END DURATIONS logger -------------------');
   console.groupEnd();
   t.true(t.context);
-});
-
-test.skip('makeClaimTokensInvitation offrs ### start: accounts[65] || end: accounts[95] ### offer interval: 15s', async t => {
-  const [startIndex, endIndex] = [0, 95];
-  const testAccts = merkleTreeObj.accounts.slice(startIndex, endIndex);
-
-  const delay = 15000;
-  const results = await runManyOffers(t, delay, testAccts);
-  t.log('Durations for all calls', results);
-  console.group('################ START DURATIONS logger ##############');
-  console.log('----------------------------------------');
-  console.log('durations ::::', results.map(trace('inspecting offer results')));
-  console.log('----------------------------------------');
-  console.log('--------------- END DURATIONS logger -------------------');
-  console.groupEnd();
-  t.deepEqual(results.length === 40, true);
 });
 
 // test.serial('makeClaimTokensInvitation offers ### start: accounts[20] || end: accounts[35] ### offer interval: 6s', async t => {
