@@ -78,11 +78,17 @@ export const makeWalletKit = (addr, opts) => {
   // eslint-disable-next-line no-unused-vars
   const sendOffer = async (offer, fee = 'auto') => {
     const actionj = formatAction(offer);
+    console.log('------------------------');
+    console.log('inside send offer::');
+    console.log('------------------------');
+    console.log('actionj::', actionj);
     const trx = await agd.tx(
       ['swingset', 'wallet-action', actionj, '--allow-spend', '--trace'],
       { chainId, from: addr, yes: true },
     );
-    // console.log('code', trx.code);
+    console.log('------------------------');
+    console.log('trx::', trx);
+
     if (trx.code !== 0) throw Error(trx.rawlog);
     return trx;
   };

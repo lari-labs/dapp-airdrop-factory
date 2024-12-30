@@ -12,7 +12,8 @@
     "downlevelIteration": true,
     "strictNullChecks": true,
     "noImplicitThis": true,
-    "noEmit": true
+    "noEmit": true,
+    "typeRoots": ["./src/types.js", "./test/types.js"]
   },
   "include": [
     "*.js",
