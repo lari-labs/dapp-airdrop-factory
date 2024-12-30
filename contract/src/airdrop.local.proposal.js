@@ -111,7 +111,7 @@ export const startAirdrop = async (powers, config) => {
   trace('powers.installation', powers.installation.consume[contractName]);
   const {
     consume: {
-      namesByAddressAdmin,
+      namesByAddressAdmin: namesByAddressAdminP,
       //  namesByAddress,
       //  bankManager,
       board,
@@ -133,10 +133,11 @@ export const startAirdrop = async (powers, config) => {
     },
   } = powers;
 
-  const [issuerIST, feeBrand, timer] = await Promise.all([
+  const [issuerIST, feeBrand, timer, namesByAddressAdmin] = await Promise.all([
     istIssuer,
     istBrand,
     chainTimerService,
+    namesByAddressAdminP,
   ]);
 
   const { customTerms } = config.options;

@@ -3,7 +3,6 @@ import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { Fail } from '@endo/errors';
 import { makeTracer, deeplyFulfilledObject } from '@agoric/internal';
-import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { fixHub } from './fixHub.js';
 
 const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n].map(
@@ -121,7 +120,7 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
   trace('powers.installation', powers.installation.consume[contractName]);
   const {
     consume: {
-      namesByAddressAdmin,
+      namesByAddressAdmin: namesByAddressAdminP,
       bankManager,
       board,
       chainTimerService,
@@ -145,11 +144,11 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
     },
   } = powers;
 
-  const [issuerIST, feeBrand, timer, storageNode] = await Promise.all([
+  const [issuerIST, feeBrand, timer, namesByAddressAdmin] = await Promise.all([
     istIssuer,
     istBrand,
     chainTimerService,
-    makeStorageNodeChild(chainStorage, contractName),
+    namesByAddressAdminP,
   ]);
 
   const { customTerms } = config.options;
@@ -186,6 +185,7 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
       }),
     ),
   };
+
   trace('BEFORE astartContract(permittedPowers, startOpts);', { startOpts });
 
   const { instance, creatorFacet } = await E(startUpgradable)(startOpts);
