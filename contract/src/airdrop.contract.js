@@ -22,7 +22,6 @@ import {
   makeCancelTokenMaker,
 } from './helpers/validation.js';
 import { makeStateMachine } from './helpers/stateMachine.js';
-import { createClaimSuccessMsg } from './helpers/messages.js';
 import { objectToMap } from './helpers/objectTools.js';
 import { getMerkleRootFromMerkleProof } from './merkle-tree/index.js';
 import '@agoric/zoe/exported.js';
@@ -222,12 +221,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     console.log('df::', df);
     return df;
   };
-
-  /**
-   * @param {string} addr
-   * @param {Payment} pmt
-   */
-  const sendTo = (addr, pmt) => E(getDepositFacet(addr)).receive(pmt);
 
   /** @type {ContractTerms} */
   const {
