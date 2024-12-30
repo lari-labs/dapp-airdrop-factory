@@ -29,57 +29,15 @@ import {
 import { makeMockTools, mockBootstrapPowers } from '../../tools/boot-tools.js';
 import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
 import { makeStableFaucet } from '../mintStable.js';
-import { makeOfferArgs } from './actors.js';
+import {
+  makeMakeOfferSpec,
+  makePauseOfferSpec,
+  traceFn,
+  makeAsyncObserverObject,
+} from './actors.js';
 import { merkleTreeObj } from './generated_keys.js';
 import { AmountMath } from '@agoric/ertp';
-import { Observable } from '../../src/helpers/adts.js';
-import { createStore } from '../../src/tribbles/utils.js';
 import { head } from '../../src/helpers/objectTools.js';
-
-const reducerFn = (state = [], action) => {
-  const { type, payload } = action;
-  switch (type) {
-    case 'NEW_RESULT':
-      return [...state, payload];
-    default:
-      return state;
-  }
-};
-const handleNewResult = result => ({
-  type: 'NEW_RESULT',
-  payload: result.value,
-});
-
-const makeAsyncObserverObject = (
-  generator,
-  completeMessage = 'Iterator lifecycle complete.',
-  maxCount = Infinity,
-) =>
-  Observable(async observer => {
-    const iterator = E(generator);
-    const { dispatch, getStore } = createStore(reducerFn, []);
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      // eslint-disable-next-line @jessie.js/safe-await-separator
-      const result = await iterator.next();
-      if (result.done) {
-        console.log('result.done === true #### breaking loop');
-        break;
-      }
-      dispatch(handleNewResult(result));
-      if (getStore().length === maxCount) {
-        console.log('getStore().length === maxCoutn');
-        break;
-      }
-      observer.next(result.value);
-    }
-    observer.complete({ message: completeMessage, values: getStore() });
-  });
-
-const traceFn = label => value => {
-  console.log(label, '::::', value);
-  return value;
-};
 
 const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n].map(
   x => x * 1_000_000n,
@@ -223,20 +181,8 @@ test.serial('deploy contract with core eval: airdrop / airdrop', async t => {
   });
 });
 
-const makeMakeOfferSpec = instance => (account, feeAmount, id) => ({
-  id: `offer-${id}`,
-  invitationSpec: {
-    source: 'contract',
-    instance,
-    publicInvitationMaker: 'makeClaimTokensInvitation',
-  },
-  proposal: { give: { Fee: feeAmount } },
-  offerArgs: { ...makeOfferArgs(account) },
-});
 test.serial('E2E test', async t => {
-  const merkleRoot = merkleTreeAPI.generateMerkleRoot(
-    accounts.map(x => x.pubkey.key),
-  );
+  const merkleRoot = merkleTreeObj.root;
   const { bundleCache } = t.context;
 
   t.log('starting contract with merkleRoot:', merkleRoot);
@@ -375,6 +321,24 @@ test.serial('E2E test', async t => {
       );
     },
   });
+
+  /** @import {PurseInvitationSpec} from '@agoric/smart-wallet/src/invitations.js' */
+  /** @type {PurseInvitationSpec} */
+  const pauseOffer = makePauseOfferSpec(instance, 'pause-offer-1');
+
+  const pauseOfferUpdater = E(adminWallet.offers).executeOffer(pauseOffer);
+
+  await makeAsyncObserverObject(
+    pauseOfferUpdater,
+    'pause contract success',
+    1,
+  ).subscribe({
+    next: traceFn('PAUSE_OFFER ### SUBSCRIBE.NEXT'),
+    error: traceFn('PAUSE_OFFER ### SUBSCRIBE.ERROR'),
+    complete: ({ message, values }) => {
+      t.deepEqual(message, 'pause contract success');
+    },
+  });
   const [alicesSecondClaim] = [
     E(wallets.alice.offers).executeOffer(
       makeOfferSpec({ ...accounts[4], tier: 0 }, makeFeeAmount(), 0),
@@ -388,8 +352,9 @@ test.serial('E2E test', async t => {
     error: traceFn('alicesSecondClaim #### SUBSCRIBE.ERROR'),
     complete: traceFn('alicesSecondClaim ### SUBSCRIBE.COMPLETE'),
   });
+
   await t.throwsAsync(alicesSecondOfferSubscriber, {
-    message: `Allocation for address ${accounts[4].address} has already been claimed.`,
+    message: 'Airdrop can not be claimed when contract status is: paused.',
   });
 
   await makeAsyncObserverObject(
@@ -398,15 +363,12 @@ test.serial('E2E test', async t => {
   ).subscribe({
     next: traceFn('BOBS_OFFER_UPDATE:::: SUBSCRIBE.NEXT'),
     error: traceFn('BOBS_OFFER_UPDATE:::: SUBSCRIBE.ERROR'),
-    complete: ({ message, values }) => {
-      t.deepEqual(
-        message,
-        'AsyncGenerator bobsOfferUpdate has fufilled its requirements.',
-      );
-      t.deepEqual(values.length, 4);
-    },
+    complete: traceFn('BOBS_OFFER_UPDATE:::: SUBSCRIBE.COMPLETE'),
   });
 
+  await t.throwsAsync(bobsOfferUpdate, {
+    message: 'Airdrop can not be claimed when contract status is: paused.',
+  });
   await makeAsyncObserverObject(
     bobsPurse,
     'AsyncGenerator bobsPurse has fufilled its requirements.',
@@ -426,6 +388,7 @@ test.serial('E2E test', async t => {
     },
   });
 });
+
 test.serial('makePauseContractInvitation', async t => {
   const merkleRoot = merkleTreeAPI.generateMerkleRoot(
     accounts.map(x => x.pubkey.key),
@@ -591,7 +554,7 @@ test.serial('makePauseContractInvitation', async t => {
     complete: traceFn('alicesSecondClaim ### SUBSCRIBE.COMPLETE'),
   });
   await t.throwsAsync(alicesSecondOfferSubscriber, {
-    message: `Allocation for address ${accounts[4].address} has already been claimed.`,
+    message: `Token allocation has already been claimed.`,
   });
 
   await makeAsyncObserverObject(

@@ -416,23 +416,14 @@ export const start = async (zcf, privateArgs, baggage) => {
               OfferArgsShape,
               'offerArgs does not contain the correct data.',
             );
-            const {
-              give: { Fee: claimTokensFee },
-            } = claimSeat.getProposal();
-            
 
+            if (accountStore.has(offerArgs.key)) {
+              claimSeat.exit();
+              throw new Error(`Token allocation has already been claimed.`);
+            }
             const { proof, key: pubkey, tier } = offerArgs;
 
             const derivedAddress = computeAddress(pubkey);
-
-            // This line was added because of issues when testing
-            // Is there a way to gracefully test assertion failures????
-            if (accountStore.has(pubkey)) {
-              claimSeat.exit();
-              throw new Error(
-                `Allocation for address ${derivedAddress} has already been claimed.`,
-              );
-            }
 
             assert.equal(
               getMerkleRootFromMerkleProof(proof),
@@ -440,59 +431,39 @@ export const start = async (zcf, privateArgs, baggage) => {
               'Computed proof does not equal the correct root hash. ',
             );
 
-            const paymentAmount = this.state.payoutArray[tier];
-            console.log('------------------------');
-            console.log('paymentAmount::', paymentAmount);
-            const payment = await withdrawFromSeat(zcf, tokenHolderSeat, {
-              Tokens: paymentAmount,
-            });
-
-            console.log('------------------------');
-            console.log(
-              'withdrawn from tokenHolderSeat ### payment::',
-              payment,
-            );
-            console.log('------------------------');
-
             const depositFacet = await getDepositFacet(derivedAddress);
-
-            console.log('------------------------');
-            console.log(
-              `depositFacet:: AFTER getDepositFacet(${derivedAddress})`,
-              depositFacet,
-            );
+            const payment = await withdrawFromSeat(zcf, tokenHolderSeat, {
+              Tokens: this.state.payoutArray[tier],
+            });
             await Promise.all(
-              Object.values(payment).map(pmtP =>
-                E.when(pmtP, pmt => E(depositFacet).receive(pmt)),
-              ),
-            );
-            // XXX partial failure? return payments?
-            // await Promise.all(
-            //   E.when(
-            //     payment,
-            //     E(depositFacet).receive(payment),
-            //     new Error('Error getting payment'),
-            //   ),
-            // );
-            TT(
-              'After await E.when(payment, pmy => E(depositFacet).recieve(pmt)',
+              ...[
+                Object.values(payment).map(pmtP =>
+                  E.when(pmtP, pmt => E(depositFacet).receive(pmt)),
+                ),
+                Promise.resolve(
+                  accountStore.add(pubkey, {
+                    address: derivedAddress,
+                    pubkey,
+                    tier,
+                    amountAllocated: payment.value,
+                    epoch: this.state.currentEpoch,
+                  }),
+                ),
+              ],
             );
 
             rearrange(
-              harden([[claimSeat, tokenHolderSeat, { Fee: claimTokensFee }]]),
+              harden([
+                [
+                  claimSeat,
+                  tokenHolderSeat,
+                  { Fee: claimSeat.getProposal().give.Fee },
+                ],
+              ]),
             );
 
             claimSeat.exit();
-
-            accountStore.add(pubkey, {
-              address: derivedAddress,
-              pubkey,
-              tier,
-              amountAllocated: payment.value,
-              epoch: this.state.currentEpoch,
-            });
-
-            return createClaimSuccessMsg(paymentAmount);
+            return 'makeClaimTokenInvitation success';
           };
 
           return zcf.makeInvitation(

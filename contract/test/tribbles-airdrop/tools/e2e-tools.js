@@ -191,6 +191,7 @@ export const provisionSmartWallet = async (
 
   /** @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction */
   const sendAction = async bridgeAction => {
+    console.log('inside sendAction::::', bridgeAction);
     // eslint-disable-next-line no-undef
     const capData = q.toCapData(harden(bridgeAction));
     const offerBody = JSON.stringify(capData);
@@ -203,6 +204,8 @@ export const provisionSmartWallet = async (
 
   /** @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer */
   async function* executeOffer(offer) {
+    console.log('------------------------');
+    console.log('offer::', offer);
     const updates = q.follow(`published.wallet.${address}`, { delay });
     const txInfo = await sendAction({ method: 'executeOffer', offer });
     console.debug('spendAction', txInfo);
@@ -263,6 +266,11 @@ export const provisionSmartWallet = async (
   }
 
   async function* purseUpdates(brand) {
+    console.log('------------------------');
+    console.log('purseUpdates##########::');
+
+    console.log('------------------------');
+    console.log('brand::', brand);
     const brandAssetInfo = Object.values(byName).find(a => a.brand === brand);
     await null;
     if (brandAssetInfo) {

@@ -26,20 +26,13 @@ import {
   makeNameProxy,
   makeAgoricNames,
 } from '../../tools/ui-kit-goals/name-service-client.js';
-import { makeMockTools, mockBootstrapPowers } from '../../tools/boot-tools.js';
+import { makeMockTools } from '../../tools/boot-tools.js';
 import { merkleTreeAPI } from '../../src/merkle-tree/index.js';
 import { makeStableFaucet } from '../mintStable.js';
-import {
-  makeAsyncObserverObject,
-  makeOfferArgs,
-  simulateClaim,
-} from './actors.js';
-import { oneDay } from '../../src/helpers/time.js';
+import { makeAsyncObserverObject, makeOfferArgs } from './actors.js';
 import { merkleTreeObj } from './generated_keys.js';
 import { AmountMath } from '@agoric/ertp';
 import '../types.js';
-import { Observable } from '../../src/helpers/adts.js';
-import { createStore } from '../../src/tribbles/utils.js';
 import { head } from '../../src/helpers/objectTools.js';
 
 const traceFn = label => value => {
@@ -294,7 +287,7 @@ test.serial('E2E test', async t => {
     ),
     E(wallets.alice.peek).purseUpdates(brands.Tribbles),
   ];
-
+  /** @import { PurseInvitationSpec } from '@agoric/smart-wallet/src/invitations.js'; */
   /**
    * @typedef {{value: { updated: string, status: { id: string, invitationSpec: import('../../tools/wallet-tools.js').InvitationSpec, proposal:Proposal, offerArgs: {key: string, proof: []}}}}} OfferResult
    */
@@ -340,7 +333,7 @@ test.serial('E2E test', async t => {
     complete: traceFn('alicesSecondClaim ### SUBSCRIBE.COMPLETE'),
   });
   await t.throwsAsync(alicesSecondOfferSubscriber, {
-    message: `Allocation for address ${accounts[4].address} has already been claimed.`,
+    message: `Token allocation has already been claimed.`,
   });
   const [bobsOfferUpdate, bobsPurse] = [
     E(wallets.bob.offers).executeOffer(
