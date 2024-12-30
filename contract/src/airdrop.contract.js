@@ -419,7 +419,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
             if (accountStore.has(offerArgs.key)) {
               claimSeat.exit();
-              throw new Error(`Allocation already been claimed.`);
+              throw new Error(`Token allocation has already been claimed.`);
             }
             const { proof, key: pubkey, tier } = offerArgs;
 
@@ -463,7 +463,7 @@ export const start = async (zcf, privateArgs, baggage) => {
             );
 
             claimSeat.exit();
-            return createClaimSuccessMsg(payment);
+            return 'makeClaimTokenInvitation success';
           };
 
           return zcf.makeInvitation(

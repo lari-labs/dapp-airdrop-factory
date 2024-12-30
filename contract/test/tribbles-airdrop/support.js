@@ -50,7 +50,7 @@ const commonSetup = async t => {
     execFileFn: childProcess.execFile,
   });
   const keyring = await makeKeyring(tools);
-  const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
+  const deployBuilder = await makeDeployBuilder(tools, fse.readJSON, execa);
   const retryUntilCondition = makeRetryUntilCondition({ log: t.log });
   const startContract = async (contractName = '', contractBuilder = '') => {
     const { vstorageClient } = tools;
