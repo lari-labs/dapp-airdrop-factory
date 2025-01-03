@@ -47,7 +47,7 @@ const trace = label => value => {
 const isValidCheck = compose(isUndefined, trace('after getHash'), getHash);
 
 // Example endpoint
-app.post('/api/transaction', rateLimiter, (req, res) => {
+app.post('/api/verify-eligibility', rateLimiter, (req, res) => {
   const {
     publicKey: { key },
   } = req.body;
