@@ -6,7 +6,8 @@
   "type": "module",
   "workspaces": [
     "contract",
-    "ui"
+    "ui",
+    "api"
   ],
   "packageManager": "yarn@4.4.0",
   "useWorkspaces": true,
