@@ -1,5 +1,14 @@
 {
-  "$note": "@agoric/create-dapp@0.1.0 expects an api/package.json",
-  "name": "dapp-ertp-airdrop-api",
-  "version": "0.1.0"
+  "name": "my-esm-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node ./index.js"
+  },
+  "dependencies": {
+    "@noble/hashes": "^1.6.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
 }
