@@ -1,10 +1,11 @@
 {
-  "name": "my-esm-server",
-  "version": "1.0.0",
+  "name": "ertp-airdrop-api",
+  "version": "0.1.0",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node ./index.js"
+    "start": "node ./index.js",
+    "dev": "npx nodemon ./index.js"
   },
   "dependencies": {
     "@noble/hashes": "^1.6.1",
