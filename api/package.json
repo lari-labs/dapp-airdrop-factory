@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node ./index.js",
-    "dev": "npx nodemon ./index.js"
+    "dev": "npx nodemon ./index.js",
+    "test:requests": "./test_requests.sh"
   },
   "dependencies": {
     "@noble/hashes": "^1.6.1",

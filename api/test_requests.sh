@@ -5,7 +5,7 @@ temp_file=$(mktemp).cjs
 
 # Create the CommonJS format
 cat > $temp_file << EOF
-const data = $(cat test/accounts.js)
+const data = $(cat test_data.js)
 console.log(JSON.stringify(data))
 EOF
 
