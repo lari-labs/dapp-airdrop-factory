@@ -1,13 +1,77 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useReducer, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ConnectWalletButton, useAgoric } from '@agoric/react-components';
 import CreateAccountButton from '../../components/Orchestration/CreateAccountButton.tsx';
 import { makeOffer } from '../../components/Orchestration/MakeOffer.tsx';
 import { decodePubkey } from '@cosmjs/proto-signing';
 import { pubkeyToAgoricAddress } from '../../utils/check-sig';
+import { isDate } from 'util/types';
+const createStore = (reducerFn, initialState = {}) => {
+  let state = initialState;
+  const getSlice = prop => state[prop];
+  const getStore = () => state;
+  const getState = () => state;
 
+  const dispatch = action => {
+    return (state = reducerFn(state, action));
+  };
+  return {
+    getStore,
+    getSlice,
+    getState,
+    dispatch,
+  };
+};
 const noop = () => {};
+const REQUEST_STATES = {
+  IDLE: 'idle', // Initial state, no request has been made yet
+  PENDING: 'pending', // Request is in progress
+  SUCCESS: 'success', // Request completed successfully
+  ERROR: 'error', // Request failed with an error
+  LOADING: 'loading', // Alternative to PENDING, used when loading data
+  FULFILLED: 'fulfilled', // Alternative to SUCCESS, commonly used with Promise states
+  REJECTED: 'rejected', // Alternative to ERROR, commonly used with Promise states
+};
 
+const makeActionCreator = states =>
+  Object.values(states).map(x => ({
+    action: payload => ({
+      type: x,
+      payload,
+    }),
+  }));
+
+const actionCreators = makeActionCreator(REQUEST_STATES);
+
+const { ERROR, FULFILLED, REJECTED, PENDING, SUCCESS, IDLE } = REQUEST_STATES;
+
+// const response = ({payload}) => payload === undefined ?
+
+const requestReducer = (state, action) => {
+  const { type, payload } = action;
+  switch (type) {
+    case REJECTED:
+      return {
+        ...state,
+        ui: payload.message,
+        isEligible: false,
+        response: payload,
+        status: FULFILLED,
+      };
+    case SUCCESS:
+      return {
+        ...state,
+        ui: payload.message,
+        isEligible: true,
+        response: payload,
+        status: FULFILLED,
+      };
+    case REQUEST_STATES.IDLE:
+      return state;
+    default:
+      return state;
+  }
+};
 const AddressForm = ({
   itemPrice = 175,
   username = '',
@@ -18,6 +82,13 @@ const AddressForm = ({
   showRemoveButton = false,
 }) => {
   const { walletConnection } = useAgoric();
+
+  const [state, dispatch] = useReducer(requestReducer, {
+    status: REQUEST_STATES.IDLE,
+    isEligible: false,
+    response: {},
+  });
+  console.log({ actionCreators });
   const checkEligibility = async () => {
     try {
       const response = await fetch(
@@ -35,12 +106,16 @@ const AddressForm = ({
 
       if (response.ok) {
         console.log('Eligibility Check Success:', data);
+        dispatch({ type: SUCCESS, payload: data });
         // Handle successful eligibility response (e.g., show to user)
       } else {
+        dispatch({ type: REJECTED, payload: data });
         console.error('Eligibility Check Failed:', data);
         // Handle errors returned from server (e.g., show error message to user)
       }
     } catch (error) {
+      dispatch({ type: ERROR, payload: error });
+
       console.error('Network Error:', error);
       // Handle network errors (e.g., show network error message to user)
     }
@@ -52,6 +127,7 @@ const AddressForm = ({
     const { value } = target;
     set(value);
   };
+  const handleResponse = payload => ({ type: SUCCESS, payload });
   const [formSubmitted, setFormSubmitted] = useState(false);
   const handleFormSubmit = async event => {
     event.preventDefault(); // Prevent default form submission behavior
@@ -69,18 +145,15 @@ const AddressForm = ({
       );
 
       const data = await response.json(); // Parse the JSON from the response
-
-      if (response.ok) {
-        setResponseMessage(`Success: ${data.message}`);
-      } else {
-        setResponseMessage(`Error: ${data.message}`);
-      }
+      handleResponse(data);
     } catch (error) {
       console.error('Error:', error);
       setResponseMessage('An unexpected error occurred.');
     }
   };
+  console.log({ state });
 
+  const renderResponse = state => (!state.ui ? <p>{state.ui}</p> : null);
   return (
     <div className="bg-transparent px-4 py-20">
       <div className="w-4xl rounded-lg border-2 border-[#2c2b2f] bg-[#26252a] p-8 ">
@@ -100,8 +173,12 @@ const AddressForm = ({
         <h2 className="mt-10 text-center text-2xl font-bold text-white">
           Check Eligibility
         </h2>
-        <p className="mx-12 mb-12 mt-4 text-center text-xs text-gray-400">
-          Click button below to check eligibility
+        <p
+          className={`mx-12 mb-12 mt-4 text-center ${state.status === IDLE ? 'text-gray-300' : state.isEligible ? 'text-lg font-bold text-green-300' : 'text-lg font-bold text-red-200'}`}
+        >
+          {state.status === FULFILLED
+            ? state.ui
+            : 'Click button below to check eligibility'}
         </p>
         <form className="space-y-4" onSubmit={handleFormSubmit}>
           <div>
@@ -112,6 +189,7 @@ const AddressForm = ({
               value={addressInput}
             />
           </div>
+
           <div className="flex w-full flex-col items-center">
             <motion.button
               type="submit"

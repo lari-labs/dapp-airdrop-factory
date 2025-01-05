@@ -10,12 +10,12 @@ const Navbar = () => (
     <div>
       <div className="flex items-stretch">
         <div
-          className={`w-full rounded bg-[#6b46c1] p-4 font-semibold text-white`}
+          className={`m-4 w-full rounded bg-[#6b46c1] p-4 font-semibold text-white`}
         >
           <NetworkDropdown />
         </div>
         <ConnectWalletButton
-          className={`w-full rounded bg-[#6b46c1] p-4 font-semibold text-white`}
+          className={`m-4 w-full rounded bg-[#6b46c1] p-4 font-semibold text-white`}
         />
         {/* <a href="#" aria-description="telegram logo">
           <svg
