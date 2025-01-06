@@ -30,7 +30,7 @@ const DisconnectedComponent = () => (
         <h2 className="font-kanit p-4 text-white">
           Tribbles Airdrop Redemption
         </h2>
-        <p className="text-small font-kanit text-center">
+        <p className="text-md font-kanit text-center text-white">
           Connect your wallet now and discover if you’re among the exclusive
           recipients of our highly anticipated token airdrop.
         </p>
