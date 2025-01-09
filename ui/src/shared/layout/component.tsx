@@ -1,10 +1,10 @@
-import NavigationMenu from '../navbar/component';
+import NavigationMenu from '../ bar/component';
 import Footer from '../footer/component';
 
 const Layout = ({ children }) => (
   <>
     <div className="wrapper">
-      <main className="main-content">{children}</main>
+      <main className="main-content font-poppins">{children}</main>
       <Footer />
     </div>
   </>

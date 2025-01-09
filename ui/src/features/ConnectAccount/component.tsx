@@ -4,7 +4,7 @@ import { List, LIST_ITEMS } from './types.js';
 import { Task } from '../../shared/helpers/adts.js';
 
 const mockFetchList = runAfterSeconds =>
-  new Task((reject, resolve) =>
+   Task((reject, resolve) =>
     setTimeout(() => resolve(LIST_ITEMS), runAfterSeconds * 1000),
   );
 

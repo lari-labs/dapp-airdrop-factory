@@ -31,12 +31,12 @@ const watchContract = (watcher: ChainStorageWatcher) => {
 };
 
 export const ContractProvider = ({ children }: PropsWithChildren) => {
-  const { chainStorageWatcher } = useAgoric();
+  const { chainStorageWatcher, address } = useAgoric();
   useEffect(() => {
     if (chainStorageWatcher) {
       watchContract(chainStorageWatcher);
     }
-  }, [chainStorageWatcher]);
+  }, [chainStorageWatcher, address]);
 
   return <>{children}</>;
 };

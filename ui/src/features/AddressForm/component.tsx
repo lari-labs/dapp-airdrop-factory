@@ -1,4 +1,4 @@
-import React, { useContext, useReducer, useState } from 'react';
+import React, { useContext, useEffect, useReducer, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ConnectWalletButton, useAgoric } from '@agoric/react-components';
 import CreateAccountButton from '../../components/Orchestration/CreateAccountButton.tsx';
@@ -24,6 +24,7 @@ const createStore = (reducerFn, initialState = {}) => {
 };
 const noop = () => {};
 const REQUEST_STATES = {
+  RESET: 'reset',
   IDLE: 'idle', // Initial state, no request has been made yet
   PENDING: 'pending', // Request is in progress
   SUCCESS: 'success', // Request completed successfully
@@ -40,20 +41,25 @@ const makeActionCreator = states =>
       payload,
     }),
   }));
-
+const initialState = {
+  status: REQUEST_STATES.IDLE,
+  isEligible: false,
+  response: {},
+};
 const actionCreators = makeActionCreator(REQUEST_STATES);
 
-const { ERROR, FULFILLED, REJECTED, PENDING, SUCCESS, IDLE } = REQUEST_STATES;
+const { ERROR, FULFILLED, REJECTED, RESET, PENDING, SUCCESS, IDLE } =
+  REQUEST_STATES;
 
 // const response = ({payload}) => payload === undefined ?
 
-const requestReducer = (state, action) => {
+const requestReducer = (state = initialState, action) => {
   const { type, payload } = action;
   switch (type) {
     case REJECTED:
       return {
         ...state,
-        ui: payload.message,
+        ui: 'User is ineliibles',
         isEligible: false,
         response: payload,
         status: FULFILLED,
@@ -66,6 +72,8 @@ const requestReducer = (state, action) => {
         response: payload,
         status: FULFILLED,
       };
+    case RESET:
+      return { ...initialState };
     case REQUEST_STATES.IDLE:
       return state;
     default:
@@ -83,12 +91,7 @@ const AddressForm = ({
 }) => {
   const { walletConnection } = useAgoric();
 
-  const [state, dispatch] = useReducer(requestReducer, {
-    status: REQUEST_STATES.IDLE,
-    isEligible: false,
-    response: {},
-  });
-  console.log({ actionCreators });
+  const [state, dispatch] = useReducer(requestReducer, initialState);
   const checkEligibility = async () => {
     try {
       const response = await fetch(
@@ -120,6 +123,11 @@ const AddressForm = ({
       // Handle network errors (e.g., show network error message to user)
     }
   };
+
+  useEffect(() => {
+    dispatch({ type: RESET });
+  }, [addressInput]);
+
   const [usernameInput, setUsername] = useState(username);
   const [responseMessage, setResponseMessage] = useState('');
   const setter = set => e => {
@@ -155,61 +163,59 @@ const AddressForm = ({
 
   const renderResponse = state => (!state.ui ? <p>{state.ui}</p> : null);
   return (
-    <div className="bg-transparent px-4 py-20">
-      <div className="w-4xl rounded-lg border-2 border-[#2c2b2f] bg-[#26252a] p-8 ">
-        <div className="mb-6 flex justify-center">
-          <div className="relative flex h-12 w-12 animate-pulse items-center justify-center rounded-2xl border-2 border-purple-500 bg-[#2b2836] p-3 shadow-lg shadow-purple-500/50">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 100 100"
-              className="h-full w-full"
-              fill="white"
-            >
-              <polygon points="50,15 90,80 10,80" />
-            </svg>
-          </div>
+    <div>
+      <div className="mb-6 flex justify-center">
+        <div className="relative flex h-12 w-12 animate-pulse items-center justify-center rounded-2xl border-2 border-purple-500 bg-[#2b2836] p-3 shadow-lg shadow-purple-500/50">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 100 100"
+            className="h-full w-full"
+            fill="white"
+          >
+            <polygon points="50,15 90,80 10,80" />
+          </svg>
+        </div>
+      </div>
+
+      <h2 className="mt-10 text-center text-2xl font-bold text-white ">
+        Check Eligibility
+      </h2>
+      <p
+        className={`mt-4 p-8 text-center ${state.status === IDLE ? 'text-gray-300' : state.isEligible ? 'text-lg font-bold text-green-300' : 'text-lg font-bold text-red-200'}`}
+      >
+        {state.status === FULFILLED
+          ? state.ui
+          : 'Click button below to check eligibility'}
+      </p>
+      <form className="space-y-4" onSubmit={handleFormSubmit}>
+        <div>
+          <input
+            type="text"
+            className="w-full rounded-lg border-2 border-[#2c2b2f] bg-[#1b1a1f] px-5 py-4 text-[0.9rem] text-white focus:animate-pulse focus:border-purple-500 focus:shadow-lg focus:shadow-purple-500/50 focus:outline-none"
+            readOnly
+            value={addressInput}
+          />
         </div>
 
-        <h2 className="mt-10 text-center text-2xl font-bold text-white">
-          Check Eligibility
-        </h2>
-        <p
-          className={`mx-12 mb-12 mt-4 text-center ${state.status === IDLE ? 'text-gray-300' : state.isEligible ? 'text-lg font-bold text-green-300' : 'text-lg font-bold text-red-200'}`}
-        >
-          {state.status === FULFILLED
-            ? state.ui
-            : 'Click button below to check eligibility'}
-        </p>
-        <form className="space-y-4" onSubmit={handleFormSubmit}>
-          <div>
-            <input
-              type="text"
-              className="w-full rounded-lg border-2 border-[#2c2b2f] bg-[#1b1a1f] px-5 py-4 text-[0.9rem] text-white focus:animate-pulse focus:border-purple-500 focus:shadow-lg focus:shadow-purple-500/50 focus:outline-none"
-              readOnly
-              value={addressInput}
-            />
-          </div>
-
-          <div className="flex w-full flex-col items-center">
-            <motion.button
-              type="submit"
-              onClick={checkEligibility}
-              className={`w-full rounded p-4 py-3 font-semibold text-white ${
-                formSubmitted ? 'bg-[#2c2b2f]' : 'bg-purple-500'
-              }`}
-              whileTap={{ scale: 0.95 }}
-              animate={
-                formSubmitted
-                  ? { backgroundColor: '#2c2b2f' }
-                  : { backgroundColor: '#6b46c1' }
-              }
-              transition={{ duration: 0.3 }}
-            >
-              {formSubmitted ? 'Check Eligibility' : 'Checking Eligibility'}
-            </motion.button>
-          </div>
-        </form>
-      </div>
+        <div className="flex w-full flex-col items-center">
+          <motion.button
+            type="submit"
+            onClick={checkEligibility}
+            className={`w-full rounded p-4 py-3 font-semibold text-white shadow-inner hover:shadow-lg ${
+              formSubmitted ? 'bg-[#2c2b2f]' : 'bg-purple-500'
+            }`}
+            whileTap={{ scale: 0.95 }}
+            animate={
+              formSubmitted
+                ? { backgroundColor: '#2c2b2f' }
+                : { backgroundColor: '#6b46c1' }
+            }
+            transition={{ duration: 0.3 }}
+          >
+            {formSubmitted ? 'Check Eligibility' : 'Checking Eligibility'}
+          </motion.button>
+        </div>
+      </form>
     </div>
   );
 };

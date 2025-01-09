@@ -1,3 +1,5 @@
+const { fontFamily } = require('tailwindcss/defaultTheme');
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -22,8 +24,12 @@ export default {
         local_dark_pink: '94388B',
       },
     },
+    fontFamily: {
+      poppins: ['Poppins', ...fontFamily.sans],
+      oswald: ['Oswald', ...fontFamily.sans],
+    },
   },
-  plugins: [require('daisyui')],
+  plugins: [require('daisyui'), require('@tailwindcss/typography')],
   daisyui: {
     prefix: 'daisyui-',
   },
