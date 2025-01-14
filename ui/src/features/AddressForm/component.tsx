@@ -6,6 +6,7 @@ import { makeOffer } from '../../components/Orchestration/MakeOffer.tsx';
 import { decodePubkey } from '@cosmjs/proto-signing';
 import { pubkeyToAgoricAddress } from '../../utils/check-sig';
 import { isDate } from 'util/types';
+import Modal from '../CheckEligibility/Modal/component.tsx';
 const createStore = (reducerFn, initialState = {}) => {
   let state = initialState;
   const getSlice = prop => state[prop];
@@ -42,6 +43,7 @@ const makeActionCreator = states =>
     }),
   }));
 const initialState = {
+  showModal: false,
   status: REQUEST_STATES.IDLE,
   isEligible: false,
   response: {},
@@ -60,6 +62,7 @@ const requestReducer = (state = initialState, action) => {
       return {
         ...state,
         ui: 'User is ineliibles',
+        showModal: true,
         isEligible: false,
         response: payload,
         status: FULFILLED,
@@ -67,13 +70,14 @@ const requestReducer = (state = initialState, action) => {
     case SUCCESS:
       return {
         ...state,
+        showModal: true,
         ui: payload.message,
         isEligible: true,
         response: payload,
         status: FULFILLED,
       };
     case RESET:
-      return { ...initialState };
+      return { ...initialState, showModal: false };
     case REQUEST_STATES.IDLE:
       return state;
     default:
@@ -128,7 +132,6 @@ const AddressForm = ({
     dispatch({ type: RESET });
   }, [addressInput]);
 
-  const [usernameInput, setUsername] = useState(username);
   const [responseMessage, setResponseMessage] = useState('');
   const setter = set => e => {
     const { target } = e;
@@ -153,6 +156,7 @@ const AddressForm = ({
       );
 
       const data = await response.json(); // Parse the JSON from the response
+      console.log({ data });
       handleResponse(data);
     } catch (error) {
       console.error('Error:', error);
@@ -214,6 +218,12 @@ const AddressForm = ({
           >
             {formSubmitted ? 'Check Eligibility' : 'Checking Eligibility'}
           </motion.button>
+          <Modal
+            onClose={() => dispatch({ type: RESET })}
+            isOpen={state.showModal}
+            status={state.status}
+            isEligible={state.isEligible}
+          />
         </div>
       </form>
     </div>

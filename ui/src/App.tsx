@@ -52,7 +52,7 @@ function App() {
             },
           },
         ]}
-        defaultChainName="agoricxnet"
+        defaultChainName="agoric-local"
       >
         <ContractProvider>
           <Outlet />
