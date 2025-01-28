@@ -2,7 +2,7 @@ import { Task, Either } from '../../../shared/helpers/adts.js';
 
 const safeFetch = (
   publicKey,
-  url = 'http://localhost:3000/api/verify-eligibility',
+  url = 'http://localhost:1010/api/verify-eligibility',
 ) =>
   fetch(url, {
     method: 'POST',
@@ -16,7 +16,7 @@ const fetchAirdropEligibility = async publicKey => {
   // Simulate API call
   try {
     const response = await fetch(
-      'http://localhost:3000/api/verify-eligibility',
+      'http://localhost:1010/api/verify-eligibility',
       {
         method: 'POST',
         headers: {

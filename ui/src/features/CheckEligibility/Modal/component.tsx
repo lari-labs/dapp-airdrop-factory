@@ -1,8 +1,38 @@
 // src/App.js
-import React, { useReducer, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAgoric } from '@agoric/react-components';
 
-const Modal1 = ({ isOpen, onClose, isEligible }) => {
+const generateInt = x => () => Math.floor(Math.random() * (x + 1));
+
+const createTestTier = generateInt(4); // ?
+const STRING_CONSTANTS = {
+  OFFER_TYPES: {
+    AGORIC_CONTRACT: 'agoricContract',
+    CONTRACT: 'contract',
+  },
+  OFFER_NAME: 'makeClaimTokensInvitation',
+  INSTANCE: {
+    PATH: 'tribblesAirdrop3',
+  },
+  ISSUERS: {
+    TRIBBLES: 'Tribbles3',
+    IST: 'IST',
+    BLD: 'BLD',
+  },
+};
+
+const makeGive = ({ keyword = 'Fee', brand, value = 5n }) => ({
+  give: { [keyword]: { brand, value } },
+});
+
+const Modal = ({ proof, isOpen, onClose, isEligible, publicKey, istBrand }) => {
+  const { walletConnection } = useAgoric();
+
+  const [notification, setNotification] = useState({});
+
+  // const tribblesWallet = useAgoric().purses.map(x => <li<b> </b></li>/li>)
+
   const containerVariants = {
     hidden: {
       opacity: 0,
@@ -39,6 +69,38 @@ const Modal1 = ({ isOpen, onClose, isEligible }) => {
     exit: { opacity: 0, transition: { duration: 0.2 } },
   };
 
+  useEffect(() => {
+    const handleEscapeKey = event => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+
+    // Cleanup listener when component unmounts
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [onClose]);
+  const handleRespone = ({ type, payload }) =>
+    type === 'error'
+      ? setNotification({
+          data: payload.data,
+          message: payload.text,
+          status: 'error',
+        })
+      : type === 'refunded'
+        ? setNotification({
+            data: payload.data,
+            message: payload.text,
+            status: 'refunded',
+          })
+        : setNotification({
+            data: payload.data,
+            message: payload.text,
+            status: 'success',
+          });
   const getModalContent = () => {
     if (isEligible) {
       return {
@@ -59,6 +121,70 @@ const Modal1 = ({ isOpen, onClose, isEligible }) => {
           'Claim your tokens below and begin your journey into the realms of intersubjectivity.',
         primaryButtonBg: 'bg-teal-700 hover:bg-teal-600',
         primaryButtonText: 'Claim Airdrop',
+        nextActionFn: async e => {
+          const giveArgs = { brand: istBrand, value: 5n };
+          console.log('------------------------');
+          console.log('give::', giveArgs);
+          const offerArgsValue = {
+            key: publicKey,
+            tier: createTestTier(),
+            proof,
+          };
+          console.log({
+            offerArgsValue,
+          });
+
+          console.log('offerArgsValue:::', offerArgsValue); /**
+           * invitationSpec,
+           * proposal,
+           * offerArgs,
+           *   id: `offer-${id}`,
+  invitationSpec: {
+    source: 'contract',
+    instance,
+    publicInvitationMaker: 'makeClaimTokensInvitation',
+  },
+  proposal: { give: { Fee: feeAmount } },
+           */
+
+          await walletConnection?.makeOffer(
+            {
+              source: STRING_CONSTANTS.OFFER_TYPES.AGORIC_CONTRACT,
+              instancePath: [STRING_CONSTANTS.INSTANCE.PATH],
+              callPipe: [[STRING_CONSTANTS.OFFER_NAME]],
+            },
+            { give: { Fee: giveArgs } },
+            { ...offerArgsValue },
+            (update: { status: string; data?: unknown }) => {
+              if (update.status === 'error') {
+                handleRespone({
+                  type: 'error',
+                  payload: {
+                    text: 'Error claiming tokens.',
+                    data: update.data,
+                  },
+                });
+                console.log(update);
+              }
+              if (update.status === 'accepted') {
+                handleRespone({
+                  type: 'success',
+                  payload: { text: 'Token claimsuccess', data: update.data },
+                });
+              }
+              if (update.status === 'refunded') {
+                handleRespone({
+                  type: 'refunded',
+                  payload: { text: 'Tokens refunded', data: update.data },
+                });
+              }
+              if (update.status === 'done') {
+                console.log('Done!', update);
+              }
+            },
+            `Offer-Airdrop-1`,
+          );
+        },
       };
     } else {
       return {
@@ -79,6 +205,7 @@ const Modal1 = ({ isOpen, onClose, isEligible }) => {
           'Some call-to-action to stay posted, informing users about Tribbles on DEXs',
         primaryButtonBg: 'bg-red-700 hover:bg-red-600',
         primaryButtonText: 'Check a different wallet',
+        nextActionFn: onClose,
       };
     }
   };
@@ -133,7 +260,7 @@ const Modal1 = ({ isOpen, onClose, isEligible }) => {
               <div className="flex flex-col items-center space-y-4 px-4 pb-6">
                 <button
                   className={`${content.primaryButtonBg} h-16 w-full rounded-lg px-4 py-2 text-xl font-semibold text-white`}
-                  onClick={onClose}
+                  onClick={content.nextActionFn}
                 >
                   {content.primaryButtonText}
                 </button>
@@ -145,9 +272,5 @@ const Modal1 = ({ isOpen, onClose, isEligible }) => {
     </AnimatePresence>
   );
 };
-
-const Modal = ({ status, isEligible, onClose, isOpen }) => (
-  <Modal1 isOpen={isOpen} onClose={onClose} isEligible={isEligible} />
-);
 
 export default Modal;

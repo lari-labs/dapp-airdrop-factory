@@ -1,29 +1,8 @@
-import React, { useContext, useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ConnectWalletButton, useAgoric } from '@agoric/react-components';
-import CreateAccountButton from '../../components/Orchestration/CreateAccountButton.tsx';
-import { makeOffer } from '../../components/Orchestration/MakeOffer.tsx';
-import { decodePubkey } from '@cosmjs/proto-signing';
-import { pubkeyToAgoricAddress } from '../../utils/check-sig';
-import { isDate } from 'util/types';
 import Modal from '../CheckEligibility/Modal/component.tsx';
-const createStore = (reducerFn, initialState = {}) => {
-  let state = initialState;
-  const getSlice = prop => state[prop];
-  const getStore = () => state;
-  const getState = () => state;
+import { useContractStore } from '../../store/contract.ts';
 
-  const dispatch = action => {
-    return (state = reducerFn(state, action));
-  };
-  return {
-    getStore,
-    getSlice,
-    getState,
-    dispatch,
-  };
-};
-const noop = () => {};
 const REQUEST_STATES = {
   RESET: 'reset',
   IDLE: 'idle', // Initial state, no request has been made yet
@@ -33,6 +12,7 @@ const REQUEST_STATES = {
   LOADING: 'loading', // Alternative to PENDING, used when loading data
   FULFILLED: 'fulfilled', // Alternative to SUCCESS, commonly used with Promise states
   REJECTED: 'rejected', // Alternative to ERROR, commonly used with Promise states
+  LOAD_PURSES_SUCCESS: 'load purses success',
 };
 
 const makeActionCreator = states =>
@@ -47,17 +27,31 @@ const initialState = {
   status: REQUEST_STATES.IDLE,
   isEligible: false,
   response: {},
+  purses: [],
 };
 const actionCreators = makeActionCreator(REQUEST_STATES);
 
-const { ERROR, FULFILLED, REJECTED, RESET, PENDING, SUCCESS, IDLE } =
-  REQUEST_STATES;
+const {
+  ERROR,
+  FULFILLED,
+  REJECTED,
+  RESET,
+  PENDING,
+  SUCCESS,
+  IDLE,
+  LOAD_PURSES_SUCCESS,
+} = REQUEST_STATES;
 
 // const response = ({payload}) => payload === undefined ?
 
 const requestReducer = (state = initialState, action) => {
   const { type, payload } = action;
   switch (type) {
+    case LOAD_PURSES_SUCCESS:
+      return {
+        ...state,
+        purses: payload.data,
+      };
     case REJECTED:
       return {
         ...state,
@@ -84,22 +78,14 @@ const requestReducer = (state = initialState, action) => {
       return state;
   }
 };
-const AddressForm = ({
-  itemPrice = 175,
-  username = '',
-  addressInput = '',
-  publicKey = '',
-  id = '',
-  removeHolder = noop,
-  showRemoveButton = false,
-}) => {
-  const { walletConnection } = useAgoric();
+const AddressForm = ({ purses, addressInput = '', publicKey = '' }) => {
+  const agoricStore = useContractStore();
 
   const [state, dispatch] = useReducer(requestReducer, initialState);
   const checkEligibility = async () => {
     try {
       const response = await fetch(
-        'http://localhost:3000/api/verify-eligibility',
+        'http://localhost:1010/api/verify-eligibility',
         {
           method: 'POST',
           headers: {
@@ -129,6 +115,10 @@ const AddressForm = ({
   };
 
   useEffect(() => {
+    dispatch(() => ({ type: LOAD_PURSES_SUCCESS, payload: { data: purses } }));
+  }, [purses]);
+
+  useEffect(() => {
     dispatch({ type: RESET });
   }, [addressInput]);
 
@@ -145,7 +135,7 @@ const AddressForm = ({
 
     try {
       const response = await fetch(
-        'http://localhost:3000/api/verify-eligibility',
+        'http://localhost:1010/api/verify-eligibility',
         {
           method: 'POST',
           headers: {
@@ -163,7 +153,6 @@ const AddressForm = ({
       setResponseMessage('An unexpected error occurred.');
     }
   };
-  console.log({ state });
 
   const renderResponse = state => (!state.ui ? <p>{state.ui}</p> : null);
   return (
@@ -219,10 +208,13 @@ const AddressForm = ({
             {formSubmitted ? 'Check Eligibility' : 'Checking Eligibility'}
           </motion.button>
           <Modal
+            publicKey={publicKey}
+            istBrand={agoricStore.brands.IST}
             onClose={() => dispatch({ type: RESET })}
             isOpen={state.showModal}
             status={state.status}
             isEligible={state.isEligible}
+            proof={state.response.payload}
           />
         </div>
       </form>

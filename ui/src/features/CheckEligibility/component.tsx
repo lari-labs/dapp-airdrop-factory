@@ -4,6 +4,7 @@ import AddressForm from '../AddressForm/component.js';
 import Navbar from '../../shared/navbar/component.js';
 import { toBase64 } from '@cosmjs/encoding';
 import DisconnectedComponent from '../Disconnected/component.js';
+import PurseDetails from '../Purses/component.tsx';
 
 const getPubkey = async ({ signingClient: { signer } }) => {
   const [account] = await signer.getAccounts();
@@ -17,7 +18,7 @@ const CheckEligibility = () => {
     proof: null,
     pubkey: '',
   });
-  const { walletConnection, address } = useAgoric();
+  const { walletConnection, address, ...agState } = useAgoric();
 
   useEffect(() => {
     getPubkey(walletConnection)
@@ -30,12 +31,17 @@ const CheckEligibility = () => {
       });
   }, [walletConnection]);
 
+  console.log({ agState });
   return (
     <>
       <Navbar />
       <div className="w-400 mt-20 flex h-96 items-center justify-center rounded-lg bg-transparent px-4 py-20">
         {address ? (
-          <AddressForm addressInput={address} publicKey={state.pubkey} />
+          <AddressForm
+            addressInput={address}
+            publicKey={state.pubkey}
+            purses={agState.purses}
+          />
         ) : (
           <DisconnectedComponent />
         )}
