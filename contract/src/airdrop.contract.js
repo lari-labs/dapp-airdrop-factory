@@ -41,6 +41,7 @@ const compose =
   (...fns) =>
   args =>
     fns.reduceRight((x, f) => f(x), args);
+
 const toAgoricBech = (data, limit) =>
   bech32.encode('agoric', bech32.toWords(data), limit);
 
@@ -275,10 +276,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   });
 
   const divideAmount = divideAmountByTwo(tokenBrand);
-  const handlePauseOffers = () => {
-    stateMachine.transitionTo(PAUSED);
-    void zcf.setOfferFilter([messagesObject.makeClaimInvitationDescription()]);
-  };
+
   await objectToMap(
     {
       merkleRoot,
@@ -334,7 +332,9 @@ export const start = async (zcf, privateArgs, baggage) => {
          */
         updateEpochDetails(absTime, epochIdx) {
           const { helper } = this.facets;
+          TT('epoch Ending:::', this.state.currentEpoch);
           this.state.currentEpoch = epochIdx;
+          TT('epoch starting:::', this.state.currentEpoch);
           if (this.state.currentEpoch === targetNumberOfEpochs) {
             void withdrawAndBurn(
               zcf,
@@ -490,19 +490,20 @@ export const start = async (zcf, privateArgs, baggage) => {
             const pauseInvitation = await zcf.makeInvitation(
               // Is this UserSeat argument necessary????
               /** @type {UserSeat} */
-              seat => {
+              (seat, offerArgs) => {
                 assert(
-                  stateMachine.canTransitionTo(PAUSED),
-                  `Illegal state transition. Can not transition from state: ${stateMachine.getStatus()} to state ${PAUSED}`,
+                  stateMachine.canTransitionTo(offerArgs.nextState),
+                  `Illegal state transition. Can not transition from state: ${stateMachine.getStatus()} to state ${offerArgs.nextState}`,
                 );
+                stateMachine.transitionTo(offerArgs.nextState);
                 seat.exit('Exiting pause invitation');
-                return handlePauseOffers();
+                zcf.setOfferFilter(offerArgs.filter);
+                void depositInvitation(adminDepositFacet);
               },
-              'pause contract',
+              'set offer filter',
             );
             E(depositFacet).receive(pauseInvitation);
           };
-
           const recievedPause = depositInvitation(adminDepositFacet);
           return recievedPause;
         },
@@ -515,7 +516,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     public: publicFacet,
   } = prepareContract(airdropStatusTracker);
 
-  console.log('START TIME', baggage.get('startTime'));
+  TT('START TIME', baggage.get('startTime'));
   void E(timer).setWakeup(
     baggage.get('startTime'),
     makeWaker('claimWindowOpenWaker', ({ absValue }) => {
