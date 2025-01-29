@@ -40,6 +40,7 @@ import { AmountMath } from '@agoric/ertp';
 import { Observable, Task } from '../../src/helpers/adts.js';
 import { createStore } from '../../src/tribbles/utils.js';
 import { head } from '../../src/helpers/objectTools.js';
+import { messagesObject, OPEN, PAUSED } from '../../src/airdrop.contract.js';
 
 const reducerFn = (state = [], action) => {
   const { type, payload } = action;
@@ -241,7 +242,7 @@ test.serial('makeClaimTokensInvitation happy path::', async t => {
       t.deepEqual(pauseInvitationDetails.brand, zoeBrand);
       t.deepEqual(
         head(pauseInvitationDetails.value).description,
-        'pause contract',
+        'set offer filter',
       );
     },
   });
@@ -262,6 +263,7 @@ test.serial('makeClaimTokensInvitation happy path::', async t => {
   const wallets = {
     alice: await walletFactory.makeSmartWallet(accounts[4].address),
     bob: await walletFactory.makeSmartWallet(accounts[2].address),
+    carol: await walletFactory.makeSmartWallet(accounts[10].address),
   };
   const { faucet, mintBrandedPayment } = makeStableFaucet({
     bundleCache,
@@ -281,7 +283,7 @@ test.serial('makeClaimTokensInvitation happy path::', async t => {
   const makeFeeAmount = () => AmountMath.make(brands.Fee, 5n);
 
   const [aliceTier, bobTier] = [0, 2];
-  const [alice, bob] = [
+  const [alice, bob, carol] = [
     [
       E(wallets.alice.offers).executeOffer(
         makeOfferSpec({ ...accounts[4], tier: 0 }, makeFeeAmount(), 0),
@@ -294,10 +296,17 @@ test.serial('makeClaimTokensInvitation happy path::', async t => {
       ),
       E(wallets.bob.peek).purseUpdates(brands.Tribbles),
     ],
+    [
+      E(wallets.carol.offers).executeOffer(
+        makeOfferSpec({ ...accounts[10], tier: bobTier }, makeFeeAmount(), 0),
+      ),
+      E(wallets.carol.peek).purseUpdates(brands.Tribbles),
+    ],
   ];
 
   const [alicesOfferUpdates, alicesPurse] = alice;
   const [bobsOfferUpdate, bobsPurse] = bob;
+  const [carolsOfferUpdate, carolsPurse] = carol;
   /**
    * @typedef {{value: { updated: string, status: { id: string, invitationSpec: import('../../tools/wallet-tools.js').InvitationSpec, proposal:Proposal, offerArgs: {key: string, proof: []}}}}} OfferResult
    */
@@ -381,6 +390,40 @@ test.serial('makeClaimTokensInvitation happy path::', async t => {
       );
     },
   });
+
+  await makeAsyncObserverObject(
+    carolsOfferUpdate,
+    'AsyncGenerator carolsOfferUpdate has fufilled its requirements.',
+  ).subscribe({
+    next: traceFn('CAROLS_OFFER_UPDATE:::: SUBSCRIBE.NEXT'),
+    error: traceFn('CAROLS_OFFER_UPDATE:::: SUBSCRIBE.ERROR'),
+    complete: ({ message, values }) => {
+      t.deepEqual(
+        message,
+        'AsyncGenerator carolsOfferUpdate has fufilled its requirements.',
+      );
+      t.deepEqual(values.length, 4);
+    },
+  });
+
+  await makeAsyncObserverObject(
+    carolsPurse,
+    'AsyncGenerator carolPurse has fufilled its requirements.',
+    1,
+  ).subscribe({
+    next: traceFn('TRIBBLES_WATCHER ### SUBSCRIBE.NEXT'),
+    error: traceFn('TRIBBLES_WATCHER #### SUBSCRIBE.ERROR'),
+    complete: ({ message, values }) => {
+      t.deepEqual(
+        message,
+        'AsyncGenerator carolPurse has fufilled its requirements.',
+      );
+      t.deepEqual(
+        head(values),
+        AmountMath.make(brands.Tribbles, AIRDROP_TIERS_STATIC[bobTier]),
+      );
+    },
+  });
 });
 
 test.serial(
@@ -443,7 +486,7 @@ test.serial(
         t.deepEqual(pauseInvitationDetails.brand, zoeBrand);
         t.deepEqual(
           head(pauseInvitationDetails.value).description,
-          'pause contract',
+          'set offer filter',
         );
       },
     });
@@ -486,11 +529,14 @@ test.serial(
       invitationSpec: {
         source: 'purse',
         instance,
-        description: 'pause contract',
+        description: 'set offer filter',
       },
       proposal: {},
+      offerArgs: {
+        nextState: PAUSED,
+        filter: [messagesObject.makeClaimInvitationDescription()],
+      },
     };
-
     const pauseOfferUpdater = E(adminWallet.offers).executeOffer(pauseOffer);
 
     await makeAsyncObserverObject(pauseOfferUpdater).subscribe({
@@ -498,6 +544,56 @@ test.serial(
       error: traceFn('pauseOfferUpdater## Error'),
       complete: traceFn('pauseOfferUpdater ## complete'),
     });
+
+    await makeAsyncObserverObject(
+      adminZoePurse,
+      'invitation recieved',
+      1,
+    ).subscribe({
+      next: traceFn('ADMIN_WALLET::: NEXT'),
+      error: traceFn('ADMIN WALLET::: ERROR'),
+      complete: async ({ message, values }) => {
+        const [pauseInvitationDetails] = values;
+        t.deepEqual(message, 'invitation recieved');
+        t.deepEqual(pauseInvitationDetails.brand, zoeBrand);
+        t.deepEqual(
+          head(pauseInvitationDetails.value).description,
+          'set offer filter',
+        );
+      },
+    });
+
+    const removePauseOffer = {
+      id: 'admin-pause-1',
+      invitationSpec: {
+        source: 'purse',
+        instance,
+        description: 'set offer filter',
+      },
+      proposal: {},
+      offerArgs: {
+        nextState: OPEN,
+        filter: [],
+      },
+    };
+    const removePauseOfferUpdater = E(adminWallet.offers).executeOffer(
+      removePauseOffer,
+    );
+
+    await makeAsyncObserverObject(removePauseOfferUpdater).subscribe({
+      next: traceFn('removePauseOfferUpdater ## next'),
+      error: traceFn('removePauseOfferUpdater## Error'),
+      complete: traceFn('removePauseOfferUpdater ## complete'),
+    });
+    const secondPauseOfferUpdater = E(adminWallet.offers).executeOffer(
+      pauseOffer,
+    );
+    await makeAsyncObserverObject(secondPauseOfferUpdater).subscribe({
+      next: traceFn('secondPauseOfferUpdater ## next'),
+      error: traceFn('secondPauseOfferUpdater## Error'),
+      complete: traceFn('secondPauseOfferUpdater ## complete'),
+    });
+
     const [aliceTier, bobTier] = [0, 2];
     const [alice, bob] = [
       [
