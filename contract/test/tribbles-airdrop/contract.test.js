@@ -219,10 +219,13 @@ test.serial('makeClaimTokensInvitation happy path::', async t => {
 
   const airdropPowers = extract(permit, powers);
 
+  const { chainTimerService } = airdropPowers.consume;
+
   await startAirdrop(airdropPowers, {
     options: {
       customTerms: {
         ...makeTerms(),
+        targetEpochLength: 100n,
         merkleRoot: merkleTreeObj.root,
       },
       tribblesAirdrop: { bundleID },
@@ -264,6 +267,7 @@ test.serial('makeClaimTokensInvitation happy path::', async t => {
     alice: await walletFactory.makeSmartWallet(accounts[4].address),
     bob: await walletFactory.makeSmartWallet(accounts[2].address),
     carol: await walletFactory.makeSmartWallet(accounts[10].address),
+    dave: await walletFactory.makeSmartWallet(accounts[5].address),
   };
   const { faucet, mintBrandedPayment } = makeStableFaucet({
     bundleCache,
@@ -282,8 +286,8 @@ test.serial('makeClaimTokensInvitation happy path::', async t => {
 
   const makeFeeAmount = () => AmountMath.make(brands.Fee, 5n);
 
-  const [aliceTier, bobTier] = [0, 2];
-  const [alice, bob, carol] = [
+  const [aliceTier, bobTier, carolTier, daveTier] = [0, 2, 2, 4];
+  const [alice, bob, carol, dave] = [
     [
       E(wallets.alice.offers).executeOffer(
         makeOfferSpec({ ...accounts[4], tier: 0 }, makeFeeAmount(), 0),
@@ -298,15 +302,22 @@ test.serial('makeClaimTokensInvitation happy path::', async t => {
     ],
     [
       E(wallets.carol.offers).executeOffer(
-        makeOfferSpec({ ...accounts[10], tier: bobTier }, makeFeeAmount(), 0),
+        makeOfferSpec({ ...accounts[10], tier: carolTier }, makeFeeAmount(), 0),
       ),
       E(wallets.carol.peek).purseUpdates(brands.Tribbles),
+    ],
+    [
+      E(wallets.dave.offers).executeOffer(
+        makeOfferSpec({ ...accounts[20], tier: daveTier }, makeFeeAmount(), 0),
+      ),
+      E(wallets.dave.peek).purseUpdates(brands.Tribbles),
     ],
   ];
 
   const [alicesOfferUpdates, alicesPurse] = alice;
   const [bobsOfferUpdate, bobsPurse] = bob;
   const [carolsOfferUpdate, carolsPurse] = carol;
+  const [davesOfferUpdater, davesPurse] = dave;
   /**
    * @typedef {{value: { updated: string, status: { id: string, invitationSpec: import('../../tools/wallet-tools.js').InvitationSpec, proposal:Proposal, offerArgs: {key: string, proof: []}}}}} OfferResult
    */
@@ -463,16 +474,21 @@ test.serial(
 
     const airdropPowers = extract(permit, powers);
 
+    const { chainTimerService } = airdropPowers.consume;
     await startAirdrop(airdropPowers, {
       options: {
         customTerms: {
           ...makeTerms(),
+          startTime: 250n,
+          targetEpochLength: 150n,
+          targetNumberOfEpochs: 3n,
           merkleRoot: merkleTreeObj.root,
         },
         tribblesAirdrop: { bundleID },
       },
     });
 
+    await E(chainTimerService).advanceBy(275n);
     await makeAsyncObserverObject(
       adminZoePurse,
       'invitation recieved',
@@ -525,7 +541,7 @@ test.serial(
     const makeFeeAmount = () => AmountMath.make(brands.Fee, 5n);
 
     const pauseOffer = {
-      id: 'admin-pause-1',
+      id: 'admin-pause-0',
       invitationSpec: {
         source: 'purse',
         instance,
@@ -564,7 +580,7 @@ test.serial(
     });
 
     const removePauseOffer = {
-      id: 'admin-pause-1',
+      id: 'admin-pause-5',
       invitationSpec: {
         source: 'purse',
         instance,
@@ -639,6 +655,7 @@ test.serial(
         t.deepEqual(head(values), AmountMath.make(brands.Tribbles, 0n));
       },
     });
+    await E(chainTimerService).tickN(900n);
     const [alicesSecondClaim] = [
       E(wallets.alice.offers).executeOffer(
         makeOfferSpec({ ...accounts[4], tier: 0 }, makeFeeAmount(), 0),

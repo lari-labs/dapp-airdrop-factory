@@ -128,7 +128,7 @@ export const customTermsShape = {
   initialPayoutValues: M.arrayOf(M.bigint()),
   tokenName: M.string(),
   targetTokenSupply: M.bigint(),
-  targetNumberOfEpochs: M.number(),
+  targetNumberOfEpochs: M.bigint(),
   startTime: M.bigint(),
   feeAmount: AmountShape,
   merkleRoot: M.string(),
@@ -173,14 +173,6 @@ const tokenMintFactory = async (
     brand,
     issuer,
   };
-};
-
-const withdrawAndBurn = async (zcf, seat, keyword, issuer, brand) => {
-  const remainingPayment = await withdrawFromSeat(zcf, seat, {
-    [keyword]: seat.getAmountAllocated(keyword, brand),
-  });
-  issuer.burn(remainingPayment);
-  return 'Successfully burned remaining tokens.';
 };
 
 /**
@@ -229,7 +221,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     targetEpochLength = oneDay,
     targetTokenSupply = 10_000_000n * SIX_DIGITS,
     tokenName = 'Tribbles',
-    targetNumberOfEpochs = 5,
+    targetNumberOfEpochs = 5n,
     merkleRoot,
     initialPayoutValues = AIRDROP_TIERS_STATIC.map(x => x * 1_000_000n),
     feeAmount,
@@ -336,13 +328,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           this.state.currentEpoch = epochIdx;
           TT('epoch starting:::', this.state.currentEpoch);
           if (this.state.currentEpoch === targetNumberOfEpochs) {
-            void withdrawAndBurn(
-              zcf,
-              tokenHolderSeat,
-              'Tokens',
-              tokenIssuer,
-              tokenBrand,
-            );
+            TT('Airdrop is ending!', this.state.currentEpoch);
             zcf.shutdown('Airdrop complete');
             stateMachine.transitionTo(EXPIRED);
           }
