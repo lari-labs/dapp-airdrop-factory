@@ -51,21 +51,24 @@ const publishBrandInfo = async (chainStorage, board, brand) => {
 /**
  * @typedef {{
  *   startTime: bigint;
- *   initialPayoutValues: any;
- *   targetNumberOfEpochs: number;
+ *   initialPayoutValues: Array;
+ *   targetNumberOfEpochs: bigint;
  *   targetEpochLength: bigint;
  *   targetTokenSupply: bigint;
  *   tokenName: string;
+ *   merkleRoot: string;
  * }} CustomContractTerms
  */
 
 export const defaultCustomTerms = {
-  startTime: 0n,
+  startTime: 180n,
   initialPayoutValues: harden(AIRDROP_TIERS_STATIC),
-  targetNumberOfEpochs: 5,
-  targetEpochLength: 12_000n / 2n,
+  targetNumberOfEpochs: 5n,
+  targetEpochLength: 86_000n / 2n, // 6 hour epoch
   targetTokenSupply: 10_000_000n * 1_000_000n,
-  tokenName: 'Tribbles',
+  tokenName: 'TribblesXnet3',
+  merkleRoot:
+    'f0efb14f1bd214f97e05f4dfa31bdea9991a3b75aad6a28245b619b4fe66e02e',
 };
 
 export const makeTerms = (terms = {}) => ({
@@ -75,7 +78,7 @@ export const makeTerms = (terms = {}) => ({
 
 harden(makeTerms);
 
-const contractName = 'tribblesAirdrop';
+export const contractName = 'tribblesAirdropXnet3';
 
 /**
  * Core eval script to start contract q
@@ -85,13 +88,13 @@ const contractName = 'tribblesAirdrop';
  *
  * @typedef {{
  *   brand: PromiseSpaceOf<{
- *     Tribbles: import('@agoric/ertp/src/types.js').Brand;
+ *     TribblesXnet3: import('@agoric/ertp/src/types.js').Brand;
  *   }>;
  *   issuer: PromiseSpaceOf<{
- *     Tribbles: import('@agoric/ertp/src/types.js').Issuer;
+ *     TribblesXnet3: import('@agoric/ertp/src/types.js').Issuer;
  *   }>;
- *   instance: { produce: { tribblesAirdrop: Instance } };
- *   installation: { consume: { tribblesAirdrop: Installation } };
+ *   instance: { produce: { tribblesAirdropXnet3: Instance } };
+ *   installation: { consume: { tribblesAirdropXnet3: Installation } };
  * }} AirdropSpace
  */
 
@@ -106,12 +109,12 @@ const defaultConfig = {
  *
  * @param {BootstrapPowers & AirdropSpace} powers
  * @param {{
- *   options: { tribblesAirdrop: { bundleID: string }; customTerms: any };
+ *   options: { tribblesAirdropXnet3: { bundleID: string }; customTerms: any };
  * }} config
  *   XXX export AirdropTerms record from contract
  */
 
-export const startAirdrop = async (powers, config = defaultConfig) => {
+export const startAirdrop = async (powers, config) => {
   trace('######## inside startAirdrop ###########');
   trace('config ::::', config);
   trace('----------------------------------');
@@ -136,11 +139,11 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
     },
     issuer: {
       consume: { IST: istIssuer },
-      produce: { Tribbles: produceTribblesIssuer },
+      produce: { TribblesXnet3: produceTribblesIssuer },
     },
     brand: {
       consume: { IST: istBrand },
-      produce: { Tribbles: produceTribblesBrand },
+      produce: { TribblesXnet3: produceTribblesBrand },
     },
   } = powers;
 
@@ -156,13 +159,15 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
   /** @type {CustomContractTerms} */
   const terms = {
     ...customTerms,
+    merkleRoot:
+      'f0efb14f1bd214f97e05f4dfa31bdea9991a3b75aad6a28245b619b4fe66e02e',
     feeAmount: harden({
       brand: feeBrand,
       value: 5n,
     }),
   };
 
-  trace('BEFORE assert(config?.options?.merkleRoot');
+  trace('starting contract with merkleRoot', terms.merkleRoot);
   assert(
     customTerms?.merkleRoot,
     'can not start contract without merkleRoot???',
@@ -177,7 +182,7 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
     issuerKeywordRecord: {
       Fee: issuerIST,
     },
-    issuerNames: ['Tribbles'],
+    issuerNames: ['TribblesXnet3'],
     privateArgs: await deeplyFulfilledObject(
       harden({
         timer,
@@ -194,8 +199,8 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
   const instanceTerms = await E(zoe).getTerms(instance);
   trace('instanceTerms::', instanceTerms);
   const {
-    brands: { Tribbles: tribblesBrand },
-    issuers: { Tribbles: tribblesIssuer },
+    brands: { TribblesXnet3: tribblesBrand },
+    issuers: { TribblesXnet3: tribblesIssuer },
   } = instanceTerms;
 
   produceInstance.reset();
@@ -221,9 +226,9 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
   const tribblesMint = await E(creatorFacet).getBankAssetMint();
 
   await E(bankManager).addAsset(
-    'utribbles',
-    'Tribbles',
-    'Tribbles Intersubjective Token',
+    'utribblesxnet3',
+    'TribblesXnet3',
+    'TribblesXnet3 Intersubjective Token',
     harden({
       issuer: tribblesIssuer,
       brand: tribblesBrand,
@@ -254,18 +259,18 @@ const airdropManifest = harden({
       produce: { [contractName]: true },
     },
     issuer: {
-      consume: { IST: true, Tribbles: true },
-      produce: { Tribbles: true },
+      consume: { IST: true, TribblesXnet3: true },
+      produce: { TribblesXnet3: true },
     },
     brand: {
-      consume: { IST: true, Tribbles: true },
-      produce: { Tribbles: true },
+      consume: { IST: true, TribblesXnet3: true },
+      produce: { TribblesXnet3: true },
     },
     instance: { produce: { [contractName]: true } },
   },
 });
 
-export const getManifestForAirdrop = (
+export const getManifestForTribblesXnet = (
   { restoreRef },
   {
     installKeys,
@@ -273,7 +278,7 @@ export const getManifestForAirdrop = (
       customTerms: {
         ...defaultCustomTerms,
         merkleRoot:
-          '0f7e7eeb1c6e5dec518ec2534a4fc55738af04b5379a052c5e3fe836f451ccd0',
+          'f0efb14f1bd214f97e05f4dfa31bdea9991a3b75aad6a28245b619b4fe66e02e',
       },
     },
   },
@@ -284,7 +289,7 @@ export const getManifestForAirdrop = (
   return harden({
     manifest: airdropManifest,
     installations: {
-      tribblesAirdrop: restoreRef(installKeys.tribblesAirdrop),
+      tribblesAirdropXnet3: restoreRef(installKeys.tribblesAirdropXnet3),
     },
     options,
   });
@@ -292,31 +297,31 @@ export const getManifestForAirdrop = (
 
 export const permit = Object.values(airdropManifest)[0];
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async ({ publishRef, install }) => {
-  return harden({
-    // Somewhat unorthodox, source the exports from this builder module
-    sourceSpec:
-      '/workspaces/dapp-ertp-airdrop/contract/src/airdrop.proposal.js',
-    getManifestCall: [
-      'getManifestForAirdrop',
-      {
-        installKeys: {
-          tribblesAirdrop: publishRef(
-            install(
-              '/workspaces/dapp-ertp-airdrop/contract/src/airdrop.contract.js',
-            ),
-          ),
-        },
-      },
-    ],
-  });
-};
+// /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+// export const defaultProposalBuilder = async ({ publishRef, install }) => {
+//   return harden({
+//     // Somewhat unorthodox, source the exports from this builder module
+//     sourceSpec:
+//       '/workspaces/dapp-ertp-airdrop/contract/src/airdrop.proposal.js',
+//     getManifestCall: [
+//       'getManifestForAirdrop',
+//       {
+//         installKeys: {
+//           tribblesAirdropXnet3: publishRef(
+//             install(
+//               '/workspaces/dapp-ertp-airdrop/contract/src/airdrop.contract.js',
+//             ),
+//           ),
+//         },
+//       },
+//     ],
+//   });
+// };
 
-export default async (homeP, endowments) => {
-  // import dynamically so the module can work in CoreEval environment
-  const dspModule = await import('@agoric/deploy-script-support');
-  const { makeHelpers } = dspModule;
-  const { writeCoreEval } = await makeHelpers(homeP, endowments);
-  await writeCoreEval(startAirdrop.name, defaultProposalBuilder);
-};
+// export default async (homeP, endowments) => {
+//   // import dynamically so the module can work in CoreEval environment
+//   const dspModule = await import('@agoric/deploy-script-support');
+//   const { makeHelpers } = dspModule;
+//   const { writeCoreEval } = await makeHelpers(homeP, endowments);
+//   await writeCoreEval(startAirdrop.name, defaultProposalBuilder);
+// };

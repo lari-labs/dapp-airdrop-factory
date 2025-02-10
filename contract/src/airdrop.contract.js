@@ -123,6 +123,18 @@ export const privateArgsShape = {
 };
 harden(privateArgsShape);
 
+/**
+ * @typedef {{
+ *   startTime: bigint;
+ *   initialPayoutValues: Array;
+ *   targetNumberOfEpochs: bigint;
+ *   targetEpochLength: bigint;
+ *   targetTokenSupply: bigint;
+ *   tokenName: string;
+ *   merkleRoot: string;
+ * }} CustomContractTerms
+ */
+
 export const customTermsShape = {
   targetEpochLength: M.bigint(),
   initialPayoutValues: M.arrayOf(M.bigint()),
@@ -193,6 +205,9 @@ const withdrawAndBurn = async (zcf, seat, keyword, issuer, brand) => {
 const createFutureTs = (sourceTs, inputTs) =>
   TimeMath.absValue(sourceTs) + TimeMath.relValue(inputTs);
 
+const inspectObject = o =>
+  Object.entries(o).map(([k, v]) => ({ key: k, value: v })); // ?
+
 const SIX_DIGITS = 1_000_000n;
 /**
  * @param {ZCF<ContractTerms>} zcf
@@ -207,6 +222,23 @@ export const start = async (zcf, privateArgs, baggage) => {
   // XXX why is type not inferred from makeDurableZone???
   /** @type {Zone} */
   const zone = makeDurableZone(baggage, 'rootZone');
+
+  const terms = zcf.getTerms();
+
+  /** @type {import('./types.js').ContractTerms} */
+  const {
+    startTime = 120n,
+    targetEpochLength = oneDay,
+    targetTokenSupply = 10_000_000n * SIX_DIGITS,
+    tokenName = 'Tribbles',
+    targetNumberOfEpochs,
+    merkleRoot,
+    initialPayoutValues = AIRDROP_TIERS_STATIC.map(x => x * 1_000_000n),
+    feeAmount,
+    _brands,
+  } = terms;
+
+  TT('Object');
 
   const { timer, namesByAddress } = privateArgs;
 
@@ -223,18 +255,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     return df;
   };
 
-  /** @type {ContractTerms} */
-  const {
-    startTime = 120n,
-    targetEpochLength = oneDay,
-    targetTokenSupply = 10_000_000n * SIX_DIGITS,
-    tokenName = 'Tribbles',
-    targetNumberOfEpochs = 5,
-    merkleRoot,
-    initialPayoutValues = AIRDROP_TIERS_STATIC.map(x => x * 1_000_000n),
-    feeAmount,
-    _brands,
-  } = zcf.getTerms();
+  TT('inspecting terms:::', inspectObject(terms));
 
   const airdropStatusTracker = zone.mapStore('airdrop claim window status');
 
