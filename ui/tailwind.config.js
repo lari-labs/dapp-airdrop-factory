@@ -1,4 +1,6 @@
-const { fontFamily } = require('tailwindcss/defaultTheme');
+import { fontFamily } from 'tailwindcss/defaultTheme';
+import daisyui from 'daisyui';
+import typography from '@tailwindcss/typography';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -11,9 +13,11 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        baumans: ['"Baumans", system-ui'],
-        kanit: ['"Gemunu Libre", sans-serif'],
-        ksg: ['"ksg", sans-serif'],
+        baumans: ['Baumans', ...fontFamily.sans],
+        kanit: ['Gemunu Libre', ...fontFamily.sans],
+        ksg: ['ksg', ...fontFamily.serif],
+        poppins: ['Poppins', ...fontFamily.sans],
+        oswald: ['Oswald', ...fontFamily.sans],
       },
 
       colors: {
@@ -24,12 +28,9 @@ export default {
         local_dark_pink: '94388B',
       },
     },
-    fontFamily: {
-      poppins: ['Poppins', ...fontFamily.sans],
-      oswald: ['Oswald', ...fontFamily.sans],
-    },
+    fontFamily: {},
   },
-  plugins: [require('daisyui'), require('@tailwindcss/typography')],
+  plugins: [daisyui, typography],
   daisyui: {
     prefix: 'daisyui-',
   },

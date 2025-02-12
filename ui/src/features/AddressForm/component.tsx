@@ -2,6 +2,7 @@ import { useEffect, useReducer, useState } from 'react';
 import { motion } from 'framer-motion';
 import Modal from '../CheckEligibility/Modal/component.tsx';
 import { useContractStore } from '../../store/contract.ts';
+import { Card } from '../Purses/component.tsx';
 
 const REQUEST_STATES = {
   RESET: 'reset',
@@ -78,9 +79,13 @@ const requestReducer = (state = initialState, action) => {
       return state;
   }
 };
-const AddressForm = ({ purses, addressInput = '', publicKey = '' }) => {
+const AddressForm = ({ purses = [], addressInput = '', publicKey = '' }) => {
   const agoricStore = useContractStore();
 
+  const tribblesPurse = purses?.find(
+    x => x.brand === agoricStore.brands.Tribbles3,
+  );
+  console.log({ tribblesPurse });
   const [state, dispatch] = useReducer(requestReducer, initialState);
   const checkEligibility = async () => {
     try {
@@ -113,10 +118,6 @@ const AddressForm = ({ purses, addressInput = '', publicKey = '' }) => {
       // Handle network errors (e.g., show network error message to user)
     }
   };
-
-  useEffect(() => {
-    dispatch(() => ({ type: LOAD_PURSES_SUCCESS, payload: { data: purses } }));
-  }, [purses]);
 
   useEffect(() => {
     dispatch({ type: RESET });
@@ -154,6 +155,9 @@ const AddressForm = ({ purses, addressInput = '', publicKey = '' }) => {
     }
   };
 
+  const formatPurseValue = ({ currentAmount, displayInfo }) =>
+    Number(currentAmount.value) / Math.pow(10, displayInfo.decimalPlaces);
+
   const renderResponse = state => (!state.ui ? <p>{state.ui}</p> : null);
   return (
     <div>
@@ -170,54 +174,71 @@ const AddressForm = ({ purses, addressInput = '', publicKey = '' }) => {
         </div>
       </div>
 
-      <h2 className="mt-10 text-center text-2xl font-bold text-white ">
-        Check Eligibility
-      </h2>
-      <p
-        className={`mt-4 p-8 text-center ${state.status === IDLE ? 'text-gray-300' : state.isEligible ? 'text-lg font-bold text-green-300' : 'text-lg font-bold text-red-200'}`}
-      >
-        {state.status === FULFILLED
-          ? state.ui
-          : 'Click button below to check eligibility'}
-      </p>
-      <form className="space-y-4" onSubmit={handleFormSubmit}>
-        <div>
-          <input
-            type="text"
-            className="w-full rounded-lg border-2 border-[#2c2b2f] bg-[#1b1a1f] px-5 py-4 text-[0.9rem] text-white focus:animate-pulse focus:border-purple-500 focus:shadow-lg focus:shadow-purple-500/50 focus:outline-none"
-            readOnly
-            value={addressInput}
-          />
-        </div>
-
-        <div className="flex w-full flex-col items-center">
-          <motion.button
-            type="submit"
-            onClick={checkEligibility}
-            className={`w-full rounded p-4 py-3 font-semibold text-white shadow-inner hover:shadow-lg ${
-              formSubmitted ? 'bg-[#2c2b2f]' : 'bg-purple-500'
-            }`}
-            whileTap={{ scale: 0.95 }}
-            animate={
-              formSubmitted
-                ? { backgroundColor: '#2c2b2f' }
-                : { backgroundColor: '#6b46c1' }
-            }
-            transition={{ duration: 0.3 }}
+      {!(purses && tribblesPurse?.currentAmount?.value > 0n) ? (
+        <>
+          <h2 className="mt-10 text-center text-2xl font-bold text-white ">
+            Check Eligibility
+          </h2>
+          <p
+            className={`mt-4 p-8 text-center ${state.status === IDLE ? 'text-gray-300' : state.isEligible ? 'text-lg font-bold text-green-300' : 'text-lg font-bold text-red-200'}`}
           >
-            {formSubmitted ? 'Check Eligibility' : 'Checking Eligibility'}
-          </motion.button>
-          <Modal
-            publicKey={publicKey}
-            istBrand={agoricStore.brands.IST}
-            onClose={() => dispatch({ type: RESET })}
-            isOpen={state.showModal}
-            status={state.status}
-            isEligible={state.isEligible}
-            proof={state.response.payload}
-          />
-        </div>
-      </form>
+            'Click button below to check eligibility'
+          </p>
+          <form className="space-y-4" onSubmit={handleFormSubmit}>
+            <div>
+              <input
+                type="text"
+                className="w-full rounded-lg border-2 border-[#2c2b2f] bg-[#1b1a1f] px-5 py-4 text-[0.9rem] text-white focus:animate-pulse focus:border-purple-500 focus:shadow-lg focus:shadow-purple-500/50 focus:outline-none"
+                readOnly
+                value={addressInput}
+              />
+            </div>
+
+            <div className="flex w-full flex-col items-center">
+              <motion.button
+                type="submit"
+                onClick={checkEligibility}
+                className={`w-full rounded p-4 py-3 font-semibold text-white shadow-inner hover:shadow-lg ${
+                  formSubmitted ? 'bg-[#2c2b2f]' : 'bg-purple-500'
+                }`}
+                whileTap={{ scale: 0.95 }}
+                animate={
+                  formSubmitted
+                    ? { backgroundColor: '#2c2b2f' }
+                    : { backgroundColor: '#6b46c1' }
+                }
+                transition={{ duration: 0.3 }}
+              >
+                {formSubmitted ? 'Check Eligibility' : 'Checking Eligibility'}
+              </motion.button>
+              <Modal
+                publicKey={publicKey}
+                istBrand={agoricStore.brands.IST}
+                onClose={() => dispatch({ type: RESET })}
+                isOpen={state.showModal}
+                status={state.status}
+                isEligible={state.isEligible}
+                proof={state.response.payload}
+              />
+            </div>
+          </form>
+        </>
+      ) : (
+        <>
+          <div className="flex flex-col">
+            <h2 className="mt-10 text-center text-2xl font-bold text-white ">
+              Airdrop Claimed!
+            </h2>{' '}
+          </div>
+          <p className="mt-4 text-2xl text-white">
+            Current balance:{' '}
+            {formatPurseValue({
+              displayInfo: tribblesPurse.displayInfo,
+              currentAmount: tribblesPurse.currentAmount,
+            })}
+          </p>
+        </>
+      )}
     </div>
   );
 };

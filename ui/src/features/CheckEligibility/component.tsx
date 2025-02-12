@@ -5,6 +5,8 @@ import Navbar from '../../shared/navbar/component.js';
 import { toBase64 } from '@cosmjs/encoding';
 import DisconnectedComponent from '../Disconnected/component.js';
 import PurseDetails from '../Purses/component.tsx';
+import { usePurse } from '../../hooks/usePurse.ts';
+import Form from '../Form/component';
 
 const getPubkey = async ({ signingClient: { signer } }) => {
   const [account] = await signer.getAccounts();
@@ -35,12 +37,12 @@ const CheckEligibility = () => {
   return (
     <>
       <Navbar />
-      <div className="w-400 mt-20 flex h-96 items-center justify-center rounded-lg bg-transparent px-4 py-20">
+      <div className="mt-20 flex h-96 items-center justify-center rounded-lg bg-transparent px-4 py-20">
         {address ? (
-          <AddressForm
-            addressInput={address}
-            publicKey={state.pubkey}
-            purses={agState.purses}
+          <Form
+            address={address}
+            walletConnection={walletConnection}
+            pubkey={state.pubkey}
           />
         ) : (
           <DisconnectedComponent />

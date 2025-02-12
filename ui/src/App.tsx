@@ -22,45 +22,43 @@ const AnimateWrapper = ({ children }) => (
     {children}
   </motion.div>
 );
-function App() {
-  return (
-    <Layout>
-      <AgoricProvider
-        // @ts-expect-error XXX _chainWalletMap' is protected but type 'MainWalletBase' is not a class derived from 'MainWalletBase
-        wallets={wallets.extension}
-        agoricNetworkConfigs={[
-          {
-            testChain: {
-              chainId: 'agoriclocal',
-              chainName: 'agoric-local',
-              iconUrl: 'agoric.svg', // Optional icon for dropdown display
-            },
-            apis: {
-              rest: ['http://localhost:1317'],
-              rpc: ['http://localhost:26657'],
-            },
+const App = () => (
+  <Layout>
+    <AgoricProvider
+      // @ts-expect-error XXX _chainWalletMap' is protected but type 'MainWalletBase' is not a class derived from 'MainWalletBase
+      wallets={wallets.extension}
+      agoricNetworkConfigs={[
+        {
+          testChain: {
+            chainId: 'agoriclocal',
+            chainName: 'agoric-local',
+            iconUrl: 'agoric.svg', // Optional icon for dropdown display
           },
-          {
-            testChain: {
-              chainId: 'agoricxnet-14',
-              chainName: 'agoricxnet',
-              iconUrl: 'agoric.svg', // Optional icon for dropdown display
-            },
-            apis: {
-              rest: ['https://xnet.api.agoric.net'],
-              rpc: ['https://xnet.rpc.agoric.net'],
-            },
+          apis: {
+            rest: ['http://localhost:1317'],
+            rpc: ['http://localhost:26657'],
           },
-        ]}
-        defaultChainName="agoricxnet"
-      >
-        <ContractProvider>
-          <Outlet />
-        </ContractProvider>
-      </AgoricProvider>
-    </Layout>
-  );
-}
+        },
+        {
+          testChain: {
+            chainId: 'agoricxnet-14',
+            chainName: 'agoricxnet',
+            iconUrl: 'agoric.svg', // Optional icon for dropdown display
+          },
+          apis: {
+            rest: ['https://xnet.api.agoric.net'],
+            rpc: ['https://xnet.rpc.agoric.net'],
+          },
+        },
+      ]}
+      defaultChainName="agoricxnet"
+    >
+      <ContractProvider>
+        <Outlet />
+      </ContractProvider>
+    </AgoricProvider>
+  </Layout>
+);
 
 const AppRoutes = () => (
   <BrowserRouter>
