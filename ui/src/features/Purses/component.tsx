@@ -10,7 +10,7 @@ export const Card = ({
   title = 'Default Title',
   description = '0n',
 }) => (
-  <div className="w-96 rounded-lg border bg-white p-6 shadow-xl ">
+  <div className="w-full rounded-lg border bg-transparent p-8 shadow-2xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.7)] backdrop-blur-sm">
     <div className="flex items-center">
       <img
         src={imageUrl}
@@ -18,10 +18,12 @@ export const Card = ({
         className="mr-4 h-12 w-12 rounded-full"
       />
       <div className="flex flex-col">
-        <h2 className="text-xl font-bold">{title}</h2>
+        <h2 className="text-4xl font-bold">{title}</h2>
       </div>
     </div>
-    <p className="mt-4 text-gray-600">Current balance: {description}</p>
+    <p className="mt-4 text-lg text-white">
+      $TRIBBLES Claimed: <b> {description}</b>
+    </p>
   </div>
 );
 const PurseDetails = ({ purses = [], brands }) => {

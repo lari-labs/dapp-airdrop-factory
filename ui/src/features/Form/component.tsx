@@ -9,8 +9,9 @@ import {
 } from 'lucide-react';
 import { useEligibility } from '../CheckEligibility/useEligibility.tsx';
 import { useContractStore } from '../../store/contract.ts';
-import { usePurse } from '../../hooks/usePurse';
-
+import { usePurse } from '../../hooks/usePurse.ts';
+import { Card } from '../Purses/component.tsx';
+import { formatPurseValue } from '../../shared/utilities/index.js';
 // Simulated API check - in reality this would be a real API call
 const fakeApiCheck = async (name: string): Promise<boolean> => {
   await new Promise(resolve => setTimeout(resolve, 3000));
@@ -37,6 +38,7 @@ const STRING_CONSTANTS = {
 };
 const Form = ({ pubkey, address, walletConnection, istBrand }) => {
   const { state, checkEligibility, resetEligibility } = useEligibility();
+  const tribblesPurse = usePurse('XnetTribbles');
   console.log('Form ::: state', state);
   const contractStore = useContractStore();
   const [step, setStep] = useState(1);
@@ -52,14 +54,6 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
     setResponse({ type, payload });
   };
 
-  const formatPurseValue = ({ currentAmount, displayInfo }) =>
-    Number(currentAmount.value) / Math.pow(10, displayInfo.decimalPlaces);
-
-  const [tribblesPurse, istPurse] = ['XnetTribbles', 'IST'].map(usePurse);
-
-  console.log({ tribblesPurse, istPurse });
-
-  console.log({ response });
   const submitOffer = async () => {
     await walletConnection?.makeOffer(
       {
@@ -81,29 +75,27 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
             },
           });
           console.log(update);
-          setStep(3);
         }
         if (update.status === 'accepted') {
           handleResponse({
             type: 'success',
             payload: { text: 'Token claimsuccess', data: update.data },
           });
-          setStep(3);
         }
         if (update.status === 'refunded') {
           handleResponse({
             type: 'refunded',
             payload: { text: 'Tokens refunded', data: update.data },
           });
-          setStep(3);
         }
         if (update.status === 'done') {
           console.log('Done!', update);
-          setStep(3);
         }
       },
       `Offer-Airdrop-1`,
     );
+
+    await setStep(3);
   };
   const handleSubmitName = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,7 +117,7 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-xl rounded-2xl bg-white bg-white/90 p-8 shadow-[0_20px_50px_rgba(8,_112,_184,_0.7)] backdrop-blur-sm"
+        className="w-full max-w-xl rounded-2xl bg-transparent p-8 shadow-[0_20px_50px_rgba(8,_112,_184,_0.7)] backdrop-blur-sm"
       >
         {/* Progress Bar */}
         <div className="mb-8">
@@ -137,7 +129,7 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
               transition={{ duration: 0.5 }}
             />
           </div>
-          <div className="mt-2 flex justify-between text-sm text-gray-600">
+          <div className="mt-2 flex justify-between text-sm text-white">
             <span>Start</span>
             <span>Verify</span>
             <span>Claim</span>
@@ -154,13 +146,13 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
               onSubmit={handleSubmitName}
               className="space-y-6"
             >
-              <h2 className="text-2xl font-bold text-gray-800">
+              <h2 className="text-2xl font-bold text-white">
                 Check Eligibility
               </h2>
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-white"
                 >
                   Wallet Address
                 </label>
@@ -168,7 +160,7 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
                   type="text"
                   id="name"
                   value={address}
-                  className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-gray-800 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                  className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-purple-500 focus:ring-purple-500"
                   disabled
                 />
               </div>
@@ -197,26 +189,20 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
             >
               {state.isEligible ? (
                 <>
-                  <div className="flex items-center space-x-2 text-green-600">
-                    <CheckCircle2 size={24} />
-                    <h2 className="text-2xl font-bold">You're Eligible!</h2>
+                  <div className="flex flex-col items-center space-x-2 text-green-600">
+                    <div className="flex items-center">
+                      <CheckCircle2 size={24} />
+                      <h2 className="p-4 text-3xl font-bold">
+                        You're Eligible!
+                      </h2>
+                    </div>
                   </div>
-                  <p className="text-gray-600">
+                  <p className="text-center">
                     Congratulations! You can now proceed to claim your tokens.
                   </p>
-                  {!walletConnection.isSmartWalletProvisioned ? (
-                    <p className="text-red-600">
-                      Current wallet does not have a smart wallet provisioned.
-                    </p>
-                  ) : istPurse.currentAmount.value < 5n ? (
-                    <p className="text-red-600">
-                      Insufficient IST balance. Please add more IST to your
-                      wallet.
-                    </p>
-                  ) : null}
                   <button
                     onClick={submitOffer}
-                    disabled={isLoading || istPurse.currentAmount.value < 5n}
+                    disabled={isLoading}
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-3 text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
                   >
                     {isLoading ? (
@@ -267,7 +253,8 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
                   Tokens Claimed Successfully!
                 </h2>
                 <p className="text-gray-600">
-                  Your tokens have been successfully claimed. You can now claim
+                  You have successfully claimed{' '}
+                  {formatPurseValue(tribblesPurse)} $TRIBBLES. You can now claim
                   more tokens if you'd like.
                 </p>
               </div>

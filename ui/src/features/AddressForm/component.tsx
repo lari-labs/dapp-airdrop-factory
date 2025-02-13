@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import Modal from '../CheckEligibility/Modal/component.tsx';
 import { useContractStore } from '../../store/contract.ts';
 import { Card } from '../Purses/component.tsx';
-
+import { formatPurseValue } from '../../shared/utilities/index.js';
 const REQUEST_STATES = {
   RESET: 'reset',
   IDLE: 'idle', // Initial state, no request has been made yet
@@ -154,9 +154,6 @@ const AddressForm = ({ purses = [], addressInput = '', publicKey = '' }) => {
       setResponseMessage('An unexpected error occurred.');
     }
   };
-
-  const formatPurseValue = ({ currentAmount, displayInfo }) =>
-    Number(currentAmount.value) / Math.pow(10, displayInfo.decimalPlaces);
 
   const renderResponse = state => (!state.ui ? <p>{state.ui}</p> : null);
   return (

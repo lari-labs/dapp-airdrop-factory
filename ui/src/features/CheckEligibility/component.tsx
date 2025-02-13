@@ -7,6 +7,7 @@ import DisconnectedComponent from '../Disconnected/component.js';
 import PurseDetails from '../Purses/component.tsx';
 import { usePurse } from '../../hooks/usePurse.ts';
 import Form from '../Form/component';
+import { useContractStore } from '../../store/contract.ts';
 
 const getPubkey = async ({ signingClient: { signer } }) => {
   const [account] = await signer.getAccounts();
@@ -21,6 +22,8 @@ const CheckEligibility = () => {
     pubkey: '',
   });
   const { walletConnection, address, ...agState } = useAgoric();
+
+  const { brands } = useContractStore();
 
   useEffect(() => {
     getPubkey(walletConnection)
@@ -43,6 +46,7 @@ const CheckEligibility = () => {
             address={address}
             walletConnection={walletConnection}
             pubkey={state.pubkey}
+            istBrand={brands?.IST}
           />
         ) : (
           <DisconnectedComponent />
