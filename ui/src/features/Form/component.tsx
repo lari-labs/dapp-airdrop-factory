@@ -6,6 +6,7 @@ import {
   XCircle,
   ArrowRight,
   RefreshCw,
+  Ban,
 } from 'lucide-react';
 import { useEligibility } from '../CheckEligibility/useEligibility.tsx';
 import { useContractStore } from '../../store/contract.ts';
@@ -17,7 +18,78 @@ const fakeApiCheck = async (name: string): Promise<boolean> => {
   await new Promise(resolve => setTimeout(resolve, 3000));
   return ['John', 'Jane', 'Alice', 'Bob', 'Nicole'].includes(name);
 };
-
+const ClaimResponse = ({ response, resetForm, tribblesPurse }) =>
+  response.type === 'success' ? (
+    <>
+      <div className="flex flex-col items-center space-y-4">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+        >
+          <CheckCircle2 size={64} className="text-green-600" />
+        </motion.div>
+        <h2 className="text-2xl font-bold text-white">
+          Tokens Claimed Successfully!
+        </h2>
+        <p className="text-white">
+          You have successfully claimed {formatPurseValue(tribblesPurse)}{' '}
+          $TRIBBLES. You can now claim more tokens if you'd like.
+        </p>
+      </div>
+      <button
+        onClick={resetForm}
+        className="flex w-full items-center justify-center rounded-md border border-transparent bg-purple-600 px-4 py-3 text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+      >
+        <RefreshCw className="mr-2" size={20} />
+        Claim More Tokens
+      </button>
+    </>
+  ) : response.type === 'error' ? (
+    <>
+      <div className="flex flex-col items-center space-y-4">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+        >
+          <Ban size={64} className="text-red-600" />
+        </motion.div>
+        <h2 className="text-2xl font-bold text-white">Transaction Error</h2>
+        <p className="text-white">{response?.payload?.data}</p>
+      </div>
+      <button
+        onClick={resetForm}
+        className="flex w-full items-center justify-center rounded-md border border-transparent bg-purple-600 px-4 py-3 text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+      >
+        <RefreshCw className="mr-2" size={20} />
+        Try Again
+      </button>
+    </>
+  ) : (
+    <>
+      <div className="flex flex-col items-center space-y-4">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+        >
+          <Ban size={64} className="text-red-600" />
+        </motion.div>
+        <h2 className="text-2xl font-bold text-white">
+          Error with your transaction.
+        </h2>
+        <p className="text-white">{response?.payload?.data}</p>
+      </div>
+      <button
+        onClick={resetForm}
+        className="flex w-full items-center justify-center rounded-md border border-transparent bg-purple-600 px-4 py-3 text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+      >
+        <RefreshCw className="mr-2" size={20} />
+        Try again
+      </button>
+    </>
+  );
 const generateInt = x => () => Math.floor(Math.random() * (x + 1));
 
 const createTestTier = generateInt(4); // ?
@@ -96,6 +168,7 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
     );
 
     await setStep(3);
+    await setIsLoading(false);
   };
   const handleSubmitName = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -197,7 +270,7 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
                       </h2>
                     </div>
                   </div>
-                  <p className="text-center">
+                  <p className="text-center text-white">
                     Congratulations! You can now proceed to claim your tokens.
                   </p>
                   <button
@@ -214,11 +287,13 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
                 </>
               ) : (
                 <>
-                  <div className="flex items-center space-x-2 text-red-600">
+                  <div className="flex items-center space-x-2">
                     <XCircle size={24} />
-                    <h2 className="text-2xl font-bold">Not Eligible</h2>
+                    <h2 className="text-2xl font-bold text-white">
+                      Not Eligible
+                    </h2>
                   </div>
-                  <p className="text-gray-600">
+                  <p className="text-red-950">
                     Sorry, you are not eligible for token claiming at this time.
                   </p>
                   <button
@@ -241,30 +316,11 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6 text-center"
             >
-              <div className="flex flex-col items-center space-y-4">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 200, damping: 10 }}
-                >
-                  <CheckCircle2 size={64} className="text-green-600" />
-                </motion.div>
-                <h2 className="text-2xl font-bold text-gray-800">
-                  Tokens Claimed Successfully!
-                </h2>
-                <p className="text-gray-600">
-                  You have successfully claimed{' '}
-                  {formatPurseValue(tribblesPurse)} $TRIBBLES. You can now claim
-                  more tokens if you'd like.
-                </p>
-              </div>
-              <button
-                onClick={resetForm}
-                className="flex w-full items-center justify-center rounded-md border border-transparent bg-purple-600 px-4 py-3 text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-              >
-                <RefreshCw className="mr-2" size={20} />
-                Claim More Tokens
-              </button>
+              <ClaimResponse
+                resetForm={resetForm}
+                response={response}
+                tribblesPurse={tribblesPurse}
+              />
             </motion.div>
           )}
         </AnimatePresence>
