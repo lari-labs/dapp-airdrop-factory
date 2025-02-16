@@ -46,7 +46,8 @@ const CheckEligibility = () => {
             address={address}
             walletConnection={walletConnection}
             pubkey={state.pubkey}
-            istBrand={brands?.IST}
+            provisionSmartWallet={agState.provisionSmartWallet}
+            isSmartWalletProvisioned={agState.isSmartWalletProvisioned}
           />
         ) : (
           <DisconnectedComponent />

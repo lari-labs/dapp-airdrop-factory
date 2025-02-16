@@ -13,10 +13,10 @@ const STRING_CONSTANTS = {
   },
   OFFER_NAME: 'makeClaimTokensInvitation',
   INSTANCE: {
-    PATH: 'xnetTribblesAirdrop',
+    PATH: 'tribblesDemoContract',
   },
   ISSUERS: {
-    TRIBBLES: 'XnetTribbles',
+    TRIBBLES: 'DemoTribbles',
     IST: 'IST',
     BLD: 'BLD',
   },

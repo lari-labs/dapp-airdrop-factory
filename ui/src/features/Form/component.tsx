@@ -11,13 +11,41 @@ import {
 import { useEligibility } from '../CheckEligibility/useEligibility.tsx';
 import { useContractStore } from '../../store/contract.ts';
 import { usePurse } from '../../hooks/usePurse.ts';
-import { Card } from '../Purses/component.tsx';
+
 import { formatPurseValue } from '../../shared/utilities/index.js';
-// Simulated API check - in reality this would be a real API call
-const fakeApiCheck = async (name: string): Promise<boolean> => {
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  return ['John', 'Jane', 'Alice', 'Bob', 'Nicole'].includes(name);
-};
+import AlreadyClaimed from '../AlreadyClaimed/component.tsx';
+
+const WalletRequirements = ({ isSmartWalletProvisioned, onClick, istPurse }) =>
+  !isSmartWalletProvisioned ? (
+    <>
+      <p className="text-center text-lg text-white">
+        In order to claim, you must first provision a smart wallet for 1 $IST.
+      </p>
+      <button
+        onClick={onClick}
+        className="flex w-full items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-3 text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
+      >
+        Provision Smart Wallet
+      </button>
+    </>
+  ) : istPurse.currentAmount.value < 5n ? (
+    <>
+      <p className="text-center text-lg text-white">
+        5 $IST in your wallet to claim Tribbles.
+      </p>
+      <button className="flex w-full items-center justify-center rounded-md border border-transparent bg-yellow-600 px-4 py-3 text-white shadow-sm hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50">
+        <a href="https://app.osmosis.zone" target="_blank">
+          Get $IST on Inter's PSM
+        </a>
+      </button>
+      <button className="flex w-full items-center justify-center rounded-md border border-transparent bg-purple-600 px-4 py-3 text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50">
+        <a href="https://app.osmosis.zone" target="_blank">
+          Get $IST on Osmosis
+        </a>
+      </button>
+    </>
+  ) : null;
+
 const ClaimResponse = ({ response, resetForm, tribblesPurse }) =>
   response.type === 'success' ? (
     <>
@@ -100,18 +128,30 @@ const STRING_CONSTANTS = {
   },
   OFFER_NAME: 'makeClaimTokensInvitation',
   INSTANCE: {
-    PATH: 'xnetTribblesAirdrop',
+    PATH: 'tribblesDemoContract',
   },
   ISSUERS: {
-    TRIBBLES: 'XnetTribbles',
+    TRIBBLES: 'DemoTribbles',
     IST: 'IST',
     BLD: 'BLD',
   },
 };
-const Form = ({ pubkey, address, walletConnection, istBrand }) => {
+// Add this new component
+
+const Form = ({
+  pubkey,
+  address,
+  walletConnection,
+  isSmartWalletProvisioned,
+  provisionSmartWallet,
+}) => {
+  const handleProvisionWallet = async () => {
+    await provisionSmartWallet();
+  };
+
   const { state, checkEligibility, resetEligibility } = useEligibility();
-  const tribblesPurse = usePurse('XnetTribbles');
-  console.log('Form ::: state', state);
+  const tribblesPurse = usePurse('DemoTribbles');
+  const istPurse = usePurse('IST');
   const contractStore = useContractStore();
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
@@ -146,6 +186,7 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
               data: update.data,
             },
           });
+          setStep(3);
           console.log(update);
         }
         if (update.status === 'accepted') {
@@ -153,15 +194,18 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
             type: 'success',
             payload: { text: 'Token claimsuccess', data: update.data },
           });
+          setStep(3);
         }
         if (update.status === 'refunded') {
           handleResponse({
             type: 'refunded',
             payload: { text: 'Tokens refunded', data: update.data },
           });
+          setStep(3);
         }
         if (update.status === 'done') {
           console.log('Done!', update);
+          setStep(3);
         }
       },
       `Offer-Airdrop-1`,
@@ -219,7 +263,7 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
               onSubmit={handleSubmitName}
               className="space-y-6"
             >
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-center text-2xl font-bold text-white">
                 Check Eligibility
               </h2>
               <div>
@@ -270,30 +314,48 @@ const Form = ({ pubkey, address, walletConnection, istBrand }) => {
                       </h2>
                     </div>
                   </div>
-                  <p className="text-center text-white">
-                    Congratulations! You can now proceed to claim your tokens.
-                  </p>
-                  <button
-                    onClick={submitOffer}
-                    disabled={isLoading}
-                    className="flex w-full items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-3 text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="mr-2 animate-spin" size={20} />
-                    ) : (
-                      'Submit Transaction'
-                    )}
-                  </button>
+
+                  <>
+                    <p className="text-center text-lg text-white">
+                      Please have {!isSmartWalletProvisioned ? '6' : '5'} $IST
+                      in your wallet to claim Tribbles.{' '}
+                      {!isSmartWalletProvisioned &&
+                        '(1 $IST will go towards creating your Agoric smart wallet'}
+                    </p>
+                    <button className="flex w-full items-center justify-center rounded-md border border-transparent bg-yellow-600 px-4 py-3 text-white shadow-sm hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50">
+                      <a href="https://app.osmosis.zone" target="_blank">
+                        Get $IST on Inter's PSM
+                      </a>
+                    </button>
+                    <button className="flex w-full items-center justify-center rounded-md border border-transparent bg-purple-600 px-4 py-3 text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50">
+                      <a href="https://app.osmosis.zone" target="_blank">
+                        Get $IST on Osmosis
+                      </a>
+                    </button>
+                    <button
+                      onClick={submitOffer}
+                      disabled={isLoading}
+                      className="flex w-full items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-3 text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="mr-2 animate-spin" size={20} />
+                      ) : (
+                        'Submit Transaction'
+                      )}
+                    </button>
+                  </>
                 </>
               ) : (
                 <>
-                  <div className="flex items-center space-x-2">
-                    <XCircle size={24} />
-                    <h2 className="text-2xl font-bold text-white">
-                      Not Eligible
-                    </h2>
+                  <div className="flex items-center justify-center space-x-2">
+                    <>
+                      <XCircle size={24} />
+                      <h2 className="text-2xl font-bold text-white">
+                        Not Eligible
+                      </h2>
+                    </>
                   </div>
-                  <p className="text-red-950">
+                  <p className="text-red-600">
                     Sorry, you are not eligible for token claiming at this time.
                   </p>
                   <button
