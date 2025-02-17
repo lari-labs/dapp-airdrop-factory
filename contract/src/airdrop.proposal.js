@@ -217,9 +217,8 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
 
   await E(creatorFacet).makePauseContractInvitation(adminDepositFacet);
 
-  // Add utribbles token to vbank
-  const tribblesMint = await E(creatorFacet).getBankAssetMint();
-
+  // addAsset creating a short lived mint
+  // See https://github.com/hindley-milner-systems/dapp-ertp-airdrop/issues/164
   await E(bankManager).addAsset(
     'utribbles',
     'Tribbles',
@@ -227,7 +226,6 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
     harden({
       issuer: tribblesIssuer,
       brand: tribblesBrand,
-      mint: tribblesMint,
     }),
   );
   await publishBrandInfo(chainStorage, board, tribblesBrand);
