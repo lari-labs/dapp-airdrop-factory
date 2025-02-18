@@ -186,7 +186,6 @@ const Form = ({
               data: update.data,
             },
           });
-          setStep(3);
           console.log(update);
         }
         if (update.status === 'accepted') {
@@ -194,18 +193,15 @@ const Form = ({
             type: 'success',
             payload: { text: 'Token claimsuccess', data: update.data },
           });
-          setStep(3);
         }
         if (update.status === 'refunded') {
           handleResponse({
             type: 'refunded',
             payload: { text: 'Tokens refunded', data: update.data },
           });
-          setStep(3);
         }
         if (update.status === 'done') {
           console.log('Done!', update);
-          setStep(3);
         }
       },
       `Offer-Airdrop-1`,
