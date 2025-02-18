@@ -215,7 +215,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     return df;
   };
 
-  /** @type {ContractTerms} */
+  /** @type {import('./airdrop.proposal.js').CustomContractTerms} */
   const {
     startTime = 120n,
     targetEpochLength = oneDay,

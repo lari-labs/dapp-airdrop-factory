@@ -65,7 +65,7 @@ export const defaultCustomTerms = {
   targetNumberOfEpochs: 5n,
   targetEpochLength: 86_400n / 2n,
   targetTokenSupply: 10_000_000n * 1_000_000n,
-  tokenName: 'ShortLivedTribbles',
+  tokenName: 'Tribbles',
 };
 
 export const makeTerms = (terms = {}) => ({
@@ -75,7 +75,7 @@ export const makeTerms = (terms = {}) => ({
 
 harden(makeTerms);
 
-export const contractName = 'shortlivedTribblesAirdrop';
+export const contractName = 'tribblesAirdropContract';
 
 /**
  * Core eval script to start contract q
@@ -85,13 +85,13 @@ export const contractName = 'shortlivedTribblesAirdrop';
  *
  * @typedef {{
  *   brand: PromiseSpaceOf<{
- *     ShortLivedTribbles: import('@agoric/ertp/src/types.js').Brand;
+ *     Tribbles: import('@agoric/ertp/src/types.js').Brand;
  *   }>;
  *   issuer: PromiseSpaceOf<{
- *     ShortLivedTribbles: import('@agoric/ertp/src/types.js').Issuer;
+ *     Tribbles: import('@agoric/ertp/src/types.js').Issuer;
  *   }>;
- *   instance: { produce: { shortlivedTribblesAirdrop: Instance } };
- *   installation: { consume: { shortlivedTribblesAirdrop: Installation } };
+ *   instance: { produce: { TribblesAirdrop: Instance } };
+ *   installation: { consume: { TribblesAirdrop: Installation } };
  * }} AirdropSpace
  */
 
@@ -132,11 +132,11 @@ export const startAirdrop = async (powers, config) => {
     },
     issuer: {
       consume: { IST: istIssuer },
-      produce: { ShortLivedTribbles: produceShortLivedTribblesIssuer },
+      produce: { Tribbles: produceTribblesIssuer },
     },
     brand: {
       consume: { IST: istBrand },
-      produce: { ShortLivedTribbles: produceShortLivedTribblesBrand },
+      produce: { Tribbles: produceTribblesBrand },
     },
   } = powers;
 
@@ -173,7 +173,7 @@ export const startAirdrop = async (powers, config) => {
     issuerKeywordRecord: {
       Fee: issuerIST,
     },
-    issuerNames: ['ShortLivedTribbles'],
+    issuerNames: ['Tribbles'],
     privateArgs: await deeplyFulfilledObject(
       harden({
         timer,
@@ -190,17 +190,17 @@ export const startAirdrop = async (powers, config) => {
   const instanceTerms = await E(zoe).getTerms(instance);
   trace('instanceTerms::', instanceTerms);
   const {
-    brands: { ShortLivedTribbles: ShortLivedTribblesBrand },
-    issuers: { ShortLivedTribbles: ShortLivedTribblesIssuer },
+    brands: { Tribbles: tribblesBrand },
+    issuers: { Tribbles: tribblesIssuer },
   } = instanceTerms;
 
   produceInstance.reset();
   produceInstance.resolve(instance);
 
-  produceShortLivedTribblesBrand.reset();
-  produceShortLivedTribblesIssuer.reset();
-  produceShortLivedTribblesBrand.resolve(ShortLivedTribblesBrand);
-  produceShortLivedTribblesIssuer.resolve(ShortLivedTribblesIssuer);
+  produceTribblesBrand.reset();
+  produceTribblesIssuer.reset();
+  produceTribblesBrand.resolve(tribblesBrand);
+  produceTribblesIssuer.resolve(tribblesIssuer);
 
   // Sending invitation for pausing contract to a specific wallet
   // TODO: add correct wallet address
@@ -221,15 +221,15 @@ export const startAirdrop = async (powers, config) => {
   // addAsset creating a short lived mint
   // See https://github .com/hindley-milner-systems/dapp-ertp-airdrop/issues/164
   await E(bankManager).addAsset(
-    'ushortlivedtribbles',
-    'ShortLivedTribbles',
-    'ShortLivedTribbles Intersubjective Token',
+    'uTribbles',
+    'Tribbles',
+    'Tribbles Intersubjective Token',
     harden({
-      issuer: ShortLivedTribblesIssuer,
-      brand: ShortLivedTribblesBrand,
+      issuer: tribblesIssuer,
+      brand: tribblesBrand,
     }),
   );
-  await publishBrandInfo(chainStorage, board, ShortLivedTribblesBrand);
+  await publishBrandInfo(chainStorage, board, tribblesBrand);
   trace('deploy script complete.');
 };
 
@@ -253,12 +253,12 @@ const airdropManifest = harden({
       produce: { [contractName]: true },
     },
     issuer: {
-      consume: { IST: true, ShortLivedTribbles: true },
-      produce: { ShortLivedTribbles: true },
+      consume: { IST: true, Tribbles: true },
+      produce: { Tribbles: true },
     },
     brand: {
-      consume: { IST: true, ShortLivedTribbles: true },
-      produce: { ShortLivedTribbles: true },
+      consume: { IST: true, Tribbles: true },
+      produce: { Tribbles: true },
     },
     instance: { produce: { [contractName]: true } },
   },
@@ -283,9 +283,7 @@ export const getManifestForAirdrop = (
   return harden({
     manifest: airdropManifest,
     installations: {
-      shortlivedTribblesAirdrop: restoreRef(
-        installKeys.shortlivedTribblesAirdrop,
-      ),
+      tribblesAirdrop: restoreRef(installKeys.tribblesAirdrop),
     },
     options,
   });

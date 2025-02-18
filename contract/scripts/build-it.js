@@ -1,7 +1,16 @@
+<<<<<<< HEAD
 import { makeHelpers } from '@agoric/deploy-script-support';∑
 import {
   startAirdrop,
   getManifestForAirdrop,
+=======
+import { makeHelpers } from '@agoric/deploy-script-support';
+
+import {
+  startAirdrop,
+  contractName,
+  getManifestForTribblesXnet,
+>>>>>>> main
 } from '../src/airdrop.proposal.js';
 
 /**
@@ -18,15 +27,23 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
     // insert as the first argument a "powers" object that includes functions such as
     // `restoreRef`). A common thing to want to pass in `args` is a reference to code
     getManifestCall: [
+<<<<<<< HEAD
       getManifestForAirdrop.name,
+=======
+      getManifestForTribblesXnet.name,
+>>>>>>> main
       {
         installKeys: {
           // s built from sources in agoric-sdk, and passed as a
           // `bundleRef`, which contains a `bundleID` suitable for passing to Zoe (for
           // contracts)
+<<<<<<< HEAD
           shortlivedTribblesAirdrop: publishRef(
             install('../src/airdrop.contract.js'),
           ),
+=======
+          [contractName]: publishRef(install('../src/airdrop.contract.js')),
+>>>>>>> main
         },
       },
     ],
