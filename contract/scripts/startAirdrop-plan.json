@@ -10,8 +10,8 @@
     },
     {
       "entrypoint": "../src/airdrop.proposal.js",
-      "bundleID": "b1-f48516fbcad5b69a5a1fcd0ef4a363fc2babcc9df2e280c4b086fb528ad6c2074bd5f905f03f09a00f385d641a15a3d5c03137b66a33e006b24b586f83d7c719",
-      "fileName": "/Users/tgreco/.agoric/cache/b1-f48516fbcad5b69a5a1fcd0ef4a363fc2babcc9df2e280c4b086fb528ad6c2074bd5f905f03f09a00f385d641a15a3d5c03137b66a33e006b24b586f83d7c719.json"
+      "bundleID": "b1-e329fd867d605ec02a866bd559e37d6b0f3ac1aff34f0a7c985e63b16ec80295a5d574e963d31de71c29ebf9d054dfda26c6166b966be26dc1b0dfa699256ec4",
+      "fileName": "/Users/tgreco/.agoric/cache/b1-e329fd867d605ec02a866bd559e37d6b0f3ac1aff34f0a7c985e63b16ec80295a5d574e963d31de71c29ebf9d054dfda26c6166b966be26dc1b0dfa699256ec4.json"
     }
   ]
 }

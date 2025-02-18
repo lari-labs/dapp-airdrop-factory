@@ -15,33 +15,33 @@
   },
   "installation": {
     "consume": {
-      "shortlivedTribblesAirdrop": true
+      "trillblsAirdrop": true
     },
     "produce": {
-      "shortlivedTribblesAirdrop": true
+      "trillblsAirdrop": true
     }
   },
   "issuer": {
     "consume": {
       "IST": true,
-      "ShortLivedTribbles": true
+      "TrillbillsS": true
     },
     "produce": {
-      "ShortLivedTribbles": true
+      "TrillbillsS": true
     }
   },
   "brand": {
     "consume": {
       "IST": true,
-      "ShortLivedTribbles": true
+      "TrillbillsS": true
     },
     "produce": {
-      "ShortLivedTribbles": true
+      "TrillbillsS": true
     }
   },
   "instance": {
     "produce": {
-      "shortlivedTribblesAirdrop": true
+      "trillblsAirdrop": true
     }
   },
   "evaluateBundleCap": "makeCoreProposalBehavior",
